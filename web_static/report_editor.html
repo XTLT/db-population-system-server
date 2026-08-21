@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>报表编辑</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: "微软雅黑", sans-serif; background: #f5f5f5; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+        .header { background: #4472C4; color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .header h1 { font-size: 18px; }
+        .header .info { font-size: 13px; opacity: 0.9; }
+        .toolbar { background: white; padding: 10px 20px; border-bottom: 1px solid #ddd; display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+        .toolbar button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .btn-save { background: #00994C; color: white; }
+        .btn-save:hover { background: #007a3d; }
+        .btn-add-row { background: #4472C4; color: white; }
+        .btn-add-row:hover { background: #3461b3; }
+        .btn-add-col { background: #FF6600; color: white; }
+        .btn-add-col:hover { background: #e55c00; }
+        .btn-close { background: #C8C8C8; color: black; }
+        .btn-close:hover { background: #b0b0b0; }
+        .status { margin-left: auto; font-size: 12px; color: #666; }
+        .table-wrap { flex: 1; overflow: auto; margin: 0; background: white; position: relative; }
+        table { border-collapse: collapse; table-layout: fixed; }
+        th, td { border: 1px solid #ddd; padding: 0; position: relative; overflow: hidden; }
+        th { background: #4472C4; color: white; position: sticky; top: 0; z-index: 2; }
+        th input { background: transparent; color: white; border: none; width: 100%; padding: 8px; font-weight: bold; font-size: 13px; text-align: center; }
+        th input:focus { outline: 2px solid #FFD700; background: rgba(255,255,255,0.1); }
+        td input { border: none; width: 100%; padding: 6px 8px; font-size: 13px; height: 100%; }
+        td input:focus { outline: 2px solid #4472C4; background: #f0f7ff; }
+        td input.changed { background: #fffde7; }
+        .row-num { background: #f0f0f0; text-align: center; font-size: 12px; color: #999; width: 40px; min-width: 40px; padding: 6px; user-select: none; position: sticky; left: 0; z-index: 1; }
+        th.row-num { z-index: 3; }
+        .col-resize { position: absolute; right: -3px; top: 0; width: 6px; height: 100%; cursor: col-resize; z-index: 5; }
+        .col-resize:hover, .col-resize.active { background: #4472C4; }
+        .row-resize { position: absolute; bottom: -3px; left: 0; width: 100%; height: 6px; cursor: row-resize; z-index: 5; }
+        .row-resize:hover, .row-resize.active { background: #4472C4; }
+        .hidden-col { display: none; }
+        .ctx-menu { position: fixed; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); z-index: 100; min-width: 140px; padding: 4px 0; }
+        .ctx-menu-item { padding: 8px 16px; cursor: pointer; font-size: 13px; }
+        .ctx-menu-item:hover { background: #e8f0fe; }
+        .ctx-sep { height: 1px; background: #ddd; margin: 4px 0; }
+        .btn-hide-col { background: #888; color: white; }
+        .btn-hide-col:hover { background: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 id="title">报表编辑</h1>
+        <div class="info" id="userInfo"></div>
+    </div>
+    <div class="toolbar">
+        <button class="btn-save" onclick="saveData()">保存</button>
+        <button class="btn-add-row" onclick="addRow()">添加行</button>
+        <button class="btn-add-col" onclick="addCol()">添加列</button>
+        <button class="btn-hide-col" onclick="showColMenu(event)">显示/隐藏列</button>
+        <button class="btn-close" onclick="window.close()">关闭</button>
+        <span class="status" id="status"></span>
+    </div>
+    <div class="table-wrap" id="tableWrap">
+        <table id="grid"></table>
+    </div>
+    <div class="ctx-menu" id="ctxMenu" style="display:none;"></div>
+
+    <script>
+        let reportId = '';
+        let authToken = '';
+        let originalData = [];
+        let originalHeaders = [];
+        let changeLog = [];
+        let colWidths = [];
+        let rowHeights = [];
+        let hiddenCols = new Set();
+
+        function getParams() {
+            const p = new URLSearchParams(window.location.search);
+            const pathMatch = window.location.pathname.match(/\/api\/reports\/([^/]+)/);
+            reportId = pathMatch ? pathMatch[1] : (p.get('id') || '');
+            authToken = p.get('token') || localStorage.getItem('token') || '';
+            return { reportId, token: authToken };
+        }
+
+        async function loadData() {
+            const { reportId, token } = getParams();
+            if (!reportId) {
+                document.getElementById('status').textContent = '缺少报表ID';
+                return;
+            }
+            try {
+                const res = await fetch(`/api/reports/${reportId}/data`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.status === 401) { alert('登录已过期'); return; }
+                const data = await res.json();
+                if (data.error) { alert(data.error); return; }
+
+                originalHeaders = data.headers || [];
+                originalData = data.data || [];
+                colWidths = originalHeaders.map(() => 120);
+                rowHeights = originalData.map(() => 32);
+                document.getElementById('title').textContent = `报表编辑 - ${data.report_name}`;
+                document.getElementById('userInfo').textContent = `上传者: ${data.username} | 共 ${originalData.length} 行`;
+                document.getElementById('status').textContent = '已加载';
+                changeLog = [];
+                renderTable();
+            } catch (e) {
+                document.getElementById('status').textContent = '加载失败: ' + e.message;
+            }
+        }
+
+        function renderTable() {
+            const table = document.getElementById('grid');
+            let html = '<thead><tr><th class="row-num" style="width:40px">#</th>';
+            originalHeaders.forEach((h, i) => {
+                html += `<th style="width:${colWidths[i]}px;min-width:${colWidths[i]}px"><input value="${esc(h)}" onchange="headerChanged(${i}, this.value)"><div class="col-resize" data-col="${i}"></div></th>`;
+            });
+            html += '</tr></thead><tbody>';
+
+            originalData.forEach((row, ri) => {
+                const h = rowHeights[ri] || 32;
+                html += `<tr style="height:${h}px"><td class="row-num">${ri + 1}<div class="row-resize" data-row="${ri}"></div></td>`;
+                originalHeaders.forEach((_, ci) => {
+                    const val = row[ci] || '';
+                    html += `<td style="width:${colWidths[ci]}px;min-width:${colWidths[ci]}px"><input value="${esc(val)}" data-row="${ri}" data-col="${ci}" onchange="cellChanged(${ri}, ${ci}, this.value)"></td>`;
+                });
+                html += '</tr>';
+            });
+            html += '</tbody>';
+            table.innerHTML = html;
+            initResize();
+        }
+
+        function esc(s) {
+            return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function cellChanged(row, col, newVal) {
+            const oldVal = (originalData[row] && originalData[row][col]) || '';
+            if (oldVal === newVal) return;
+            const cellRef = `${String.fromCharCode(65 + col)}${row + 2}`;
+            changeLog.push({ cell: cellRef, row, col, old: oldVal, new: newVal });
+            document.getElementById('status').textContent = `已修改 ${changeLog.length} 个单元格`;
+        }
+
+        function headerChanged(col, newVal) {
+            const oldVal = originalHeaders[col] || '';
+            if (oldVal === newVal) return;
+            changeLog.push({ cell: `表头${col + 1}`, old: oldVal, new: newVal });
+            document.getElementById('status').textContent = `已修改 ${changeLog.length} 个单元格`;
+        }
+
+        function addRow() {
+            const tbody = document.querySelector('#grid tbody');
+            const ri = tbody.querySelectorAll('tr').length;
+            originalData.push(new Array(originalHeaders.length).fill(''));
+            rowHeights.push(32);
+            let html = `<tr style="height:32px"><td class="row-num">${ri + 1}<div class="row-resize" data-row="${ri}"></div></td>`;
+            originalHeaders.forEach((_, ci) => {
+                html += `<td style="width:${colWidths[ci]}px;min-width:${colWidths[ci]}px"><input value="" data-row="${ri}" data-col="${ci}" onchange="cellChanged(${ri}, ${ci}, this.value)"></td>`;
+            });
+            html += '</tr>';
+            tbody.insertAdjacentHTML('beforeend', html);
+            initRowResize(tbody.lastElementChild);
+            if (hiddenCols.size > 0) applyColVisibility();
+            document.getElementById('status').textContent = `已添加第 ${ri + 1} 行`;
+        }
+
+        function addCol() {
+            const colName = prompt('请输入新列名称：');
+            if (!colName) return;
+            originalHeaders.push(colName);
+            colWidths.push(120);
+            changeLog.push({ cell: `新列`, old: '', new: colName });
+            originalData.forEach(row => row.push(''));
+            renderTable();
+            document.getElementById('status').textContent = `已添加列「${colName}」`;
+        }
+
+        function showColMenu(e) {
+            const menu = document.getElementById('ctxMenu');
+            let html = '';
+            originalHeaders.forEach((h, i) => {
+                const checked = !hiddenCols.has(i) ? '✓ ' : '  ';
+                html += `<div class="ctx-menu-item" onclick="toggleCol(${i})">${checked}${h || '列' + (i+1)}</div>`;
+            });
+            html += '<div class="ctx-sep"></div>';
+            html += `<div class="ctx-menu-item" onclick="showAllCols()" style="color:#4472C4;font-weight:bold">显示全部列</div>`;
+            menu.innerHTML = html;
+            menu.style.display = 'block';
+            menu.style.left = e.clientX + 'px';
+            menu.style.top = e.clientY + 'px';
+
+            function close() { menu.style.display = 'none'; document.removeEventListener('click', close); }
+            setTimeout(() => document.addEventListener('click', close), 0);
+        }
+
+        function toggleCol(idx) {
+            if (hiddenCols.has(idx)) {
+                hiddenCols.delete(idx);
+            } else {
+                if (hiddenCols.size >= originalHeaders.length - 1) {
+                    alert('至少保留一列可见');
+                    return;
+                }
+                hiddenCols.add(idx);
+            }
+            applyColVisibility();
+            document.getElementById('ctxMenu').style.display = 'none';
+        }
+
+        function showAllCols() {
+            hiddenCols.clear();
+            applyColVisibility();
+            document.getElementById('ctxMenu').style.display = 'none';
+        }
+
+        function applyColVisibility() {
+            const table = document.getElementById('grid');
+            table.querySelectorAll('tr').forEach(tr => {
+                const cells = tr.children;
+                for (let i = 0; i < cells.length; i++) {
+                    const colIdx = i - 1;
+                    if (colIdx < 0) continue;
+                    if (hiddenCols.has(colIdx)) {
+                        cells[i].classList.add('hidden-col');
+                    } else {
+                        cells[i].classList.remove('hidden-col');
+                    }
+                }
+            });
+        }
+
+        function initResize() {
+            document.querySelectorAll('.col-resize').forEach(el => {
+                el.addEventListener('mousedown', startColResize);
+            });
+            document.querySelectorAll('.row-resize').forEach(el => {
+                el.addEventListener('mousedown', startRowResize);
+            });
+        }
+
+        function initRowResize(tr) {
+            const el = tr.querySelector('.row-resize');
+            if (el) el.addEventListener('mousedown', startRowResize);
+        }
+
+        let resizing = null;
+
+        function startColResize(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const col = parseInt(e.target.dataset.col);
+            const th = e.target.parentElement;
+            const startX = e.clientX;
+            const startW = colWidths[col];
+            e.target.classList.add('active');
+
+            function onMove(ev) {
+                const w = Math.max(50, startW + ev.clientX - startX);
+                colWidths[col] = w;
+                th.style.width = w + 'px';
+                th.style.minWidth = w + 'px';
+                const table = document.getElementById('grid');
+                table.querySelectorAll(`tbody tr`).forEach(tr => {
+                    const td = tr.children[col + 1];
+                    if (td) { td.style.width = w + 'px'; td.style.minWidth = w + 'px'; }
+                });
+            }
+
+            function onUp() {
+                e.target.classList.remove('active');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            }
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        }
+
+        function startRowResize(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const rowIdx = parseInt(e.target.dataset.row);
+            const tr = e.target.parentElement.parentElement;
+            const startY = e.clientY;
+            const startH = rowHeights[rowIdx] || 32;
+            e.target.classList.add('active');
+
+            function onMove(ev) {
+                const h = Math.max(20, startH + ev.clientY - startY);
+                rowHeights[rowIdx] = h;
+                tr.style.height = h + 'px';
+            }
+
+            function onUp() {
+                e.target.classList.remove('active');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onUp);
+            }
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onUp);
+        }
+
+        async function saveData() {
+            const { reportId, token } = getParams();
+            if (!reportId) return;
+
+            const table = document.getElementById('grid');
+            const headerInputs = table.querySelectorAll('thead input');
+            const headers = Array.from(headerInputs).map(inp => inp.value);
+
+            const rows = [];
+            const bodyInputs = table.querySelectorAll('tbody tr');
+            bodyInputs.forEach(tr => {
+                const cells = tr.querySelectorAll('input');
+                rows.push(Array.from(cells).map(inp => inp.value));
+            });
+
+            document.getElementById('status').textContent = '保存中...';
+
+            try {
+                const res = await fetch(`/api/reports/${reportId}/data`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ headers, data: rows, changes: changeLog })
+                });
+                const text = await res.text();
+                let result;
+                try { result = JSON.parse(text); } catch(e) { result = { error: '服务器返回非JSON: ' + text.substring(0, 200) }; }
+                if (result.success) {
+                    originalHeaders = headers;
+                    originalData = rows;
+                    changeLog = [];
+                    document.getElementById('status').textContent = `已保存 (${rows.length} 行)`;
+                    document.getElementById('userInfo').textContent = `上传者: ${document.getElementById('userInfo').textContent.split('|')[0].split(': ')[1]} | 共 ${rows.length} 行`;
+                } else {
+                    alert(result.error || '保存失败');
+                    document.getElementById('status').textContent = '保存失败';
+                }
+            } catch (e) {
+                alert('保存失败: ' + e.message);
+                document.getElementById('status').textContent = '保存失败';
+            }
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

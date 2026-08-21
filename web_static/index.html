@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>人口信息查询系统</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="loginPage" class="login-page">
+        <div class="login-box">
+            <h1>人口信息查询系统</h1>
+            <div id="defaultAccountInfo" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:6px;padding:12px;margin-bottom:15px;font-size:13px;">
+                <p style="margin:0 0 8px 0;font-weight:bold;color:#856404;">首次使用，请使用初始账户登录：</p>
+                <p style="margin:0 0 4px 0;color:#856404;">用户名：<strong>admin</strong></p>
+                <p style="margin:0;color:#856404;">密码：<strong>amdin123</strong></p>
+                <p style="margin:8px 0 0 0;color:#856404;font-size:12px;">登录后请立即创建新的管理员账户</p>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="loginUsername" placeholder="请输入用户名" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" placeholder="请输入密码" required>
+                </div>
+                <div id="loginError" class="login-error" style="display:none;"></div>
+                <button type="submit" class="btn-login">登录</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="createAdminPage" class="login-page" style="display:none;">
+        <div class="login-box">
+            <h1>创建管理员账户</h1>
+            <p style="color:#dc3545;margin-bottom:15px;font-weight:bold;">请创建您自己的管理员账户，初始账户将在创建后禁用</p>
+            <form id="createAdminForm">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="adminUsername" placeholder="请输入新用户名" required>
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="adminPassword" placeholder="至少8位，含字母和数字" required>
+                </div>
+                <div class="form-group">
+                    <label>确认密码</label>
+                    <input type="password" id="adminConfirm" placeholder="再次输入密码" required>
+                </div>
+                <div class="form-group">
+                    <label>真实姓名</label>
+                    <input type="text" id="adminRealName" placeholder="选填">
+                </div>
+                <div id="createAdminError" class="login-error" style="display:none;"></div>
+                <button type="submit" class="btn-login">创建账户</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="mainPage" class="container" style="display:none;">
+        <header>
+            <h1>人口信息查询系统</h1>
+            <div class="user-info">
+                <span id="currentUser"></span>
+                <span id="currentRole"></span>
+                <button onclick="showUserModal()" class="btn-logout" id="btnUserManage" style="display:none;">用户管理</button>
+                <button onclick="logout()" class="btn-logout">退出</button>
+            </div>
+        </header>
+
+        <div class="toolbar" id="toolbar">
+            <button onclick="doSearch()" class="toolbar-btn">查询</button>
+            <button onclick="showAddHouseholdModal()" class="toolbar-btn" id="btnAddHousehold">新增户</button>
+            <button onclick="showSplitHouseholdModal()" class="toolbar-btn" id="btnSplitHousehold" style="display:none;">分户</button>
+            <button onclick="showMergeHouseholdModal()" class="toolbar-btn" id="btnMergeHousehold" style="display:none;">合户</button>
+            <button onclick="showImportModal()" class="toolbar-btn" id="btnImport">导入Excel</button>
+            <button onclick="doDownloadTemplate()" class="toolbar-btn" id="btnTemplate">下载导入模板</button>
+            <button onclick="doExportExcel()" class="toolbar-btn" id="btnExport">导出Excel</button>
+            <button onclick="showStudentModal()" class="toolbar-btn">学生管理</button>
+            <button onclick="showLandSubsidyModal()" class="toolbar-btn" id="btnLandSubsidy">地力补贴</button>
+            <button onclick="showTreatmentPaymentModal()" class="toolbar-btn" id="btnTreatmentPayment">待遇发放</button>
+            <button onclick="showDeletedModal()" class="toolbar-btn" id="btnDeleted" style="display:none;">找回人员</button>
+            <button onclick="doBackup()" class="toolbar-btn" id="btnBackup" style="display:none;">备份</button>
+            <button onclick="showLogsModal()" class="toolbar-btn" id="btnLogs" style="display:none;">操作日志</button>
+        </div>
+
+        <div class="search-box">
+            <input type="text" id="searchInput" placeholder="输入姓名查询...">
+            <button onclick="doSearch()">查询</button>
+        </div>
+
+        <div id="nameList" class="name-list"></div>
+
+        <div id="familyInfo" class="family-info" style="display:none;">
+            <h2 id="familyTitle"></h2>
+            <div style="margin-bottom:10px;">
+                <button onclick="showAddPersonModal()" class="toolbar-btn" id="btnAddPerson" style="display:none;">添加家庭成员</button>
+            </div>
+            <div class="table-container">
+                <table id="familyTable">
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>身份证号</th>
+                            <th>关系</th>
+                            <th>年龄</th>
+                            <th>电话</th>
+                            <th>土地面积</th>
+                            <th>状态</th>
+                            <th>学生标记</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="familyBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div id="personDetail" class="person-detail" style="display:none;">
+            <h2>人员详情</h2>
+            <div class="detail-content" id="detailContent"></div>
+            <div class="action-buttons" id="actionButtons">
+                <button onclick="editPerson()" class="btn-edit" id="btnEdit">编辑</button>
+                <button onclick="migratePerson()" class="btn-migrate" id="btnMigrate">户籍迁出</button>
+                <button onclick="deletePerson()" class="btn-delete" id="btnDelete">删除</button>
+                <button onclick="closeDetail()" class="btn-cancel">关闭</button>
+            </div>
+        </div>
+
+        <div id="addPersonModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>添加家庭成员</h2>
+                <form id="addPersonForm">
+                    <div class="form-group">
+                        <label>户号：</label>
+                        <input type="text" id="addPersonHuHao" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>姓名：</label>
+                        <input type="text" id="addPersonName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>身份证号：</label>
+                        <input type="text" id="addPersonIdCard" required>
+                    </div>
+                    <div class="form-group">
+                        <label>与户主关系：</label>
+                        <input type="text" id="addPersonRelation" placeholder="如：户主、配偶、子女">
+                    </div>
+                    <div class="form-group">
+                        <label>地址：</label>
+                        <input type="text" id="addPersonAddress">
+                    </div>
+                    <div class="form-group">
+                        <label>电话：</label>
+                        <input type="text" id="addPersonPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>土地面积：</label>
+                        <input type="text" id="addPersonLandArea" placeholder="亩">
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-save">添加</button>
+                        <button type="button" onclick="closeAddPersonModal()" class="btn-cancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="editModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>编辑人员信息</h2>
+                <form id="editForm">
+                    <input type="hidden" id="editId">
+                    <div class="form-group">
+                        <label>姓名：</label>
+                        <input type="text" id="editName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>身份证号：</label>
+                        <input type="text" id="editIdCard" required>
+                    </div>
+                    <div class="form-group">
+                        <label>与户主关系：</label>
+                        <input type="text" id="editRelation">
+                    </div>
+                    <div class="form-group">
+                        <label>电话：</label>
+                        <input type="text" id="editPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>是否死亡：</label>
+                        <select id="editIsDead">
+                            <option value="否">否</option>
+                            <option value="是">是</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>土地面积：</label>
+                        <input type="text" id="editLandArea" placeholder="亩">
+                    </div>
+                    <div class="form-group">
+                        <label>社保卡号1：</label>
+                        <input type="text" id="editSocial1">
+                    </div>
+                    <div class="form-group">
+                        <label>社保卡号2：</label>
+                        <input type="text" id="editSocial2">
+                    </div>
+                    <div class="form-group">
+                        <label>社保卡号3：</label>
+                        <input type="text" id="editSocial3">
+                    </div>
+                    <hr style="margin:10px 0;border-color:#ddd;">
+                    <p style="font-weight:bold;color:#333;margin-bottom:8px;">就读信息</p>
+                    <div class="form-group">
+                        <label>学校：</label>
+                        <input type="text" id="editEduSchool">
+                    </div>
+                    <div class="form-group">
+                        <label>年级：</label>
+                        <select id="editEduGrade"><option value="">请选择</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>班级：</label>
+                        <input type="text" id="editEduClass">
+                    </div>
+                    <div class="form-group">
+                        <label>监护人：</label>
+                        <input type="text" id="editEduGuardian">
+                    </div>
+                    <div class="form-group">
+                        <label>监护人电话：</label>
+                        <input type="text" id="editEduGuardianPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>留守儿童：</label>
+                        <select id="editEduLeftBehind">
+                            <option value="否">否</option>
+                            <option value="是">是</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>学生状态：</label>
+                        <select id="editEduStatus">
+                            <option value="在读">在读</option>
+                            <option value="留级">留级</option>
+                            <option value="跳级">跳级</option>
+                            <option value="休学">休学</option>
+                            <option value="转学">转学</option>
+                            <option value="毕业">毕业</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>入学日期：</label>
+                        <input type="date" id="editEduEnrollDate">
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-save">保存</button>
+                        <button type="button" onclick="closeEdit()" class="btn-cancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="migrateModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>户籍迁出</h2>
+                <form id="migrateForm">
+                    <input type="hidden" id="migrateId">
+                    <div class="form-group">
+                        <label>迁出时间：</label>
+                        <input type="date" id="migrateDate">
+                    </div>
+                    <div class="form-group">
+                        <label>迁出地：</label>
+                        <input type="text" id="migratePlace">
+                    </div>
+                    <div class="form-group">
+                        <label>迁出原因：</label>
+                        <select id="migrateReason">
+                            <option value="">请选择</option>
+                            <option value="婚嫁迁出">婚嫁迁出</option>
+                            <option value="工作调动">工作调动</option>
+                            <option value="升学迁出">升学迁出</option>
+                            <option value="投靠亲属">投靠亲属</option>
+                            <option value="购房迁入">购房迁入</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-save">保存</button>
+                        <button type="button" onclick="closeMigrate()" class="btn-cancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="userModal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:700px;">
+                <h2>用户管理</h2>
+                <table id="userTable" class="user-table">
+                    <thead>
+                        <tr>
+                            <th>用户名</th>
+                            <th>姓名</th>
+                            <th>角色</th>
+                            <th>状态</th>
+                            <th>最后登录</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="userBody"></tbody>
+                </table>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="showAddUser()" class="btn-save">添加用户</button>
+                    <button onclick="closeUserModal()" class="btn-cancel">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="addUserModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>添加用户</h2>
+                <form id="addUserForm">
+                    <div class="form-group">
+                        <label>用户名：</label>
+                        <input type="text" id="newUsername" required>
+                    </div>
+                    <div class="form-group">
+                        <label>密码：</label>
+                        <input type="password" id="newPassword" required>
+                    </div>
+                    <div class="form-group">
+                        <label>真实姓名：</label>
+                        <input type="text" id="newRealName">
+                    </div>
+                    <div class="form-group">
+                        <label>角色：</label>
+                        <select id="newRole">
+                            <option value="user">普通用户</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-save">添加</button>
+                        <button type="button" onclick="closeAddUser()" class="btn-cancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="editUserModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>编辑用户</h2>
+                <form id="editUserForm">
+                    <input type="hidden" id="editUserId">
+                    <div class="form-group">
+                        <label>用户名：</label>
+                        <input type="text" id="editUsername" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>新密码（留空不修改）：</label>
+                        <input type="password" id="editPassword">
+                    </div>
+                    <div class="form-group">
+                        <label>真实姓名：</label>
+                        <input type="text" id="editRealName">
+                    </div>
+                    <div class="form-group">
+                        <label>角色：</label>
+                        <select id="editRole">
+                            <option value="user">普通用户</option>
+                            <option value="admin">管理员</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>状态：</label>
+                        <select id="editIsActive">
+                            <option value="是">启用</option>
+                            <option value="否">禁用</option>
+                        </select>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-save">保存</button>
+                        <button type="button" onclick="closeEditUser()" class="btn-cancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="addHouseholdModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>新增户</h2>
+                <form id="addHouseholdForm">
+                    <div class="form-group">
+                        <label>户号：</label>
+                        <input type="text" id="newHhHuhao" required>
+                    </div>
+                    <div class="form-group">
+                        <label>户主姓名：</label>
+                        <input type="text" id="newHhName" required>
+                    </div>
+                    <div class="form-group">
+                        <label>身份证号：</label>
+                        <input type="text" id="newHhIdCard" required>
+                    </div>
+                    <div class="form-group">
+                        <label>地址：</label>
+                        <input type="text" id="newHhAddress">
+                    </div>
+                    <div class="form-group">
+                        <label>电话：</label>
+                        <input type="text" id="newHhPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>土地面积：</label>
+                        <input type="text" id="newHhLandArea" placeholder="亩">
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-save">创建</button>
+                        <button type="button" onclick="closeAddHouseholdModal()" class="btn-cancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="splitHouseholdModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>分户</h2>
+                <p style="color:#666;margin-bottom:10px;">选择要分出去的人员（将创建新户）</p>
+                <div id="splitPersonList"></div>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="doSplitHousehold()" class="btn-save">确认分户</button>
+                    <button onclick="closeSplitHouseholdModal()" class="btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="mergeHouseholdModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>合户</h2>
+                <div class="form-group">
+                    <label>目标户号（合并到此户）：</label>
+                    <input type="text" id="mergeTargetHuHao" placeholder="输入目标户号">
+                </div>
+                <p style="color:#666;margin-bottom:10px;">选择要合并的人员：</p>
+                <div id="mergePersonList"></div>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="doMergeHousehold()" class="btn-save">确认合户</button>
+                    <button onclick="closeMergeHouseholdModal()" class="btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="importModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>导入Excel</h2>
+                <div class="form-group">
+                    <label>导入模式：</label>
+                    <select id="importMode">
+                        <option value="incremental">增量导入（新增+更新）</option>
+                        <option value="full">全量导入（覆盖所有数据）</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>选择文件：</label>
+                    <input type="file" id="importFile" accept=".xlsx,.xls">
+                </div>
+                <div id="importProgress" style="display:none;">
+                    <div class="progress-bar"><div class="progress-fill" id="importProgressFill"></div></div>
+                    <p id="importStatus"></p>
+                </div>
+                <div class="form-buttons">
+                    <button onclick="doImport()" class="btn-save">开始导入</button>
+                    <button onclick="closeImportModal()" class="btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="deletedModal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:700px;">
+                <h2>找回已删除人员</h2>
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>姓名</th>
+                            <th>身份证号</th>
+                            <th>户号</th>
+                            <th>删除时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="deletedBody"></tbody>
+                </table>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="closeDeletedModal()" class="btn-cancel">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="studentModal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:900px;">
+                <h2>学生信息管理</h2>
+                <div class="student-toolbar">
+                    <select id="stuSchool"><option value="">全部学校</option></select>
+                    <select id="stuGrade"><option value="">全部年级</option></select>
+                    <button onclick="searchStudents()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">查询</button>
+                    <button onclick="showStuImportModal()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnStuImport">导入</button>
+                    <button onclick="doDownloadStudentTemplate()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnStuTemplate">模板</button>
+                    <button onclick="doExportStudents()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnStuExport">导出</button>
+                </div>
+                <div class="table-container" style="max-height:400px;overflow-y:auto;">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>身份证号</th>
+                                <th>学校</th>
+                                <th>年级</th>
+                                <th>班级</th>
+                                <th>监护人</th>
+                                <th>留守儿童</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentBody"></tbody>
+                    </table>
+                </div>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="closeStudentModal()" class="btn-cancel">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="eduEditModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>编辑就读信息</h2>
+                <form id="eduEditForm">
+                    <input type="hidden" id="eduPersonId">
+                    <div class="form-group">
+                        <label>姓名：</label>
+                        <input type="text" id="eduName" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label>学校：</label>
+                        <input type="text" id="eduSchool">
+                    </div>
+                    <div class="form-group">
+                        <label>年级：</label>
+                        <select id="eduGrade"><option value="">请选择</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>班级：</label>
+                        <input type="text" id="eduClass">
+                    </div>
+                    <div class="form-group">
+                        <label>监护人：</label>
+                        <input type="text" id="eduGuardian">
+                    </div>
+                    <div class="form-group">
+                        <label>监护人电话：</label>
+                        <input type="text" id="eduGuardianPhone">
+                    </div>
+                    <div class="form-group">
+                        <label>留守儿童：</label>
+                        <select id="eduLeftBehind">
+                            <option value="否">否</option>
+                            <option value="是">是</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>学生状态：</label>
+                        <select id="eduStatus">
+                            <option value="在读">在读</option>
+                            <option value="留级">留级</option>
+                            <option value="跳级">跳级</option>
+                            <option value="休学">休学</option>
+                            <option value="转学">转学</option>
+                            <option value="毕业">毕业</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>入学日期：</label>
+                        <input type="date" id="eduEnrollDate">
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit" class="btn-save">保存</button>
+                        <button type="button" onclick="closeEduEdit()" class="btn-cancel">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div id="stuImportModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>导入学生就读信息</h2>
+                <div class="form-group">
+                    <label>选择文件：</label>
+                    <input type="file" id="stuImportFile" accept=".xlsx,.xls">
+                </div>
+                <div id="stuImportProgress" style="display:none;">
+                    <p id="stuImportStatus"></p>
+                </div>
+                <div class="form-buttons">
+                    <button onclick="doStuImport()" class="btn-save">开始导入</button>
+                    <button onclick="closeStuImportModal()" class="btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="landSubsidyModal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:1100px;">
+                <h2>地力补贴数据管理</h2>
+                <div class="student-toolbar">
+                    <select id="subsidyYear"><option value="">全部年度</option></select>
+                    <input type="text" id="subsidySearch" placeholder="搜索姓名..." style="padding:6px 12px;font-size:13px;">
+                    <button onclick="loadLandSubsidies()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">查询</button>
+                    <button onclick="showSubsidyImportModal()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnSubsidyImport">导入</button>
+                    <button onclick="exportLandSubsidies()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">导出</button>
+                </div>
+                <div class="table-container" style="max-height:400px;overflow-y:auto;">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>身份证号</th>
+                                <th>确权颁发面积</th>
+                                <th>补贴面积(亩)</th>
+                                <th>基础补贴标准(元/亩)</th>
+                                <th>油菜面积(亩)</th>
+                                <th>油菜金额(元)</th>
+                                <th>补贴总金额(元)</th>
+                                <th>导入时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="landSubsidyBody"></tbody>
+                    </table>
+                </div>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="closeLandSubsidyModal()" class="btn-cancel">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="subsidyImportModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>导入地力补贴数据</h2>
+                <div class="form-group">
+                    <label>补贴年度：</label>
+                    <input type="text" id="subsidyImportYear" placeholder="如：2026">
+                </div>
+                <div class="form-group">
+                    <label>选择文件：</label>
+                    <input type="file" id="subsidyImportFile" accept=".xlsx,.xls">
+                </div>
+                <div id="subsidyImportProgress" style="display:none;">
+                    <p id="subsidyImportStatus"></p>
+                </div>
+                <div class="form-buttons">
+                    <button onclick="doSubsidyImport()" class="btn-save">开始导入</button>
+                    <button onclick="closeSubsidyImportModal()" class="btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="treatmentPaymentModal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:800px;">
+                <h2>待遇发放数据管理</h2>
+                <div class="student-toolbar">
+                    <input type="text" id="treatmentSearch" placeholder="搜索姓名..." style="padding:6px 12px;font-size:13px;">
+                    <button onclick="loadTreatmentPayments()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">查询</button>
+                    <button onclick="showTreatmentImportModal()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnTreatmentImport">导入</button>
+                    <button onclick="exportTreatmentPayments()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">导出</button>
+                </div>
+                <div class="table-container" style="max-height:400px;overflow-y:auto;">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>银行账号</th>
+                                <th>金额</th>
+                                <th>导入时间</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="treatmentPaymentBody"></tbody>
+                    </table>
+                </div>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="closeTreatmentPaymentModal()" class="btn-cancel">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="treatmentImportModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>导入待遇发放数据</h2>
+                <div class="form-group">
+                    <label>选择文件：</label>
+                    <input type="file" id="treatmentImportFile" accept=".xlsx,.xls">
+                </div>
+                <div id="treatmentImportProgress" style="display:none;">
+                    <p id="treatmentImportStatus"></p>
+                </div>
+                <div class="form-buttons">
+                    <button onclick="doTreatmentImport()" class="btn-save">开始导入</button>
+                    <button onclick="closeTreatmentImportModal()" class="btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="logsModal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:900px;">
+                <h2>操作日志</h2>
+                <div class="table-container" style="max-height:500px;overflow-y:auto;">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>时间</th>
+                                <th>用户</th>
+                                <th>操作</th>
+                                <th>目标</th>
+                                <th>IP</th>
+                                <th>来源</th>
+                                <th>高风险</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsBody"></tbody>
+                    </table>
+                </div>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="loadLogs()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">刷新</button>
+                    <button onclick="closeLogsModal()" class="btn-cancel">关闭</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
