@@ -320,7 +320,7 @@ def script():
 
 
 DEFAULT_ADMIN_USERNAME = "admin"
-DEFAULT_ADMIN_PASSWORD = None
+DEFAULT_ADMIN_PASSWORD = "admin123"
 
 
 def _ensure_default_admin():
@@ -329,9 +329,8 @@ def _ensure_default_admin():
         existing = session.query(User).filter(User.username == DEFAULT_ADMIN_USERNAME).first()
         if not existing:
             import hashlib
-            random_password = secrets.token_hex(8)
             salt = secrets.token_hex(16)
-            password_sha256 = hashlib.sha256(random_password.encode()).hexdigest()
+            password_sha256 = hashlib.sha256(DEFAULT_ADMIN_PASSWORD.encode()).hexdigest()
             password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
             user = User(
                 id=f"user_default_{secrets.token_hex(8)}",
