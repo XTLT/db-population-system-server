@@ -446,6 +446,32 @@ def _migrate_db(engine):
             conn.commit()
         except Exception:
             pass
+        # land_subsidy 表迁移：subsidy_year -> year，添加新字段
+        try:
+            conn.execute(text("ALTER TABLE land_subsidy RENAME COLUMN subsidy_year TO year"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE land_subsidy ADD COLUMN year VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE land_subsidy ADD COLUMN land_area VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE land_subsidy ADD COLUMN subsidy_amount VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE land_subsidy ADD COLUMN created_at VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
 
 
 def validate_password(password: str) -> tuple[bool, str]:
