@@ -712,7 +712,7 @@ def get_year_subsidy_totals() -> dict:
         subsidies = session.query(LandSubsidy).all()
         totals = {}
         for s in subsidies:
-            year = s.subsidy_year or "未知"
+            year = s.year or "未知"
             if year not in totals:
                 totals[year] = 0.0
             try:
@@ -864,3 +864,122 @@ def delete_treatment_payment(payment_id: str):
         raise
     finally:
         session.close()
+
+
+# API 别名函数
+def import_treatment_payment_excel(file_path: str, progress_callback=None) -> dict:
+    """导入待遇发放数据 - API 别名"""
+    return import_treatment_payment(file_path, progress_callback)
+
+
+def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_callback=None) -> dict:
+    """导入地力补贴数据
+    
+    Args:
+        file_path: Excel 文件路径
+        subsidy_year: 补贴年份
+        progress_callback: 进度回调函数
+    
+    Returns:
+        导入结果字典
+    """
+    from database import get_session, LandSubsidy
+    
+    df = pd.read_excel(file_path, dtype=str, header=0)
+    df = df.fillna("")
+    
+    columns = list(df.columns)
+    
+    # 确定列名映射
+    name_col = None
+    id_card_col = None
+    area_col = None
+    amount_col = None
+    
+    if "姓名" in columns:
+        name_col = "姓名"
+    elif "承包人姓名" in columns:
+        name_col = "承包人姓名"
+    
+    if "身份证号" in columns:
+        id_card_col = "身份证号"
+    elif "身份证号码" in columns:
+        id_card_col = "身份证号码"
+    elif "公民身份证号码" in columns:
+        id_card_col = "公民身份证号码"
+    
+    if "确权面积" in columns:
+        area_col = "确权面积"
+    elif "耕地面积" in columns:
+        area_col = "耕地面积"
+    elif "土地面积" in columns:
+        area_col = "土地面积"
+    
+    if "补贴金额" in columns:
+        amount_col = "补贴金额"
+    elif "总金额" in columns:
+        amount_col = "总金额"
+    elif "合计金额" in columns:
+        amount_col = "合计金额"
+    
+    if not name_col:
+        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列"], "total": 0}
+    
+    total = len(df)
+    imported = 0
+    skipped = 0
+    errors = []
+    session = get_session()
+    
+    try:
+        for idx, row in df.iterrows():
+            try:
+                name = safe_str(row.get(name_col, ""))
+                if not name:
+                    skipped += 1
+                    continue
+                
+                id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
+                land_area = safe_str(row.get(area_col, "")) if area_col else ""
+                subsidy_amount = safe_str(row.get(amount_col, "")) if amount_col else ""
+                
+                # 其他可能的字段
+                certified_area = safe_str(row.get("确权面积", ""))
+                subsidy_area = safe_str(row.get("补贴面积", ""))
+                base_standard = safe_str(row.get("补贴标准", ""))
+                rape_area = safe_str(row.get("油菜面积", ""))
+                rape_amount = safe_str(row.get("油菜金额", ""))
+                total_amount = safe_str(row.get("总金额", ""))
+                
+                subsidy = LandSubsidy(
+                    id=f"ls_{secrets.token_hex(8)}",
+                    name=name,
+                    id_card=id_card,
+                    year=subsidy_year,
+                    land_area=land_area,
+                    subsidy_amount=subsidy_amount or total_amount,
+                    certified_area=certified_area,
+                    subsidy_area=subsidy_area,
+                    base_standard=base_standard,
+                    rape_area=rape_area,
+                    rape_amount=rape_amount,
+                    total_amount=total_amount,
+                    created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                )
+                session.add(subsidy)
+                imported += 1
+                
+                if progress_callback:
+                    progress_callback(int((idx + 1) / total * 100))
+            except Exception as e:
+                skipped += 1
+                errors.append(f"行{idx + 2}: {str(e)}")
+        
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+    
+    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total}
