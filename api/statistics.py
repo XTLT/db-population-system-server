@@ -23,7 +23,10 @@ def api_statistics():
         total = session.query(Person).count()
         dead = session.query(Person).filter(Person.is_dead == '是').count()
         migrated = session.query(Person).filter(Person.is_migrated == '是').count()
-        dibao = session.query(Person).filter(Person.dibao == '低保户').count()
+        # 低保人员统计：包含"是"、"低保边缘家庭"、"特困家庭"
+        dibao = session.query(Person).filter(
+            Person.dibao.in_(['是', '低保边缘家庭', '特困家庭'])
+        ).count()
         disability = session.query(Person).filter(Person.disability != '无', Person.disability != '').count()
 
         poor_type_distribution = {}
