@@ -90,9 +90,13 @@ def list_land_subsidies():
                 'id_card': s.id_card,
                 'name': s.name,
                 'year': s.year,
-                'land_area': s.land_area,
-                'subsidy_amount': s.subsidy_amount,
-                'created_at': s.created_at
+                'certified_area': s.certified_area,
+                'subsidy_area': s.subsidy_area,
+                'base_standard': s.base_standard,
+                'rape_area': s.rape_area,
+                'rape_amount': s.rape_amount,
+                'total_amount': s.total_amount,
+                'import_time': s.import_time or s.created_at
             } for s in subsidies]
         })
     finally:
@@ -207,9 +211,13 @@ def export_land_subsidy():
             '身份证号': s.id_card,
             '姓名': s.name,
             '年份': s.year,
-            '土地面积': s.land_area,
-            '补贴金额': s.subsidy_amount,
-            '创建时间': s.created_at
+            '确权面积': s.certified_area,
+            '补贴面积': s.subsidy_area,
+            '基础标准': s.base_standard,
+            '油菜面积': s.rape_area,
+            '油菜金额': s.rape_amount,
+            '补贴总金额': s.total_amount,
+            '导入时间': s.import_time or s.created_at
         } for s in subsidies]
         
         df = pd.DataFrame(data)
