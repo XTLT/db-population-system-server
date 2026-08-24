@@ -5,7 +5,7 @@ from flask import Blueprint, request, jsonify
 
 from database import get_session, User, add_operation_log
 from utils.security import (
-    _tokens, create_token, remove_token, require_auth,
+    create_token, remove_token, require_auth,
     DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD, hash_password
 )
 from utils.response import safe_error, get_json_data, safe_exception
@@ -339,8 +339,9 @@ def api_create_admin():
         if has_real_admin:
             # 检查是否已认证
             token = request.headers.get('Authorization', '').replace('Bearer ', '')
-            from utils.security import _tokens, get_token_data
-            if not token or token not in _tokens:
+            from utils.security import get_token_data
+            token_data = get_token_data(token)
+            if not token or not token_data:
                 return jsonify({'error': '系统已初始化，请登录管理员账户'}), 401
             
             token_data = get_token_data(token)

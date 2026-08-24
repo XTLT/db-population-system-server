@@ -1,12 +1,11 @@
 # 工具函数模块
 from .security import (
-    hash_password, 
-    verify_password, 
-    require_auth, 
+    hash_password,
+    verify_password,
+    require_auth,
     create_token,
     get_token_data,
     remove_token,
-    _tokens,
     DEFAULT_ADMIN_USERNAME,
     DEFAULT_ADMIN_PASSWORD,
     check_id_card_rate_limit
@@ -46,7 +45,6 @@ __all__ = [
     'create_token',
     'get_token_data',
     'remove_token',
-    '_tokens',
     'DEFAULT_ADMIN_USERNAME',
     'DEFAULT_ADMIN_PASSWORD',
     'check_id_card_rate_limit',

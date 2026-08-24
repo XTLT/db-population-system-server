@@ -43,8 +43,8 @@ def check_structure():
     print("\n=== 结构检查 ===")
     
     # 检查 utils
-    from utils.security import hash_password, verify_password, require_auth, _tokens
-    print("  ✓ utils/security.py - hash_password, verify_password, require_auth")
+    from utils.security import hash_password, verify_password, require_auth, create_token
+    print("  ✓ utils/security.py - hash_password, verify_password, require_auth, create_token")
     
     from utils.response import safe_error, get_json_data
     print("  ✓ utils/response.py - safe_error, get_json_data")

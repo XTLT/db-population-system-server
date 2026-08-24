@@ -14,7 +14,6 @@ if not logger.handlers:
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import BASE_DIR
-from utils.security import _tokens
 
 if getattr(sys, 'frozen', False):
     _MEIPASS = sys._MEIPASS

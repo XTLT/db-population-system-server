@@ -13,6 +13,44 @@ MAX_CONCURRENT_SESSIONS = 3
 DEFAULT_ADMIN_USERNAME = os.environ.get('DEFAULT_ADMIN_USERNAME', 'admin')
 DEFAULT_ADMIN_PASSWORD = os.environ.get('DEFAULT_ADMIN_PASSWORD', 'admin123')
 
+# Token 哈希盐值文件路径
+_SALT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '.token_salt')
+
+
+def _get_or_create_salt() -> str:
+    """获取或创建 Token 哈希盐值"""
+    salt_file = os.path.abspath(_SALT_FILE)
+    
+    # 尝试读取现有 salt
+    if os.path.exists(salt_file):
+        try:
+            with open(salt_file, 'r') as f:
+                salt = f.read().strip()
+                if len(salt) >= 32:  # 确保长度足够
+                    return salt
+        except Exception as e:
+            logger.warning(f"读取Token盐值失败: {e}")
+    
+    # 生成新的 salt
+    salt = secrets.token_hex(32)
+    try:
+        with open(salt_file, 'w') as f:
+            f.write(salt)
+        os.chmod(salt_file, 0o600)  # 设置权限，仅所有者可读写
+        logger.info("已生成新的Token哈希盐值")
+    except Exception as e:
+        logger.error(f"保存Token盐值失败: {e}")
+    
+    return salt
+
+
+_TOKEN_SALT = _get_or_create_salt()
+
+
+def _hash_token(token: str) -> str:
+    """对 token 进行哈希处理"""
+    return hashlib.sha256(f"{_TOKEN_SALT}{token}".encode()).hexdigest()
+
 
 def hash_password(password: str) -> str:
     salt = secrets.token_hex(16)
@@ -40,10 +78,11 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def create_token(user_data: dict, expiry_hours: int = 24) -> str:
-    """创建 Token 并存储到数据库"""
+    """创建 Token 并存储到数据库（存储哈希值而非明文）"""
     from database import get_session, Token
     
     token = secrets.token_hex(32)
+    token_hash = _hash_token(token)  # 存储 token 的哈希值
     user_id = user_data.get('id')
     ip = request.remote_addr if request else 'unknown'
     expires_at = datetime.now() + timedelta(hours=expiry_hours)
@@ -59,9 +98,9 @@ def create_token(user_data: dict, expiry_hours: int = 24) -> str:
             for old_token in existing_tokens[MAX_CONCURRENT_SESSIONS - 1:]:
                 session.delete(old_token)
         
-        # 创建新 token
+        # 创建新 token（存储哈希值）
         new_token = Token(
-            token=token,
+            token=token_hash,  # 存储哈希值
             user_id=user_id,
             user_data=json.dumps(user_data, ensure_ascii=False),
             expires_at=expires_at.strftime("%Y-%m-%d %H:%M:%S"),
@@ -79,16 +118,17 @@ def create_token(user_data: dict, expiry_hours: int = 24) -> str:
     finally:
         session.close()
     
-    return token
+    return token  # 返回原始 token 给客户端
 
 
 def get_token_data(token: str) -> dict:
-    """从数据库获取 Token 数据"""
+    """从数据库获取 Token 数据（通过哈希值查询）"""
     from database import get_session, Token
     
+    token_hash = _hash_token(token)  # 计算哈希值用于查询
     session = get_session()
     try:
-        token_obj = session.query(Token).filter(Token.token == token).first()
+        token_obj = session.query(Token).filter(Token.token == token_hash).first()
         if not token_obj:
             return None
         
@@ -106,12 +146,13 @@ def get_token_data(token: str) -> dict:
 
 
 def remove_token(token: str) -> bool:
-    """从数据库删除 Token"""
+    """从数据库删除 Token（通过哈希值删除）"""
     from database import get_session, Token
     
+    token_hash = _hash_token(token)
     session = get_session()
     try:
-        token_obj = session.query(Token).filter(Token.token == token).first()
+        token_obj = session.query(Token).filter(Token.token == token_hash).first()
         if token_obj:
             session.delete(token_obj)
             session.commit()
