@@ -729,8 +729,10 @@ def import_treatment_payment(file_path: str, progress_callback=None) -> dict:
     1. 待遇发放成功信息表：包含所属乡镇、所属村、费款所属期、支付标志、个人编号、公民身份证号码、姓名、银行账号、金额、失败原因
     2. 待遇支付信息表：包含所属乡镇、所属村、费款所属期、姓名、公民身份证号码、银行账号、金额、支付标志
     3. 低保特困发放台账：包含救助类型、人员姓名、人员身份证号、和申请人关系、家庭保障总金额
+    
+    只导入身份证号在数据库中存在的人员
     """
-    from database import get_session, TreatmentPayment
+    from database import get_session, TreatmentPayment, Person
     import secrets
     import os
 
@@ -775,6 +777,14 @@ def import_treatment_payment(file_path: str, progress_callback=None) -> dict:
     not_found = []
     session = get_session()
 
+    # 获取数据库中所有身份证号
+    existing_id_cards = set()
+    try:
+        persons = session.query(Person.id_card).all()
+        existing_id_cards = {p.id_card for p in persons if p.id_card}
+    except Exception:
+        pass
+
     try:
         for idx, row in df.iterrows():
             try:
@@ -784,6 +794,13 @@ def import_treatment_payment(file_path: str, progress_callback=None) -> dict:
                     continue
 
                 id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
+                
+                # 检查身份证号是否在数据库中存在
+                if id_card and id_card not in existing_id_cards:
+                    not_found.append(f"{name}({id_card})")
+                    skipped += 1
+                    continue
+                
                 amount = safe_str(row.get(amount_col, "")) if amount_col else ""
 
                 # 根据表格类型提取其他字段
@@ -875,6 +892,8 @@ def import_treatment_payment_excel(file_path: str, progress_callback=None) -> di
 def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_callback=None) -> dict:
     """导入地力补贴数据
     
+    只导入身份证号在数据库中存在的人员
+    
     Args:
         file_path: Excel 文件路径
         subsidy_year: 补贴年份
@@ -883,7 +902,7 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
     Returns:
         导入结果字典
     """
-    from database import get_session, LandSubsidy
+    from database import get_session, LandSubsidy, Person
     
     df = pd.read_excel(file_path, dtype=str, header=0)
     df = df.fillna("")
@@ -923,13 +942,22 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
         amount_col = "合计金额"
     
     if not name_col:
-        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列"], "total": 0}
+        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列"], "total": 0, "not_found": []}
     
     total = len(df)
     imported = 0
     skipped = 0
     errors = []
+    not_found = []
     session = get_session()
+
+    # 获取数据库中所有身份证号
+    existing_id_cards = set()
+    try:
+        persons = session.query(Person.id_card).all()
+        existing_id_cards = {p.id_card for p in persons if p.id_card}
+    except Exception:
+        pass
     
     try:
         for idx, row in df.iterrows():
@@ -940,6 +968,13 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                     continue
                 
                 id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
+                
+                # 检查身份证号是否在数据库中存在
+                if id_card and id_card not in existing_id_cards:
+                    not_found.append(f"{name}({id_card})")
+                    skipped += 1
+                    continue
+                
                 land_area = safe_str(row.get(area_col, "")) if area_col else ""
                 subsidy_amount = safe_str(row.get(amount_col, "")) if amount_col else ""
                 
@@ -982,11 +1017,13 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
     finally:
         session.close()
     
-    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total}
+    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
 
 
 def import_pension_insurance_excel(file_path: str, progress_callback=None) -> dict:
     """导入养老保险数据
+    
+    只导入身份证号在数据库中存在的人员
     
     Args:
         file_path: Excel 文件路径
@@ -995,7 +1032,7 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None) -> di
     Returns:
         导入结果字典
     """
-    from database import get_session, PensionInsurance
+    from database import get_session, PensionInsurance, Person
     
     df = pd.read_excel(file_path, dtype=str, header=0)
     df = df.fillna("")
@@ -1005,7 +1042,7 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None) -> di
     
     # 验证必需列
     if "姓名" not in columns:
-        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列"], "total": 0}
+        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列"], "total": 0, "not_found": []}
     
     # 确定身份证列名
     id_card_col = None
@@ -1020,7 +1057,16 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None) -> di
     imported = 0
     skipped = 0
     errors = []
+    not_found = []
     session = get_session()
+
+    # 获取数据库中所有身份证号
+    existing_id_cards = set()
+    try:
+        persons = session.query(Person.id_card).all()
+        existing_id_cards = {p.id_card for p in persons if p.id_card}
+    except Exception:
+        pass
     
     try:
         for idx, row in df.iterrows():
@@ -1031,6 +1077,12 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None) -> di
                     continue
                 
                 id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
+                
+                # 检查身份证号是否在数据库中存在
+                if id_card and id_card not in existing_id_cards:
+                    not_found.append(f"{name}({id_card})")
+                    skipped += 1
+                    continue
                 
                 pension = PensionInsurance(
                     id=f"pi_{secrets.token_hex(8)}",
@@ -1064,4 +1116,4 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None) -> di
     finally:
         session.close()
     
-    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total}
+    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
