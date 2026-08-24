@@ -80,6 +80,7 @@
             <button onclick="showStudentModal()" class="toolbar-btn">学生管理</button>
             <button onclick="showLandSubsidyModal()" class="toolbar-btn" id="btnLandSubsidy">地力补贴</button>
             <button onclick="showTreatmentPaymentModal()" class="toolbar-btn" id="btnTreatmentPayment">待遇发放</button>
+            <button onclick="showPensionInsuranceModal()" class="toolbar-btn" id="btnPensionInsurance">养老保险</button>
             <button onclick="showDeletedModal()" class="toolbar-btn" id="btnDeleted" style="display:none;">找回人员</button>
             <button onclick="doBackup()" class="toolbar-btn" id="btnBackup" style="display:none;">备份</button>
             <button onclick="showLogsModal()" class="toolbar-btn" id="btnLogs" style="display:none;">操作日志</button>
@@ -720,6 +721,57 @@
                 <div class="form-buttons">
                     <button onclick="doTreatmentImport()" class="btn-save">开始导入</button>
                     <button onclick="closeTreatmentImportModal()" class="btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pensionInsuranceModal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:1100px;">
+                <h2>养老保险数据管理</h2>
+                <div class="student-toolbar">
+                    <input type="text" id="pensionPeriodSearch" placeholder="费款所属期(如202606)" style="padding:6px 12px;font-size:13px;width:140px;">
+                    <input type="text" id="pensionIdCardSearch" placeholder="身份证号" style="padding:6px 12px;font-size:13px;width:150px;">
+                    <button onclick="loadPensionInsurance()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">查询</button>
+                    <button onclick="showPensionImportModal()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnPensionImport">导入</button>
+                    <button onclick="exportPensionInsurance()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">导出</button>
+                </div>
+                <div class="table-container" style="max-height:400px;overflow-y:auto;">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>费款所属期</th>
+                                <th>姓名</th>
+                                <th>身份证号</th>
+                                <th>所属村</th>
+                                <th>银行账号</th>
+                                <th>金额</th>
+                                <th>支付标志</th>
+                                <th>导入来源</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pensionInsuranceBody"></tbody>
+                    </table>
+                </div>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="closePensionInsuranceModal()" class="btn-cancel">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pensionImportModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>导入养老保险数据</h2>
+                <div class="form-group">
+                    <label>选择文件：</label>
+                    <input type="file" id="pensionImportFile" accept=".xlsx,.xls">
+                </div>
+                <div id="pensionImportProgress" style="display:none;">
+                    <p id="pensionImportStatus"></p>
+                </div>
+                <div class="form-buttons">
+                    <button onclick="doPensionImport()" class="btn-save">开始导入</button>
+                    <button onclick="closePensionImportModal()" class="btn-cancel">取消</button>
                 </div>
             </div>
         </div>

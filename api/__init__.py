@@ -12,6 +12,7 @@ from .notifications import bp as notifications_bp
 from .reports import bp as reports_bp
 from .land_subsidy import bp as land_subsidy_bp
 from .treatment_payment import bp as treatment_payment_bp
+from .pension_insurance import bp as pension_insurance_bp
 
 __all__ = [
     'auth_bp',
@@ -26,5 +27,6 @@ __all__ = [
     'notifications_bp',
     'reports_bp',
     'land_subsidy_bp',
-    'treatment_payment_bp'
+    'treatment_payment_bp',
+    'pension_insurance_bp'
 ]
