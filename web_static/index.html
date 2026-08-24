@@ -668,10 +668,16 @@
         </div>
 
         <div id="treatmentPaymentModal" class="modal" style="display:none;">
-            <div class="modal-content" style="max-width:800px;">
+            <div class="modal-content" style="max-width:1100px;">
                 <h2>待遇发放数据管理</h2>
                 <div class="student-toolbar">
-                    <input type="text" id="treatmentSearch" placeholder="搜索姓名..." style="padding:6px 12px;font-size:13px;">
+                    <input type="text" id="treatmentPeriodSearch" placeholder="费款所属期(如202606)" style="padding:6px 12px;font-size:13px;width:140px;">
+                    <input type="text" id="treatmentIdCardSearch" placeholder="身份证号" style="padding:6px 12px;font-size:13px;width:150px;">
+                    <select id="treatmentSubsidyTypeFilter" style="padding:6px 12px;font-size:13px;">
+                        <option value="">全部类型</option>
+                        <option value="最低生活保障家庭">最低生活保障家庭</option>
+                        <option value="特困家庭">特困家庭</option>
+                    </select>
                     <button onclick="loadTreatmentPayments()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">查询</button>
                     <button onclick="showTreatmentImportModal()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnTreatmentImport">导入</button>
                     <button onclick="exportTreatmentPayments()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">导出</button>
@@ -680,10 +686,15 @@
                     <table class="user-table">
                         <thead>
                             <tr>
+                                <th>费款所属期</th>
                                 <th>姓名</th>
+                                <th>身份证号</th>
+                                <th>所属村</th>
                                 <th>银行账号</th>
                                 <th>金额</th>
-                                <th>导入时间</th>
+                                <th>支付标志</th>
+                                <th>救助类型</th>
+                                <th>导入来源</th>
                                 <th>操作</th>
                             </tr>
                         </thead>

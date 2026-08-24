@@ -1373,9 +1373,13 @@ function closeTreatmentPaymentModal() {
 }
 
 function loadTreatmentPayments() {
-    const search = document.getElementById('treatmentSearch').value;
+    const period = document.getElementById('treatmentPeriodSearch').value;
+    const idCard = document.getElementById('treatmentIdCardSearch').value;
+    const subsidyType = document.getElementById('treatmentSubsidyTypeFilter').value;
     let url = '/api/treatment_payment?';
-    if (search) url += `search=${search}`;
+    if (period) url += `period=${period}&`;
+    if (idCard) url += `id_card=${idCard}&`;
+    if (subsidyType) url += `subsidy_type=${encodeURIComponent(subsidyType)}&`;
 
     apiRequest('GET', url).then(data => {
         const tbody = document.getElementById('treatmentPaymentBody');
@@ -1387,10 +1391,15 @@ function loadTreatmentPayments() {
                     ? `<button onclick="deleteTreatmentPayment('${p.id}')" class="btn-delete" style="padding:4px 8px;font-size:12px;">删除</button>`
                     : '';
                 row.innerHTML = `
+                    <td>${p.period || ''}</td>
                     <td>${p.name || ''}</td>
-                    <td>${p.bank_account || ''}</td>
+                    <td>${p.id_card || ''}</td>
+                    <td>${p.village || ''}</td>
+                    <td style="font-size:11px;">${p.bank_account || ''}</td>
                     <td>${p.amount || ''}</td>
-                    <td>${p.import_time || ''}</td>
+                    <td>${p.payment_status || ''}</td>
+                    <td>${p.subsidy_type || ''}</td>
+                    <td style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="${p.import_source || ''}">${p.import_source || ''}</td>
                     <td>${deleteBtn}</td>
                 `;
                 tbody.appendChild(row);
@@ -1466,9 +1475,11 @@ function exportTreatmentPayments() {
         alert('请先登录');
         return;
     }
-    const search = document.getElementById('treatmentSearch').value;
+    const period = document.getElementById('treatmentPeriodSearch').value;
+    const subsidyType = document.getElementById('treatmentSubsidyTypeFilter').value;
     let url = '/api/treatment_payment/export?';
-    if (search) url += 'search=' + encodeURIComponent(search) + '&';
+    if (period) url += 'period=' + encodeURIComponent(period) + '&';
+    if (subsidyType) url += 'subsidy_type=' + encodeURIComponent(subsidyType) + '&';
 
     fetch(url, {
         method: 'GET',

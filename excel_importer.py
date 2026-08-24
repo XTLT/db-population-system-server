@@ -725,14 +725,48 @@ def get_year_subsidy_totals() -> dict:
 
 
 def import_treatment_payment(file_path: str, progress_callback=None) -> dict:
-    from database import get_session, TreatmentPayment, Person
+    """导入待遇发放数据，支持三种表格格式：
+    1. 待遇发放成功信息表：包含所属乡镇、所属村、费款所属期、支付标志、个人编号、公民身份证号码、姓名、银行账号、金额、失败原因
+    2. 待遇支付信息表：包含所属乡镇、所属村、费款所属期、姓名、公民身份证号码、银行账号、金额、支付标志
+    3. 低保特困发放台账：包含救助类型、人员姓名、人员身份证号、和申请人关系、家庭保障总金额
+    """
+    from database import get_session, TreatmentPayment
     import secrets
+    import os
 
     df = pd.read_excel(file_path, dtype=str, header=0)
     df = df.fillna("")
 
-    if "姓名" not in df.columns:
-        return {"imported": 0, "skipped": 0, "errors": ["未找到必需列：姓名"], "total": 0, "not_found": []}
+    # 检测表格类型
+    columns = list(df.columns)
+    file_name = os.path.basename(file_path)
+
+    # 格式1：待遇发放成功信息（包含个人编号、享受定期待遇人员ID等）
+    has_format1 = "个人编号" in columns and "享受定期待遇人员ID" in columns
+    # 格式2：待遇支付信息（只有基本信息）
+    has_format2 = "所属乡镇" in columns and "费款所属期" in columns and "个人编号" not in columns
+    # 格式3：低保特困发放台账
+    has_format3 = "救助类型" in columns and "人员身份证号" in columns
+
+    # 确定姓名和身份证列名
+    name_col = None
+    id_card_col = None
+    amount_col = None
+
+    if has_format3:
+        name_col = "人员姓名"
+        id_card_col = "人员身份证号"
+        amount_col = "家庭保障总金额"
+    elif "姓名" in columns:
+        name_col = "姓名"
+        if "公民身份证号码" in columns:
+            id_card_col = "公民身份证号码"
+        elif "身份证号" in columns:
+            id_card_col = "身份证号"
+        amount_col = "金额" if "金额" in columns else None
+
+    if not name_col:
+        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列"], "total": 0, "not_found": []}
 
     total = len(df)
     imported = 0
@@ -742,32 +776,43 @@ def import_treatment_payment(file_path: str, progress_callback=None) -> dict:
     session = get_session()
 
     try:
-        db_persons = session.query(Person).all()
-        db_person_dict = {}
-        for p in db_persons:
-            db_person_dict[p.name] = p.id_card
-
         for idx, row in df.iterrows():
             try:
-                name = safe_str(row.get("姓名", ""))
+                name = safe_str(row.get(name_col, ""))
                 if not name:
                     skipped += 1
                     continue
 
-                if name not in db_person_dict:
-                    not_found.append(name)
-                    skipped += 1
-                    continue
+                id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
+                amount = safe_str(row.get(amount_col, "")) if amount_col else ""
 
+                # 根据表格类型提取其他字段
+                town = safe_str(row.get("所属乡镇", ""))
+                village = safe_str(row.get("所属村", ""))
+                period = safe_str(row.get("费款所属期", ""))
+                payment_status = safe_str(row.get("支付标志", ""))
+                personal_code = safe_str(row.get("个人编号", ""))
                 bank_account = safe_str(row.get("银行账号", ""))
-                amount = safe_str(row.get("金额", ""))
+                fail_reason = safe_str(row.get("失败原因", ""))
+                subsidy_type = safe_str(row.get("救助类型", ""))
+                relation = safe_str(row.get("和申请人关系", ""))
 
                 payment = TreatmentPayment(
                     id=f"tp_{secrets.token_hex(8)}",
                     name=name,
+                    id_card=id_card,
+                    town=town,
+                    village=village,
+                    period=period,
+                    payment_status=payment_status,
+                    personal_code=personal_code,
                     bank_account=bank_account,
                     amount=amount,
+                    subsidy_type=subsidy_type,
+                    relation=relation,
+                    fail_reason=fail_reason,
                     import_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    import_source=file_name,
                 )
                 session.add(payment)
                 imported += 1
@@ -788,12 +833,19 @@ def import_treatment_payment(file_path: str, progress_callback=None) -> dict:
     return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
 
 
-def get_all_treatment_payments() -> list:
+def get_all_treatment_payments(period: str = None, id_card: str = None, subsidy_type: str = None) -> list:
     from database import get_session, TreatmentPayment
 
     session = get_session()
     try:
-        return session.query(TreatmentPayment).order_by(TreatmentPayment.name).all()
+        query = session.query(TreatmentPayment)
+        if period:
+            query = query.filter(TreatmentPayment.period == period)
+        if id_card:
+            query = query.filter(TreatmentPayment.id_card.like(f'%{id_card}%'))
+        if subsidy_type:
+            query = query.filter(TreatmentPayment.subsidy_type == subsidy_type)
+        return query.order_by(TreatmentPayment.period.desc(), TreatmentPayment.name).all()
     finally:
         session.close()
 
