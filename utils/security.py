@@ -3,15 +3,12 @@ import secrets
 import hashlib
 import functools
 import logging
-import threading
+import json
 from datetime import datetime, timedelta
 from flask import request, jsonify
 
 logger = logging.getLogger('population_system')
 
-_tokens = {}
-_user_tokens = {}
-_token_lock = threading.Lock()
 MAX_CONCURRENT_SESSIONS = 3
 DEFAULT_ADMIN_USERNAME = os.environ.get('DEFAULT_ADMIN_USERNAME', 'admin')
 DEFAULT_ADMIN_PASSWORD = os.environ.get('DEFAULT_ADMIN_PASSWORD', 'admin123')
@@ -43,63 +40,126 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def create_token(user_data: dict, expiry_hours: int = 24) -> str:
+    """创建 Token 并存储到数据库"""
+    from database import get_session, Token
+    
     token = secrets.token_hex(32)
     user_id = user_data.get('id')
     ip = request.remote_addr if request else 'unknown'
+    expires_at = datetime.now() + timedelta(hours=expiry_hours)
     
-    with _token_lock:
-        _tokens[token] = {
-            'user': user_data,
-            'expires_at': datetime.now() + timedelta(hours=expiry_hours),
-            'created_at': datetime.now(),
-            'ip': ip
-        }
+    session = get_session()
+    try:
+        # 删除该用户的旧 token（超过最大并发数）
+        existing_tokens = session.query(Token).filter(
+            Token.user_id == user_id
+        ).order_by(Token.created_at.desc()).all()
         
-        if user_id not in _user_tokens:
-            _user_tokens[user_id] = []
+        if len(existing_tokens) >= MAX_CONCURRENT_SESSIONS:
+            for old_token in existing_tokens[MAX_CONCURRENT_SESSIONS - 1:]:
+                session.delete(old_token)
         
-        _user_tokens[user_id].append(token)
+        # 创建新 token
+        new_token = Token(
+            token=token,
+            user_id=user_id,
+            user_data=json.dumps(user_data, ensure_ascii=False),
+            expires_at=expires_at.strftime("%Y-%m-%d %H:%M:%S"),
+            created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            ip=ip
+        )
+        session.add(new_token)
+        session.commit()
         
-        if len(_user_tokens[user_id]) > MAX_CONCURRENT_SESSIONS:
-            oldest_token = _user_tokens[user_id].pop(0)
-            if oldest_token in _tokens:
-                del _tokens[oldest_token]
-                logger.info(f"用户 {user_id} 超过最大并发登录数，移除旧Token")
+        logger.info(f"用户 {user_id} 创建新Token")
+    except Exception as e:
+        session.rollback()
+        logger.error(f"创建Token失败: {e}")
+        raise
+    finally:
+        session.close()
     
     return token
 
 
 def get_token_data(token: str) -> dict:
-    with _token_lock:
-        return _tokens.get(token)
+    """从数据库获取 Token 数据"""
+    from database import get_session, Token
+    
+    session = get_session()
+    try:
+        token_obj = session.query(Token).filter(Token.token == token).first()
+        if not token_obj:
+            return None
+        
+        return {
+            'user': json.loads(token_obj.user_data),
+            'expires_at': datetime.strptime(token_obj.expires_at, "%Y-%m-%d %H:%M:%S"),
+            'created_at': datetime.strptime(token_obj.created_at, "%Y-%m-%d %H:%M:%S") if token_obj.created_at else datetime.now(),
+            'ip': token_obj.ip
+        }
+    except Exception as e:
+        logger.error(f"获取Token数据失败: {e}")
+        return None
+    finally:
+        session.close()
 
 
 def remove_token(token: str) -> bool:
-    with _token_lock:
-        if token in _tokens:
-            user_id = _tokens[token]['user'].get('id')
-            del _tokens[token]
-            
-            if user_id and user_id in _user_tokens:
-                if token in _user_tokens[user_id]:
-                    _user_tokens[user_id].remove(token)
-                if not _user_tokens[user_id]:
-                    del _user_tokens[user_id]
-            
+    """从数据库删除 Token"""
+    from database import get_session, Token
+    
+    session = get_session()
+    try:
+        token_obj = session.query(Token).filter(Token.token == token).first()
+        if token_obj:
+            session.delete(token_obj)
+            session.commit()
             return True
         return False
+    except Exception as e:
+        session.rollback()
+        logger.error(f"删除Token失败: {e}")
+        return False
+    finally:
+        session.close()
 
 
 def remove_all_user_tokens(user_id: str) -> int:
-    count = 0
-    with _token_lock:
-        if user_id in _user_tokens:
-            for token in _user_tokens[user_id]:
-                if token in _tokens:
-                    del _tokens[token]
-                    count += 1
-            del _user_tokens[user_id]
-    return count
+    """删除用户的所有 Token"""
+    from database import get_session, Token
+    
+    session = get_session()
+    try:
+        count = session.query(Token).filter(Token.user_id == user_id).delete()
+        session.commit()
+        return count
+    except Exception as e:
+        session.rollback()
+        logger.error(f"删除用户Token失败: {e}")
+        return 0
+    finally:
+        session.close()
+
+
+def cleanup_expired_tokens():
+    """清理过期的 Token"""
+    from database import get_session, Token
+    
+    session = get_session()
+    try:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        count = session.query(Token).filter(Token.expires_at < now).delete()
+        session.commit()
+        if count > 0:
+            logger.info(f"清理了 {count} 个过期Token")
+        return count
+    except Exception as e:
+        session.rollback()
+        logger.error(f"清理Token失败: {e}")
+        return 0
+    finally:
+        session.close()
 
 
 def require_auth(f):
@@ -107,19 +167,22 @@ def require_auth(f):
     def decorated(*args, **kwargs):
         token = request.headers.get('Authorization', '').replace('Bearer ', '')
         
-        with _token_lock:
-            if not token or token not in _tokens:
-                return jsonify({'error': '未授权访问'}), 401
-            token_data = _tokens[token]
-            if datetime.now() > token_data['expires_at']:
-                del _tokens[token]
-                return jsonify({'error': '登录已过期，请重新登录'}), 401
-            
-            current_ip = request.remote_addr
-            if token_data.get('ip') and token_data['ip'] != current_ip:
-                logger.warning(f"Token IP变化: {token_data['ip']} -> {current_ip}, 用户: {token_data['user'].get('username')}")
-            
-            request.current_user = token_data['user']
+        if not token:
+            return jsonify({'error': '未授权访问'}), 401
+        
+        token_data = get_token_data(token)
+        if not token_data:
+            return jsonify({'error': '未授权访问'}), 401
+        
+        if datetime.now() > token_data['expires_at']:
+            remove_token(token)
+            return jsonify({'error': '登录已过期，请重新登录'}), 401
+        
+        current_ip = request.remote_addr
+        if token_data.get('ip') and token_data['ip'] != current_ip:
+            logger.warning(f"Token IP变化: {token_data['ip']} -> {current_ip}, 用户: {token_data['user'].get('username')}")
+        
+        request.current_user = token_data['user']
         
         return f(*args, **kwargs)
     return decorated
