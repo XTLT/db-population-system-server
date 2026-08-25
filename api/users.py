@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import Blueprint, request, jsonify
 
 from database import get_session, User, create_user, delete_user, get_all_users, add_operation_log
-from utils.security import require_auth, hash_password, DEFAULT_ADMIN_USERNAME
+from utils.security import require_auth, hash_password, verify_password, DEFAULT_ADMIN_USERNAME
 from utils.response import get_json_data, safe_exception
 from utils import validate_username, validate_real_name, validate_phone
 from database import validate_password
@@ -196,17 +196,9 @@ def api_update_user(user_id):
             user.username = data['username']
         if 'password' in data and data['password']:
             if not is_admin and 'old_password' in data:
-                salt, stored_hash = user.password_hash.split(":")
-                # 支持双重哈希验证
-                old_password_sha256 = hashlib.sha256(data['old_password'].encode()).hexdigest()
-                new_format_hash = hashlib.sha256((salt + old_password_sha256).encode()).hexdigest()
-                if new_format_hash == stored_hash:
-                    pass  # 验证通过
-                else:
-                    # 尝试旧格式验证（兼容旧密码）
-                    old_format_hash = hashlib.sha256((salt + data['old_password']).encode()).hexdigest()
-                    if old_format_hash != stored_hash:
-                        return jsonify({'error': '原密码错误'}), 400
+                is_valid, _ = verify_password(data['old_password'], user.password_hash)
+                if not is_valid:
+                    return jsonify({'error': '原密码错误'}), 400
             user.password_hash = hash_password(data['password'])
         session.commit()
         return jsonify({'success': True})

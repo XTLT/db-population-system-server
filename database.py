@@ -6,6 +6,8 @@ import hashlib
 import secrets
 import logging
 
+from utils.security import hash_password, verify_password
+
 SERVICE_NAME = "population-query-system"
 logger = logging.getLogger('population_system')
 
@@ -754,12 +756,12 @@ def change_user_password(user_id: str, old_password: str, new_password: str) -> 
         user = session.query(User).filter(User.id == user_id).first()
         if not user:
             return False, "用户不存在"
-        salt, stored_hash = user.password_hash.split(":")
-        if hashlib.sha256((salt + old_password).encode()).hexdigest() != stored_hash:
+        
+        is_valid, needs_rehash = verify_password(old_password, user.password_hash)
+        if not is_valid:
             return False, "原密码错误"
-        new_salt = secrets.token_hex(16)
-        new_hash = hashlib.sha256((new_salt + new_password).encode()).hexdigest()
-        user.password_hash = f"{new_salt}:{new_hash}"
+        
+        user.password_hash = hash_password(new_password)
         session.commit()
         return True, ""
     except Exception:

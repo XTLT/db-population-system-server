@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 from database import get_session, User, add_operation_log
 from utils.security import (
     create_token, remove_token, require_auth,
-    DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD, hash_password
+    DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD, hash_password, verify_password
 )
 from utils.response import safe_error, get_json_data, safe_exception
 from utils import validate_username, validate_real_name
@@ -18,18 +18,15 @@ bp = Blueprint('auth', __name__)
 
 
 def _ensure_default_admin():
-    """创建默认管理员账户（使用双重哈希存储密码）"""
+    """创建默认管理员账户"""
     session = get_session()
     try:
         existing = session.query(User).filter(User.username == DEFAULT_ADMIN_USERNAME).first()
         if not existing:
-            salt = secrets.token_hex(16)
-            password_sha256 = hashlib.sha256(DEFAULT_ADMIN_PASSWORD.encode()).hexdigest()
-            password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
             user = User(
                 id=f"user_default_{secrets.token_hex(8)}",
                 username=DEFAULT_ADMIN_USERNAME,
-                password_hash=f"{salt}:{password_hash}",
+                password_hash=hash_password(DEFAULT_ADMIN_PASSWORD),
                 real_name="初始管理员",
                 role="admin",
                 is_active="是",
@@ -103,8 +100,8 @@ def api_login():
     """用户登录
     
     支持两种客户端模式：
-    1. APP端：发送 sha256(原始密码)，password_hashed=True
-    2. 网页端：发送原始密码，password_hashed=False
+    1. APP端：发送 sha256(原始密码)，password_hashed=True（仅支持旧SHA256格式）
+    2. 网页端：发送原始密码，password_hashed=False（支持所有格式）
     """
     data, err = get_json_data()
     if err:
@@ -139,35 +136,41 @@ def api_login():
                 user_obj.locked_until = ""
                 user_obj.login_attempts = "0"
 
-        # 获取存储的密码哈希
-        try:
-            salt, stored_hash = user_obj.password_hash.split(":")
-        except (ValueError, AttributeError):
-            return jsonify({'success': False, 'error': '用户数据格式错误'}), 500
-        
-        # 验证密码
+        stored_hash = user_obj.password_hash
         verified = False
-        need_migrate = False
-        new_hash = None
+        needs_rehash = False
         
-        if password_hashed:
-            # APP端：客户端发送了 sha256(原始密码)
-            new_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-            if new_hash == stored_hash:
-                verified = True
+        # 判断密码哈希格式
+        if stored_hash.startswith("argon2:"):
+            # Argon2 格式 - 只支持原始密码验证
+            if password_hashed:
+                # APP端发送预哈希密码，无法与Argon2验证
+                return jsonify({
+                    'success': False, 
+                    'error': '请更新APP版本以支持新的安全认证方式'
+                }), 400
+            
+            verified, needs_rehash = verify_password(password, stored_hash)
         else:
-            # 网页端：客户端发送了原始密码
-            old_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-            if old_hash == stored_hash:
-                verified = True
-                need_migrate = True
-                password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-                new_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-            else:
-                password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-                new_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-                if new_hash == stored_hash:
+            # SHA256 格式（旧格式）
+            try:
+                parts = stored_hash.split(":")
+                if stored_hash.startswith("sha256:"):
+                    _, salt, hash_value = parts
+                else:
+                    salt, hash_value = parts
+            except (ValueError, AttributeError):
+                return jsonify({'success': False, 'error': '用户数据格式错误'}), 500
+            
+            if password_hashed:
+                # APP端：客户端发送了 sha256(原始密码)
+                computed = hashlib.sha256((salt + password).encode()).hexdigest()
+                if computed == hash_value:
                     verified = True
+                    needs_rehash = True  # 需要迁移到Argon2，但APP无法提供原始密码
+            else:
+                # 网页端：使用新的验证函数
+                verified, needs_rehash = verify_password(password, stored_hash)
         
         if not verified:
             attempts = int(user_obj.login_attempts or "0") + 1
@@ -177,9 +180,9 @@ def api_login():
             session.commit()
             return jsonify({'success': False, 'error': '用户名或密码错误'}), 401
 
-        # 自动迁移旧密码到新格式
-        if need_migrate and new_hash:
-            user_obj.password_hash = f"{salt}:{new_hash}"
+        # 自动迁移到Argon2（仅网页端且非预哈希密码）
+        if needs_rehash and not password_hashed:
+            user_obj.password_hash = hash_password(password)
             session.commit()
 
         is_default = user_obj.is_default == "是"
@@ -264,20 +267,10 @@ def api_change_password():
         if not user:
             return jsonify({'error': '用户不存在'}), 404
         
-        # 验证旧密码（支持双重哈希）
-        salt, stored_hash = user.password_hash.split(":")
-        
-        # 尝试双重哈希验证
-        old_password_sha256 = hashlib.sha256(old_password.encode()).hexdigest()
-        new_format_hash = hashlib.sha256((salt + old_password_sha256).encode()).hexdigest()
-        
-        if new_format_hash == stored_hash:
-            pass  # 验证通过
-        else:
-            # 尝试旧格式验证
-            old_format_hash = hashlib.sha256((salt + old_password).encode()).hexdigest()
-            if old_format_hash != stored_hash:
-                return jsonify({'error': '原密码错误'}), 400
+        # 验证旧密码
+        is_valid, needs_rehash = verify_password(old_password, user.password_hash)
+        if not is_valid:
+            return jsonify({'error': '原密码错误'}), 400
         
         # 更新密码
         user.password_hash = hash_password(new_password)
@@ -369,13 +362,10 @@ def api_create_admin():
         if existing:
             return jsonify({'error': '用户名已存在'}), 400
 
-        salt = secrets.token_hex(16)
-        password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-        password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
         user = User(
             id=f"user_{secrets.token_hex(8)}",
             username=username,
-            password_hash=f"{salt}:{password_hash}",
+            password_hash=hash_password(password),
             real_name=real_name,
             role="admin",
             is_default="否",

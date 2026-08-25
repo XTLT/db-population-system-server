@@ -11,7 +11,7 @@ from flask_cors import CORS
 from sqlalchemy import func
 from database import init_db, get_session, Person, StudentEducation, search_by_name, search_persons_advanced, get_family_members, get_person_count, update_person, add_person, delete_person, migrate_person, get_student_education, get_all_students, search_students, create_user, get_all_users, delete_user, User, OperationLog, add_operation_log, get_operation_logs, get_operation_types, get_operation_log_stats, validate_password, ReportOperationLog, add_report_log, get_report_logs, get_all_report_logs, create_notification, get_notifications, mark_notification_read, get_unread_count, get_person_trend_data, get_person_distribution, get_person_comparison, create_custom_report, get_custom_reports, get_custom_report, update_custom_report, delete_custom_report, generate_report_data
 from utils import calculate_age, find_existing_photo, get_photo_base_name, clean_filename
-from utils.security import create_token, get_token_data, remove_token, require_auth
+from utils.security import create_token, get_token_data, remove_token, require_auth, hash_password, verify_password
 from config import GRADE_DISPLAY, TOKEN_EXPIRY_HOURS, PHOTO_EXTENSIONS, BASE_DIR, LOGIN_LOCK_MINUTES
 import config
 from update_checker import check_update, download_update, verify_file, update_local_version, apply_update
@@ -165,33 +165,6 @@ def record_login_attempt(ip: str, success: bool):
     _login_attempts[ip].append((time.time(), success))
 
 
-def hash_password(password: str) -> str:
-    import hashlib
-    salt = secrets.token_hex(16)
-    password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-    password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-    return f"{salt}:{password_hash}"
-
-
-def verify_password(password: str, password_hash: str) -> bool:
-    import hashlib
-    try:
-        salt, stored_hash = password_hash.split(":")
-        
-        password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-        new_format_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-        if new_format_hash == stored_hash:
-            return True
-        
-        old_format_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-        if old_format_hash == stored_hash:
-            return True
-        
-        return False
-    except Exception:
-        return False
-
-
 def _get_json():
     data = request.json
     if data is None:
@@ -315,14 +288,10 @@ def _ensure_default_admin():
     try:
         existing = session.query(User).filter(User.username == DEFAULT_ADMIN_USERNAME).first()
         if not existing:
-            import hashlib
-            salt = secrets.token_hex(16)
-            password_sha256 = hashlib.sha256(DEFAULT_ADMIN_PASSWORD.encode()).hexdigest()
-            password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
             user = User(
                 id=f"user_default_{secrets.token_hex(8)}",
                 username=DEFAULT_ADMIN_USERNAME,
-                password_hash=f"{salt}:{password_hash}",
+                password_hash=hash_password(DEFAULT_ADMIN_PASSWORD),
                 real_name="初始管理员",
                 role="admin",
                 is_active="是",
@@ -414,33 +383,40 @@ def api_login():
                 user_obj.locked_until = ""
                 user_obj.login_attempts = "0"
 
-        import hashlib
-        
-        try:
-            salt, stored_hash = user_obj.password_hash.split(":")
-        except (ValueError, AttributeError):
-            return jsonify({'success': False, 'error': '用户数据格式错误'}), 500
-        
+        stored_hash = user_obj.password_hash
         verified = False
-        need_migrate = False
-        new_hash = None
+        needs_rehash = False
         
-        if password_hashed:
-            new_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-            if new_hash == stored_hash:
-                verified = True
+        # 判断密码哈希格式
+        if stored_hash.startswith("argon2:"):
+            # Argon2 格式 - 只支持原始密码验证
+            if password_hashed:
+                return jsonify({
+                    'success': False, 
+                    'error': '请更新APP版本以支持新的安全认证方式'
+                }), 400
+            verified, needs_rehash = verify_password(password, stored_hash)
         else:
-            old_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-            if old_hash == stored_hash:
-                verified = True
-                need_migrate = True
-                password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-                new_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-            else:
-                password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-                new_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-                if new_hash == stored_hash:
+            # SHA256 格式（旧格式）
+            import hashlib
+            try:
+                parts = stored_hash.split(":")
+                if stored_hash.startswith("sha256:"):
+                    _, salt, hash_value = parts
+                else:
+                    salt, hash_value = parts
+            except (ValueError, AttributeError):
+                return jsonify({'success': False, 'error': '用户数据格式错误'}), 500
+            
+            if password_hashed:
+                # APP端：客户端发送了 sha256(原始密码)
+                computed = hashlib.sha256((salt + password).encode()).hexdigest()
+                if computed == hash_value:
                     verified = True
+                    needs_rehash = True
+            else:
+                # 网页端：使用新的验证函数
+                verified, needs_rehash = verify_password(password, stored_hash)
         
         if not verified:
             attempts = int(user_obj.login_attempts or "0") + 1
@@ -448,11 +424,12 @@ def api_login():
             if attempts >= 5:
                 user_obj.locked_until = (datetime.now() + timedelta(minutes=LOGIN_LOCK_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
             session.commit()
-            record_login_attempt(ip_address, False)  # 记录失败尝试
+            record_login_attempt(ip_address, False)
             return jsonify({'success': False, 'error': '用户名或密码错误'}), 401
 
-        if need_migrate and new_hash:
-            user_obj.password_hash = f"{salt}:{new_hash}"
+        # 自动迁移到Argon2（仅网页端）
+        if needs_rehash and not password_hashed:
+            user_obj.password_hash = hash_password(password)
             session.commit()
 
         is_default = user_obj.is_default == "是"
@@ -462,7 +439,7 @@ def api_login():
         user_obj.last_login = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         session.commit()
         
-        record_login_attempt(ip_address, True)  # 记录成功登录
+        record_login_attempt(ip_address, True)
 
         token = create_token({
             'id': user_obj.id,
@@ -532,14 +509,10 @@ def api_create_admin():
         if existing:
             return jsonify({'error': '用户名已存在'}), 400
 
-        import hashlib
-        salt = secrets.token_hex(16)
-        password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-        password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
         user = User(
             id=f"user_{secrets.token_hex(8)}",
             username=username,
-            password_hash=f"{salt}:{password_hash}",
+            password_hash=hash_password(password),
             real_name=real_name,
             role="admin",
             is_default="否",
@@ -642,18 +615,11 @@ def api_update_user(user_id):
                 return jsonify({'error': '用户名已存在'}), 400
             user.username = data['username']
         if 'password' in data and data['password']:
-            import hashlib
             if not is_admin and 'old_password' in data:
-                salt, stored_hash = user.password_hash.split(":")
-                old_sha256 = hashlib.sha256(data['old_password'].encode()).hexdigest()
-                new_verify = hashlib.sha256((salt + old_sha256).encode()).hexdigest()
-                old_verify = hashlib.sha256((salt + data['old_password']).encode()).hexdigest()
-                if new_verify != stored_hash and old_verify != stored_hash:
+                is_valid, _ = verify_password(data['old_password'], user.password_hash)
+                if not is_valid:
                     return jsonify({'error': '原密码错误'}), 400
-            salt = secrets.token_hex(16)
-            password_sha256 = hashlib.sha256(data['password'].encode()).hexdigest()
-            password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-            user.password_hash = f"{salt}:{password_hash}"
+            user.password_hash = hash_password(data['password'])
         session.commit()
         return jsonify({'success': True})
     except Exception as e:
@@ -693,11 +659,7 @@ def api_reset_password(user_id):
         if not user:
             return jsonify({'error': '用户不存在'}), 404
         
-        import hashlib
-        salt = secrets.token_hex(16)
-        password_sha256 = hashlib.sha256(new_password.encode()).hexdigest()
-        password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-        user.password_hash = f"{salt}:{password_hash}"
+        user.password_hash = hash_password(new_password)
         user.login_attempts = "0"
         user.locked_until = ""
         
@@ -750,11 +712,7 @@ def api_force_change_password():
         if not user:
             return jsonify({'error': '用户不存在'}), 404
         
-        import hashlib
-        salt = secrets.token_hex(16)
-        password_sha256 = hashlib.sha256(new_password.encode()).hexdigest()
-        password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-        user.password_hash = f"{salt}:{password_hash}"
+        user.password_hash = hash_password(new_password)
         user.login_attempts = "0"
         user.locked_until = ""
         user.is_default = "否"
@@ -1770,14 +1728,9 @@ def api_export_excel():
         if not user:
             return jsonify({'error': '用户不存在'}), 404
         
-        import hashlib
-        salt, stored_hash = user.password_hash.split(":")
-        password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-        password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-        if password_hash != stored_hash:
-            old_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-            if old_hash != stored_hash:
-                return jsonify({'error': '密码错误'}), 401
+        is_valid, _ = verify_password(password, user.password_hash)
+        if not is_valid:
+            return jsonify({'error': '密码错误'}), 401
     finally:
         session.close()
     
@@ -2018,14 +1971,9 @@ def api_students_export():
         if not user:
             return jsonify({'error': '用户不存在'}), 404
         
-        import hashlib
-        salt, stored_hash = user.password_hash.split(":")
-        password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-        password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-        if password_hash != stored_hash:
-            old_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-            if old_hash != stored_hash:
-                return jsonify({'error': '密码错误'}), 401
+        is_valid, _ = verify_password(password, user.password_hash)
+        if not is_valid:
+            return jsonify({'error': '密码错误'}), 401
     finally:
         session.close()
     
@@ -3715,7 +3663,8 @@ def api_change_password():
         if not user:
             return jsonify({'success': False, 'message': '用户不存在'}), 404
         
-        if not verify_password(old_password, user.password_hash):
+        is_valid, needs_rehash = verify_password(old_password, user.password_hash)
+        if not is_valid:
             return jsonify({'success': False, 'message': '旧密码错误'}), 400
         
         user.password_hash = hash_password(new_password)

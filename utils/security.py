@@ -7,7 +7,25 @@ import json
 from datetime import datetime, timedelta
 from flask import request, jsonify
 
+try:
+    from argon2 import PasswordHasher
+    from argon2.exceptions import VerifyMismatchError, VerificationError
+    ARGON2_AVAILABLE = True
+except ImportError:
+    ARGON2_AVAILABLE = False
+    logging.warning("argon2-cffi 未安装，使用 SHA256 密码哈希")
+
 logger = logging.getLogger('population_system')
+
+# Argon2 密码哈希器
+if ARGON2_AVAILABLE:
+    _ph = PasswordHasher(
+        time_cost=3,        # 迭代次数
+        memory_cost=65536,  # 内存成本 (64MB)
+        parallelism=4,      # 并行度
+        hash_len=32,        # 哈希长度
+        salt_len=16         # 盐值长度
+    )
 
 MAX_CONCURRENT_SESSIONS = 2
 DEFAULT_ADMIN_USERNAME = os.environ.get('DEFAULT_ADMIN_USERNAME', 'admin')
@@ -53,28 +71,66 @@ def _hash_token(token: str) -> str:
 
 
 def hash_password(password: str) -> str:
-    salt = secrets.token_hex(16)
-    password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-    password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-    return f"{salt}:{password_hash}"
+    """使用 Argon2 哈希密码（如果可用），否则使用 SHA256"""
+    if ARGON2_AVAILABLE:
+        return f"argon2:{_ph.hash(password)}"
+    else:
+        salt = secrets.token_hex(16)
+        password_sha256 = hashlib.sha256(password.encode()).hexdigest()
+        password_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
+        return f"sha256:{salt}:{password_hash}"
 
 
-def verify_password(password: str, password_hash: str) -> bool:
+def verify_password(password: str, password_hash: str) -> tuple[bool, bool]:
+    """验证密码
+    
+    Returns:
+        (is_valid, needs_rehash): 验证结果和是否需要重新哈希
+    """
     try:
-        salt, stored_hash = password_hash.split(":")
+        # Argon2 格式: argon2:$argon2id$...
+        if password_hash.startswith("argon2:"):
+            if not ARGON2_AVAILABLE:
+                logger.error("密码使用 Argon2 哈希但 argon2-cffi 未安装")
+                return False, False
+            
+            actual_hash = password_hash[7:]  # 去掉 "argon2:" 前缀
+            try:
+                _ph.verify(actual_hash, password)
+                # 检查是否需要重新哈希（参数可能已更新）
+                needs_rehash = _ph.check_needs_rehash(actual_hash)
+                return True, needs_rehash
+            except (VerifyMismatchError, VerificationError):
+                return False, False
         
+        # SHA256 格式: sha256:salt:hash 或旧格式 salt:hash
+        if password_hash.startswith("sha256:"):
+            parts = password_hash.split(":")
+            if len(parts) == 3:
+                _, salt, stored_hash = parts
+            else:
+                return False, False
+        else:
+            # 旧格式兼容: salt:hash
+            parts = password_hash.split(":")
+            if len(parts) != 2:
+                return False, False
+            salt, stored_hash = parts
+        
+        # SHA256 验证
         password_sha256 = hashlib.sha256(password.encode()).hexdigest()
         new_format_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
         if new_format_hash == stored_hash:
-            return True
+            return True, True  # 旧格式，需要重新哈希
         
         old_format_hash = hashlib.sha256((salt + password).encode()).hexdigest()
         if old_format_hash == stored_hash:
-            return True
+            return True, True  # 旧格式，需要重新哈希
         
-        return False
-    except Exception:
-        return False
+        return False, False
+    except Exception as e:
+        logger.error(f"密码验证异常: {e}")
+        return False, False
 
 
 def create_token(user_data: dict, expiry_hours: int = 24) -> str:
