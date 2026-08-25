@@ -59,6 +59,9 @@ app = Flask(__name__)
 
 app.secret_key = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 
+# 文件上传大小限制（16MB）
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+
 
 _cors_origins = os.environ.get('CORS_ORIGINS', 'http://localhost:5000,http://127.0.0.1:5000')
 CORS_ORIGINS = [origin.strip() for origin in _cors_origins.split(',') if origin.strip()]
@@ -678,8 +681,8 @@ def api_reset_password(user_id):
     
     new_password = data.get('password', '')
     
-    if not new_password or len(new_password) < 6:
-        return jsonify({'error': '密码长度至少6位'}), 400
+    if not new_password or len(new_password) < 8:
+        return jsonify({'error': '密码长度至少8位'}), 400
     
     # 记录操作尝试
     record_sensitive_op_attempt(ip, 'reset_password')
@@ -3074,6 +3077,22 @@ def api_batch_delete_persons():
     if not person_ids:
         return jsonify({'error': '未选择人员'}), 400
     
+    # 数量限制
+    MAX_BATCH_DELETE_COUNT = 100
+    if len(person_ids) > MAX_BATCH_DELETE_COUNT:
+        return jsonify({
+            'error': f'单次最多删除 {MAX_BATCH_DELETE_COUNT} 条记录，当前选择了 {len(person_ids)} 条'
+        }), 400
+    
+    # 要求确认
+    confirm = data.get('confirm', False)
+    if not confirm:
+        return jsonify({
+            'error': '需要确认',
+            'require_confirm': True,
+            'count': len(person_ids)
+        }), 400
+    
     session = get_session()
     try:
         # 支持人员ID和身份证号两种方式
@@ -3117,14 +3136,33 @@ def api_batch_update_persons():
     if not updates:
         return jsonify({'error': '未提供更新内容'}), 400
     
+    # 数量限制
+    MAX_BATCH_UPDATE_COUNT = 200
+    if len(person_ids) > MAX_BATCH_UPDATE_COUNT:
+        return jsonify({
+            'error': f'单次最多更新 {MAX_BATCH_UPDATE_COUNT} 条记录，当前选择了 {len(person_ids)} 条'
+        }), 400
+    
+    # 允许批量更新的字段白名单
+    BATCH_UPDATE_ALLOWED_FIELDS = {
+        'relation', 'phone', 'address', 'remark', 
+        'disability', 'dis_level', 'dibao', 'jisheng',
+        'social_card1', 'social_card2', 'social_card3', 'land_area'
+    }
+    
+    # 过滤不允许更新的字段
+    filtered_updates = {k: v for k, v in updates.items() if k in BATCH_UPDATE_ALLOWED_FIELDS}
+    if not filtered_updates:
+        return jsonify({'error': '没有允许更新的字段'}), 400
+    
     session = get_session()
     try:
         persons = session.query(Person).filter(Person.id.in_(person_ids)).all()
         updated_count = 0
         
         for person in persons:
-            for key, value in updates.items():
-                if hasattr(person, key) and key not in ['id', 'id_card', 'hu_hao']:
+            for key, value in filtered_updates.items():
+                if hasattr(person, key):
                     setattr(person, key, value)
             person.updated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             updated_count += 1
@@ -3160,6 +3198,22 @@ def api_batch_delete_students():
     
     if not student_ids:
         return jsonify({'error': '未选择学生'}), 400
+    
+    # 数量限制
+    MAX_BATCH_DELETE_COUNT = 100
+    if len(student_ids) > MAX_BATCH_DELETE_COUNT:
+        return jsonify({
+            'error': f'单次最多删除 {MAX_BATCH_DELETE_COUNT} 条记录，当前选择了 {len(student_ids)} 条'
+        }), 400
+    
+    # 要求确认
+    confirm = data.get('confirm', False)
+    if not confirm:
+        return jsonify({
+            'error': '需要确认',
+            'require_confirm': True,
+            'count': len(student_ids)
+        }), 400
     
     session = get_session()
     try:
@@ -3201,6 +3255,23 @@ def api_batch_update_students():
     if not updates:
         return jsonify({'error': '未提供更新内容'}), 400
     
+    # 数量限制
+    MAX_BATCH_UPDATE_COUNT = 200
+    if len(student_ids) > MAX_BATCH_UPDATE_COUNT:
+        return jsonify({
+            'error': f'单次最多更新 {MAX_BATCH_UPDATE_COUNT} 条记录，当前选择了 {len(student_ids)} 条'
+        }), 400
+    
+    # 允许批量更新的字段白名单
+    BATCH_UPDATE_ALLOWED_FIELDS = {
+        'school_name', 'class_name', 'grade', 'education_status', 'remark'
+    }
+    
+    # 过滤不允许更新的字段
+    filtered_updates = {k: v for k, v in updates.items() if k in BATCH_UPDATE_ALLOWED_FIELDS}
+    if not filtered_updates:
+        return jsonify({'error': '没有允许更新的字段'}), 400
+    
     session = get_session()
     try:
         students = session.query(StudentEducation).filter(
@@ -3209,8 +3280,8 @@ def api_batch_update_students():
         updated_count = 0
         
         for student in students:
-            for key, value in updates.items():
-                if hasattr(student, key) and key != 'id':
+            for key, value in filtered_updates.items():
+                if hasattr(student, key):
                     setattr(student, key, value)
             updated_count += 1
         
@@ -3245,6 +3316,13 @@ def api_batch_delete_photos():
     
     if not photos:
         return jsonify({'error': '未选择照片'}), 400
+    
+    # 数量限制
+    MAX_BATCH_DELETE_COUNT = 100
+    if len(photos) > MAX_BATCH_DELETE_COUNT:
+        return jsonify({
+            'error': f'单次最多删除 {MAX_BATCH_DELETE_COUNT} 张照片，当前选择了 {len(photos)} 张'
+        }), 400
     
     deleted_count = 0
     not_found_count = 0

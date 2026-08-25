@@ -43,6 +43,9 @@ def create_app():
     else:
         app.secret_key = secrets.token_hex(32)
     
+    # 文件上传大小限制（16MB）
+    app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+    
     CORS(app, resources={
         r"/api/*": {
             "origins": "*",
