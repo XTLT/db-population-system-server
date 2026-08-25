@@ -9,7 +9,7 @@ from flask import request, jsonify
 
 logger = logging.getLogger('population_system')
 
-MAX_CONCURRENT_SESSIONS = 3
+MAX_CONCURRENT_SESSIONS = 2
 DEFAULT_ADMIN_USERNAME = os.environ.get('DEFAULT_ADMIN_USERNAME', 'admin')
 DEFAULT_ADMIN_PASSWORD = os.environ.get('DEFAULT_ADMIN_PASSWORD', 'admin123')
 
