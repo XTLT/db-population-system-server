@@ -11,6 +11,7 @@ from flask_cors import CORS
 from sqlalchemy import func
 from database import init_db, get_session, Person, StudentEducation, search_by_name, search_persons_advanced, get_family_members, get_person_count, update_person, add_person, delete_person, migrate_person, get_student_education, get_all_students, search_students, create_user, get_all_users, delete_user, User, OperationLog, add_operation_log, get_operation_logs, get_operation_types, get_operation_log_stats, validate_password, ReportOperationLog, add_report_log, get_report_logs, get_all_report_logs, create_notification, get_notifications, mark_notification_read, get_unread_count, get_person_trend_data, get_person_distribution, get_person_comparison, create_custom_report, get_custom_reports, get_custom_report, update_custom_report, delete_custom_report, generate_report_data
 from utils import calculate_age, find_existing_photo, get_photo_base_name, clean_filename
+from utils.security import create_token, get_token_data, remove_token, require_auth
 from config import GRADE_DISPLAY, TOKEN_EXPIRY_HOURS, PHOTO_EXTENSIONS, BASE_DIR, LOGIN_LOCK_MINUTES
 import config
 from update_checker import check_update, download_update, verify_file, update_local_version, apply_update
@@ -70,8 +71,6 @@ CORS(app, resources={
         "supports_credentials": True,
     }
 })
-
-_tokens = {}
 
 _login_attempts = {}
 LOGIN_RATE_LIMIT = 10
@@ -289,21 +288,6 @@ def hide_server_info(response):
     return response
 
 
-def require_auth(f):
-    @functools.wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get('Authorization', '').replace('Bearer ', '')
-        if not token or token not in _tokens:
-            return jsonify({'error': '未授权访问'}), 401
-        token_data = _tokens[token]
-        if datetime.now() > token_data['expires_at']:
-            del _tokens[token]
-            return jsonify({'error': '登录已过期，请重新登录'}), 401
-        request.current_user = token_data['user']
-        return f(*args, **kwargs)
-    return decorated
-
-
 @app.route('/')
 def index():
     return send_from_directory(STATIC_DIR, 'index.html')
@@ -477,17 +461,14 @@ def api_login():
         
         record_login_attempt(ip_address, True)  # 记录成功登录
 
-        token = secrets.token_hex(32)
-        _tokens[token] = {
-            'user': {
-                'id': user_obj.id,
-                'username': user_obj.username,
-                'real_name': user_obj.real_name,
-                'role': user_obj.role,
-                'is_default': user_obj.is_default
-            },
-            'expires_at': datetime.now() + timedelta(hours=TOKEN_EXPIRY_HOURS)
-        }
+        token = create_token({
+            'id': user_obj.id,
+            'username': user_obj.username,
+            'real_name': user_obj.real_name,
+            'role': user_obj.role,
+            'is_default': user_obj.is_default
+        }, TOKEN_EXPIRY_HOURS)
+        
         add_operation_log(user_obj.id, user_obj.username, "登录", "", ip_address, "Web")
 
         return jsonify({
@@ -514,8 +495,7 @@ def api_login():
 @require_auth
 def api_logout():
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
-    if token in _tokens:
-        del _tokens[token]
+    remove_token(token)
     return jsonify({'success': True})
 
 
