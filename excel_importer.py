@@ -660,7 +660,7 @@ def get_all_land_subsidies(subsidy_year: str = None) -> list:
     try:
         query = session.query(LandSubsidy)
         if subsidy_year:
-            query = query.filter(LandSubsidy.subsidy_year == subsidy_year)
+            query = query.filter(LandSubsidy.year == subsidy_year)
         return query.order_by(LandSubsidy.name).all()
     finally:
         session.close()
@@ -689,7 +689,7 @@ def get_person_subsidy_total(id_card: str, subsidy_year: str = None) -> str:
     try:
         query = session.query(LandSubsidy).filter(LandSubsidy.id_card == id_card)
         if subsidy_year:
-            query = query.filter(LandSubsidy.subsidy_year.startswith(subsidy_year))
+            query = query.filter(LandSubsidy.year.startswith(subsidy_year))
         subsidies = query.all()
         if not subsidies:
             return ""

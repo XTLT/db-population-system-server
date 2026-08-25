@@ -2119,9 +2119,9 @@ def generate_report_data(report_type: str, dimensions: list,
             
             # 应用日期筛选
             if start_date:
-                query = query.filter(LandSubsidy.subsidy_year >= start_date[:4])
+                query = query.filter(LandSubsidy.year >= start_date[:4])
             if end_date:
-                query = query.filter(LandSubsidy.subsidy_year <= end_date[:4])
+                query = query.filter(LandSubsidy.year <= end_date[:4])
             
             subsidies = query.all()
             result['total'] = len(subsidies)
