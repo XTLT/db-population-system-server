@@ -8,6 +8,23 @@ from database import get_session, StudentEducation, EducationHistory, Person
 from utils import safe_str
 
 
+def _read_excel_robust(file_path: str, header=None):
+    """读取 Excel 文件，自动检测格式和引擎"""
+    ext = os.path.splitext(file_path)[1].lower()
+    engines = (['openpyxl', 'xlrd'] if ext == '.xlsx'
+               else ['xlrd', 'openpyxl'] if ext == '.xls'
+               else ['openpyxl', 'xlrd'])
+    for engine in engines:
+        try:
+            return pd.read_excel(file_path, dtype=str, header=header, engine=engine)
+        except Exception:
+            continue
+    try:
+        return pd.read_csv(file_path, dtype=str, header=header, encoding='utf-8')
+    except Exception:
+        return pd.read_csv(file_path, dtype=str, header=header, encoding='gbk')
+
+
 def backup_database():
     if not os.path.exists(DB_PATH):
         return None
@@ -19,7 +36,7 @@ def backup_database():
 
 def import_student_education(file_path: str, mode: str = "incremental", progress_callback=None) -> dict:
     backup_database()
-    df = pd.read_excel(file_path, dtype=str)
+    df = _read_excel_robust(file_path)
     df = df.fillna("")
     total = len(df)
     imported = 0
