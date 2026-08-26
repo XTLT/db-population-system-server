@@ -400,6 +400,8 @@ def query_persons_with_filters(filters: dict) -> list:
             query = query.filter(Person.poor_type.in_(poor_type))
         if filters.get("dibao") and filters["dibao"] != "全部":
             query = query.filter(Person.dibao == filters["dibao"])
+        if filters.get("tekun") and filters["tekun"] != "全部":
+            query = query.filter(Person.tekun == filters["tekun"])
         if filters.get("jisheng") and filters["jisheng"] != "全部":
             query = query.filter(Person.jisheng == filters["jisheng"])
         land = filters.get("land_area", "全部")
@@ -467,6 +469,8 @@ def export_excel(file_path: str, progress_callback=None, filters: dict = None) -
             "残疾": p.disability,
             "残疾等级": p.dis_level,
             "低保": p.dibao,
+            "特困供养": p.tekun,
+            "供养类型": p.tekun_type,
             "是否计生家庭": p.jisheng,
             "社保卡号1": p.social_card1,
             "社保卡号2": p.social_card2,
@@ -502,6 +506,8 @@ def _row_to_person(row, idx) -> Person:
         disability=safe_str(row.get("残疾", "")),
         dis_level=safe_str(row.get("残疾等级", "")),
         dibao=safe_str(row.get("低保", "")),
+        tekun=safe_str(row.get("特困供养", "")),
+        tekun_type=safe_str(row.get("供养类型", "")),
         jisheng=safe_str(row.get("是否计生家庭", "")),
         social_card1=safe_str(row.get("社保卡号1", "")),
         social_card2=safe_str(row.get("社保卡号2", "")),
@@ -523,6 +529,8 @@ def _update_person_from_row(person: Person, row):
     person.disability = safe_str(row.get("残疾", person.disability))
     person.dis_level = safe_str(row.get("残疾等级", person.dis_level))
     person.dibao = safe_str(row.get("低保", person.dibao))
+    person.tekun = safe_str(row.get("特困供养", person.tekun))
+    person.tekun_type = safe_str(row.get("供养类型", person.tekun_type))
     person.jisheng = safe_str(row.get("是否计生家庭", person.jisheng))
     person.social_card1 = safe_str(row.get("社保卡号1", person.social_card1))
     person.social_card2 = safe_str(row.get("社保卡号2", person.social_card2))

@@ -139,6 +139,8 @@ class Person(Base):
     disability_type = Column(String, default="")
     dis_level = Column(String, default="")
     dibao = Column(String, default="")
+    tekun = Column(String, default="")
+    tekun_type = Column(String, default="")
     jisheng = Column(String, default="")
     social_card1 = Column(String, default="")
     social_card2 = Column(String, default="")
@@ -307,6 +309,8 @@ class DeletedPerson(Base):
     disability_type = Column(String, default="")
     dis_level = Column(String, default="")
     dibao = Column(String, default="")
+    tekun = Column(String, default="")
+    tekun_type = Column(String, default="")
     jisheng = Column(String, default="")
     social_card1 = Column(String, default="")
     social_card2 = Column(String, default="")
@@ -414,6 +418,16 @@ def _migrate_db(engine):
             pass
         try:
             conn.execute(text("ALTER TABLE persons ADD COLUMN land_area VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN tekun VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN tekun_type VARCHAR DEFAULT ''"))
             conn.commit()
         except Exception:
             pass
@@ -791,6 +805,7 @@ def search_persons_advanced(
     age_max: int = None,
     disability: str = "",
     dibao: str = "",
+    tekun: str = "",
     is_dead: str = "",
     limit: int = 100
 ) -> list:
@@ -834,6 +849,9 @@ def search_persons_advanced(
         
         if dibao:
             query = query.filter(Person.dibao == dibao)
+        
+        if tekun:
+            query = query.filter(Person.tekun == tekun)
         
         if is_dead:
             query = query.filter(Person.is_dead == is_dead)
@@ -1078,6 +1096,8 @@ def delete_person(person_id: str):
                 disability_type=person.disability_type,
                 dis_level=person.dis_level,
                 dibao=person.dibao,
+                tekun=person.tekun,
+                tekun_type=person.tekun_type,
                 jisheng=person.jisheng,
                 social_card1=person.social_card1,
                 social_card2=person.social_card2,
@@ -1118,6 +1138,8 @@ def recover_person(deleted_id: str):
                 disability=deleted.disability,
                 dis_level=deleted.dis_level,
                 dibao=deleted.dibao,
+                tekun=deleted.tekun,
+                tekun_type=deleted.tekun_type,
                 jisheng=deleted.jisheng,
                 social_card1=deleted.social_card1,
                 social_card2=deleted.social_card2,
@@ -1598,6 +1620,17 @@ def get_person_distribution(field: str) -> dict:
                 label = dibao if dibao else '无'
                 result[label] = count
         
+        elif field == 'tekun':
+            # 特困供养情况分布
+            counts = session.query(
+                Person.tekun,
+                func.count(Person.id).label('count')
+            ).group_by(Person.tekun).all()
+            
+            for tekun, count in counts:
+                label = tekun if tekun else '无'
+                result[label] = count
+        
         elif field == 'age_group':
             # 年龄段分布
             persons = session.query(Person.age).all()
@@ -1739,6 +1772,18 @@ def get_person_comparison(dimensions: list) -> dict:
                 normalized = (count / total) * 100
                 
                 result['dimensions'].append('低保人员')
+                result['values'].append(round(normalized, 2))
+                result['raw_values'].append(count)
+            
+            elif dim == 'tekun':
+                # 特困供养人员比例
+                count = session.query(func.count(Person.id)).filter(
+                    Person.tekun != '',
+                    Person.tekun != '无'
+                ).scalar() or 0
+                normalized = (count / total) * 100
+                
+                result['dimensions'].append('特困供养人员')
                 result['values'].append(round(normalized, 2))
                 result['raw_values'].append(count)
             
@@ -2032,6 +2077,11 @@ def generate_report_data(report_type: str, dimensions: list,
                 result['summary'][dim] = data
             elif dim == 'dibao':
                 data = get_person_distribution('dibao')
+                result['labels'] = list(data.keys())
+                result['values'] = list(data.values())
+                result['summary'][dim] = data
+            elif dim == 'tekun':
+                data = get_person_distribution('tekun')
                 result['labels'] = list(data.keys())
                 result['values'] = list(data.values())
                 result['summary'][dim] = data

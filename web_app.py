@@ -749,6 +749,10 @@ def api_statistics():
             Person.dibao.in_(['最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'])
         ).count()
         disability = session.query(Person).filter(Person.disability != '无', Person.disability != '').count()
+        # 特困供养人员统计
+        tekun = session.query(Person).filter(
+            Person.tekun != '', Person.tekun != '否', Person.tekun.isnot(None)
+        ).count()
 
         poor_type_distribution = {}
 
@@ -783,8 +787,15 @@ def api_statistics():
             dl_val = dl[0] or '其他'
             dis_level_distribution[dl_val] = dis_level_distribution.get(dl_val, 0) + 1
 
+        tekun_type_distribution = {}
+        tekun_types = session.query(Person.tekun_type).filter(
+            Person.tekun_type != '', Person.tekun_type.isnot(None)
+        ).all()
+        for tt in tekun_types:
+            tt_val = tt[0] or '其他'
+            tekun_type_distribution[tt_val] = tekun_type_distribution.get(tt_val, 0) + 1
+
         land_areas = session.query(Person.land_area).filter(
-            Person.land_area != '', Person.land_area.isnot(None)
         ).all()
         total_land_area = 0.0
         land_count = 0
@@ -803,10 +814,12 @@ def api_statistics():
             'migrated': migrated,
             'dibao': dibao,
             'disability': disability,
+            'tekun': tekun,
             'alive': total - dead,
             'not_migrated': total - migrated,
             'poor_type_distribution': poor_type_distribution,
             'dis_level_distribution': dis_level_distribution,
+            'tekun_type_distribution': tekun_type_distribution,
             'total_land_area': round(total_land_area, 2),
             'avg_land_area': avg_land_area
         })
@@ -843,6 +856,8 @@ def api_persons():
                 'is_dead': p.is_dead or '否',
                 'disability': p.disability or '',
                 'dibao': p.dibao or '',
+                'tekun': p.tekun or '',
+                'tekun_type': p.tekun_type or '',
                 'is_migrated': p.is_migrated or '否',
                 'relation': p.relation or ''
             } for p in persons],
@@ -888,6 +903,8 @@ def api_search():
         'disability': p.disability or '',
         'dis_level': p.dis_level or '',
         'dibao': p.dibao or '',
+        'tekun': p.tekun or '',
+        'tekun_type': p.tekun_type or '',
         'jisheng': p.jisheng or '',
         'social_card1': p.social_card1 or '',
         'social_card2': p.social_card2 or '',
@@ -934,6 +951,8 @@ def api_search_advanced():
         'relation': p.relation,
         'disability': p.disability,
         'dibao': p.dibao,
+        'tekun': p.tekun or '',
+        'tekun_type': p.tekun_type or '',
         'is_dead': p.is_dead,
         'is_migrated': p.is_migrated,
         'land_area': p.land_area or ''
@@ -984,9 +1003,10 @@ def api_family(hu_hao):
             'disability': m.disability,
             'dis_level': m.dis_level,
             'dibao': m.dibao,
+            'tekun': m.tekun or '',
+            'tekun_type': m.tekun_type or '',
             'jisheng': m.jisheng,
             'is_migrated': m.is_migrated,
-            'land_area': m.land_area or '',
             'land_area_change_reason': m.land_area_change_reason or '',
             'land_area_change_time': m.land_area_change_time or '',
             'student_mark': student_mark,

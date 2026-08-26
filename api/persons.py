@@ -78,6 +78,8 @@ def api_persons():
                 'is_dead': p.is_dead or '否',
                 'disability': p.disability or '',
                 'dibao': p.dibao or '',
+                'tekun': p.tekun or '',
+                'tekun_type': p.tekun_type or '',
                 'is_migrated': p.is_migrated or '否',
                 'relation': p.relation or ''
             } for p in persons],
@@ -127,6 +129,8 @@ def api_search():
         'disability': p.disability or '',
         'dis_level': p.dis_level or '',
         'dibao': p.dibao or '',
+        'tekun': p.tekun or '',
+        'tekun_type': p.tekun_type or '',
         'jisheng': p.jisheng or '',
         'social_card1': p.social_card1 or '',
         'social_card2': p.social_card2 or '',
@@ -187,6 +191,8 @@ def api_search_advanced():
         'relation': p.relation,
         'disability': p.disability,
         'dibao': p.dibao,
+        'tekun': p.tekun or '',
+        'tekun_type': p.tekun_type or '',
         'is_dead': p.is_dead,
         'is_migrated': p.is_migrated,
         'land_area': p.land_area or ''
@@ -240,6 +246,8 @@ def api_family(hu_hao):
             'disability': m.disability,
             'dis_level': m.dis_level,
             'dibao': m.dibao,
+            'tekun': m.tekun or '',
+            'tekun_type': m.tekun_type or '',
             'jisheng': m.jisheng,
             'is_migrated': m.is_migrated,
             'land_area': m.land_area or '',
@@ -294,6 +302,8 @@ def api_person(person_id):
                 'disability_type': p.disability_type,
                 'dis_level': p.dis_level,
                 'dibao': p.dibao,
+                'tekun': p.tekun or '',
+                'tekun_type': p.tekun_type or '',
                 'jisheng': p.jisheng,
                 'is_migrated': p.is_migrated,
                 'land_area': p.land_area or '',
@@ -378,6 +388,8 @@ def api_add_person():
         disability_type=data.get('disability_type', ''),
         dis_level=data.get('dis_level', ''),
         dibao=data.get('dibao', ''),
+        tekun=data.get('tekun', ''),
+        tekun_type=data.get('tekun_type', ''),
         jisheng=data.get('jisheng', ''),
     )
     add_person(person)
@@ -429,6 +441,8 @@ def api_update_person(person_id):
         p.disability_type = data.get('disability_type', p.disability_type)
         p.dis_level = data.get('dis_level', p.dis_level)
         p.dibao = data.get('dibao', p.dibao)
+        p.tekun = data.get('tekun', p.tekun)
+        p.tekun_type = data.get('tekun_type', p.tekun_type)
         p.jisheng = data.get('jisheng', p.jisheng)
         p.social_card1 = data.get('social_card1', p.social_card1)
         p.social_card2 = data.get('social_card2', p.social_card2)
@@ -628,7 +642,7 @@ MAX_BATCH_UPDATE_COUNT = 200  # 单次最大更新数量
 # 允许批量更新的字段白名单
 BATCH_UPDATE_ALLOWED_FIELDS = {
     'relation', 'phone', 'address', 'remark', 
-    'disability', 'dis_level', 'dibao', 'jisheng',
+    'disability', 'dis_level', 'dibao', 'tekun', 'tekun_type', 'jisheng',
     'social_card1', 'social_card2', 'social_card3', 'land_area'
 }
 

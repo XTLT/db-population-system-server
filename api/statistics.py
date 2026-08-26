@@ -28,6 +28,10 @@ def api_statistics():
             Person.dibao.in_(['最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'])
         ).count()
         disability = session.query(Person).filter(Person.disability != '无', Person.disability != '').count()
+        # 特困供养人员统计
+        tekun = session.query(Person).filter(
+            Person.tekun != '', Person.tekun != '否', Person.tekun.isnot(None)
+        ).count()
 
         poor_type_distribution = {}
         poor_type_person_count = {}
@@ -65,6 +69,14 @@ def api_statistics():
             dl_val = dl[0] or '其他'
             dis_level_distribution[dl_val] = dis_level_distribution.get(dl_val, 0) + 1
 
+        tekun_type_distribution = {}
+        tekun_types = session.query(Person.tekun_type).filter(
+            Person.tekun_type != '', Person.tekun_type.isnot(None)
+        ).all()
+        for tt in tekun_types:
+            tt_val = tt[0] or '其他'
+            tekun_type_distribution[tt_val] = tekun_type_distribution.get(tt_val, 0) + 1
+
         land_areas = session.query(Person.land_area).filter(
             Person.land_area != '', Person.land_area.isnot(None)
         ).all()
@@ -85,11 +97,13 @@ def api_statistics():
             'migrated': migrated,
             'dibao': dibao,
             'disability': disability,
+            'tekun': tekun,
             'alive': total - dead,
             'not_migrated': total - migrated,
             'poor_type_distribution': poor_type_distribution,
             'poor_type_person_count': poor_type_person_count,
             'dis_level_distribution': dis_level_distribution,
+            'tekun_type_distribution': tekun_type_distribution,
             'total_land_area': round(total_land_area, 2),
             'avg_land_area': avg_land_area
         })
