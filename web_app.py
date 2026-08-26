@@ -925,6 +925,10 @@ def api_search_advanced():
     age_max = request.args.get('age_max', type=int)
     disability = request.args.get('disability', '')
     dibao = request.args.get('dibao', '')
+    tekun = request.args.get('tekun', '')
+    tekun_type = request.args.get('tekun_type', '')
+    poor_type = request.args.get('poor_type', '')
+    relation = request.args.get('relation', '')
     is_dead = request.args.get('is_dead', '')
     limit = request.args.get('limit', 100, type=int)
     
@@ -937,6 +941,10 @@ def api_search_advanced():
         age_max=age_max,
         disability=disability,
         dibao=dibao,
+        tekun=tekun,
+        tekun_type=tekun_type,
+        poor_type=poor_type,
+        relation=relation,
         is_dead=is_dead,
         limit=limit
     )

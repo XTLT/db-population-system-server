@@ -806,6 +806,9 @@ def search_persons_advanced(
     disability: str = "",
     dibao: str = "",
     tekun: str = "",
+    tekun_type: str = "",
+    poor_type: str = "",
+    relation: str = "",
     is_dead: str = "",
     limit: int = 100
 ) -> list:
@@ -852,6 +855,15 @@ def search_persons_advanced(
         
         if tekun:
             query = query.filter(Person.tekun == tekun)
+        
+        if tekun_type:
+            query = query.filter(Person.tekun_type == tekun_type)
+        
+        if poor_type:
+            query = query.filter(Person.poor_type == poor_type)
+        
+        if relation:
+            query = query.filter(Person.relation == relation)
         
         if is_dead:
             query = query.filter(Person.is_dead == is_dead)
