@@ -23,13 +23,14 @@ def api_statistics():
         total = session.query(Person).count()
         dead = session.query(Person).filter(Person.is_dead == '是').count()
         migrated = session.query(Person).filter(Person.is_migrated == '是').count()
-        # 低保人员统计：包含"是"、"低保边缘家庭"、"特困家庭"
+        # 低保人员统计：匹配数据库中的实际值
         dibao = session.query(Person).filter(
-            Person.dibao.in_(['是', '低保边缘家庭', '特困家庭'])
+            Person.dibao.in_(['最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'])
         ).count()
         disability = session.query(Person).filter(Person.disability != '无', Person.disability != '').count()
 
         poor_type_distribution = {}
+        poor_type_person_count = {}
         
         from sqlalchemy import case, literal_column
         
@@ -46,6 +47,15 @@ def api_statistics():
             pt_val = hu_zhu_type or first_type or '其他'
             if pt_val:
                 poor_type_distribution[pt_val] = poor_type_distribution.get(pt_val, 0) + 1
+
+        # 统计各 poor_type 的人数
+        pt_person_counts = session.query(
+            Person.poor_type, func.count(Person.id)
+        ).filter(
+            Person.poor_type != '', Person.poor_type.isnot(None)
+        ).group_by(Person.poor_type).all()
+        for pt_val, cnt in pt_person_counts:
+            poor_type_person_count[pt_val] = cnt
 
         dis_level_distribution = {}
         dis_levels = session.query(Person.dis_level).filter(
@@ -78,6 +88,7 @@ def api_statistics():
             'alive': total - dead,
             'not_migrated': total - migrated,
             'poor_type_distribution': poor_type_distribution,
+            'poor_type_person_count': poor_type_person_count,
             'dis_level_distribution': dis_level_distribution,
             'total_land_area': round(total_land_area, 2),
             'avg_land_area': avg_land_area
