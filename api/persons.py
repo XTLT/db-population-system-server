@@ -152,6 +152,7 @@ def api_search_advanced():
     age_min = request.args.get('age_min', type=int)
     age_max = request.args.get('age_max', type=int)
     disability = request.args.get('disability', '')
+    dis_level = request.args.get('dis_level', '')
     dibao = request.args.get('dibao', '')
     tekun = request.args.get('tekun', '')
     tekun_type = request.args.get('tekun_type', '')
@@ -180,6 +181,7 @@ def api_search_advanced():
         age_min=age_min,
         age_max=age_max,
         disability=disability,
+        dis_level=dis_level,
         dibao=dibao,
         tekun=tekun,
         tekun_type=tekun_type,

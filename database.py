@@ -804,6 +804,7 @@ def search_persons_advanced(
     age_min: int = None,
     age_max: int = None,
     disability: str = "",
+    dis_level: str = "",
     dibao: str = "",
     tekun: str = "",
     tekun_type: str = "",
@@ -848,8 +849,14 @@ def search_persons_advanced(
             query = query.filter(Person.age <= str(age_max))
         
         if disability:
-            query = query.filter(Person.disability == disability)
-        
+            if disability == '是':
+                query = query.filter(Person.disability != '', Person.disability != '无')
+            else:
+                query = query.filter(Person.disability == disability)
+
+        if dis_level:
+            query = query.filter(Person.dis_level == dis_level)
+
         if dibao:
             query = query.filter(Person.dibao == dibao)
         

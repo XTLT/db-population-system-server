@@ -58,6 +58,7 @@ def list_pension_insurance():
     
     period = request.args.get('period', '')
     id_card = request.args.get('id_card', '')
+    name = request.args.get('name', '')
     
     session = get_session()
     try:
@@ -68,6 +69,9 @@ def list_pension_insurance():
         if id_card:
             safe_id_card = escape_like(id_card)
             query = query.filter(PensionInsurance.id_card.like(f'%{safe_id_card}%', escape='\\'))
+        if name:
+            safe_name = escape_like(name)
+            query = query.filter(PensionInsurance.name.like(f'%{safe_name}%', escape='\\'))
         
         records = query.order_by(PensionInsurance.period.desc()).limit(500).all()
         
@@ -103,6 +107,19 @@ def get_pension_insurance_years():
         periods = session.query(distinct(PensionInsurance.period)).all()
         years = sorted(set(p[0][:4] for p in periods if p[0] and len(p[0]) >= 4), reverse=True)
         return jsonify({'years': years})
+    finally:
+        session.close()
+
+
+@bp.route('/pension_insurance/periods')
+@require_auth
+def get_pension_insurance_periods():
+    """获取所有可用的费款所属期（按月）"""
+    session = get_session()
+    try:
+        periods = session.query(distinct(PensionInsurance.period)).all()
+        period_list = sorted(set(p[0] for p in periods if p[0]), reverse=True)
+        return jsonify({'periods': period_list})
     finally:
         session.close()
 

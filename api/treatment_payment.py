@@ -58,6 +58,7 @@ def list_treatment_payments():
     
     period = request.args.get('period', '')
     id_card = request.args.get('id_card', '')
+    name = request.args.get('name', '')
     subsidy_type = request.args.get('subsidy_type', '')
     
     session = get_session()
@@ -69,6 +70,9 @@ def list_treatment_payments():
         if id_card:
             safe_id_card = escape_like(id_card)
             query = query.filter(TreatmentPayment.id_card.like(f'%{safe_id_card}%', escape='\\'))
+        if name:
+            safe_name = escape_like(name)
+            query = query.filter(TreatmentPayment.name.like(f'%{safe_name}%', escape='\\'))
         if subsidy_type:
             query = query.filter(TreatmentPayment.subsidy_type == subsidy_type)
         
@@ -109,6 +113,20 @@ def get_treatment_payment_years():
         periods = session.query(distinct(TreatmentPayment.period)).all()
         years = sorted(set(p[0][:4] for p in periods if p[0] and len(p[0]) >= 4), reverse=True)
         return jsonify({'years': years})
+    finally:
+        session.close()
+
+
+@bp.route('/treatment_payment/periods')
+@require_auth
+def get_treatment_payment_periods():
+    """获取所有可用的费款所属期（按月）"""
+    session = get_session()
+    try:
+        from sqlalchemy import distinct
+        periods = session.query(distinct(TreatmentPayment.period)).all()
+        period_list = sorted(set(p[0] for p in periods if p[0]), reverse=True)
+        return jsonify({'periods': period_list})
     finally:
         session.close()
 
