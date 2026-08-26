@@ -120,7 +120,7 @@ def api_students():
                 'is_left_behind': s.is_left_behind,
                 'student_status': s.student_status
             })
-        return jsonify(result)
+        return jsonify({'students': result})
     finally:
         session.close()
 
