@@ -25,7 +25,7 @@ def safe_id_card_query(session, person_id: str):
     if p:
         return p, None
     
-    if len(person_id) == 18 and person_id.isdigit():
+    if len(person_id) == 18 and (person_id[:-1].isdigit() and person_id[-1] in '0123456789xX'):
         is_allowed, remaining = check_id_card_rate_limit(person_id)
         if not is_allowed:
             return None, (jsonify({

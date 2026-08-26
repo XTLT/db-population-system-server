@@ -58,7 +58,7 @@ def validate_photo_filename(filename: str) -> tuple:
     id_card, photo_type = parts
     
     # 验证身份证号格式
-    if not id_card.isdigit() or len(id_card) != 18:
+    if not (id_card[:-1].isdigit() and id_card[-1] in '0123456789xX') or len(id_card) != 18:
         return False, None, None, None
     
     return True, id_card, photo_type, ext
