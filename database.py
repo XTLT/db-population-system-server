@@ -235,6 +235,44 @@ class PensionInsurance(Base):
     import_source = Column(String, default="")  # 导入来源文件名
 
 
+class DibaoPayment(Base):
+    __tablename__ = "dibao_payment"
+
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False, index=True)
+    id_card = Column(String, default="", index=True)
+    town = Column(String, default="")  # 所属乡镇
+    village = Column(String, default="")  # 所属村
+    period = Column(String, default="", index=True)  # 费款所属期/年月
+    payment_status = Column(String, default="")  # 支付标志
+    personal_code = Column(String, default="")  # 个人编号
+    bank_account = Column(String, default="")
+    amount = Column(String, default="")
+    relation = Column(String, default="")  # 和申请人关系
+    fail_reason = Column(String, default="")  # 失败原因
+    import_time = Column(String, default="")
+    import_source = Column(String, default="")  # 导入来源文件名
+
+
+class TekunPayment(Base):
+    __tablename__ = "tekun_payment"
+
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False, index=True)
+    id_card = Column(String, default="", index=True)
+    town = Column(String, default="")  # 所属乡镇
+    village = Column(String, default="")  # 所属村
+    period = Column(String, default="", index=True)  # 费款所属期/年月
+    payment_status = Column(String, default="")  # 支付标志
+    personal_code = Column(String, default="")  # 个人编号
+    bank_account = Column(String, default="")
+    amount = Column(String, default="")
+    relation = Column(String, default="")  # 和申请人关系
+    fail_reason = Column(String, default="")  # 失败原因
+    import_time = Column(String, default="")
+    import_source = Column(String, default="")  # 导入来源文件名
+
+
 class EducationHistory(Base):
     __tablename__ = "education_history"
 
@@ -787,11 +825,22 @@ def change_user_password(user_id: str, old_password: str, new_password: str) -> 
 
 def search_by_name(name: str) -> list[Person]:
     import re
+    from sqlalchemy import case
     session = get_session()
     try:
         # 转义LIKE特殊字符: % 匹配任意字符, _ 匹配单个字符
         escaped_name = re.sub(r'([%_])', r'\\\1', name)
-        return session.query(Person).filter(Person.name.like(f"%{escaped_name}%", escape='\\')).all()
+
+        # 按相关性排序：精确匹配 > 前缀匹配 > 包含匹配
+        relevance = case(
+            (Person.name == name, 0),
+            (Person.name.like(f"{escaped_name}%", escape='\\'), 1),
+            else_=2
+        )
+
+        return session.query(Person).filter(
+            Person.name.like(f"%{escaped_name}%", escape='\\')
+        ).order_by(relevance, Person.name).limit(100).all()
     finally:
         session.close()
 

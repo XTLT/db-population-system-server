@@ -2827,6 +2827,14 @@ def api_backup_download():
     return jsonify({'error': '备份文件不存在'}), 404
 
 
+@app.route('/api/backup/status')
+@require_auth
+def api_backup_status():
+    from excel_importer import get_backup_status
+    status = get_backup_status()
+    return jsonify(status)
+
+
 @app.route('/api/backups')
 @require_auth
 def api_backup_list():

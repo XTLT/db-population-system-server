@@ -200,6 +200,7 @@ def api_search_advanced():
         'address': p.address,
         'relation': p.relation,
         'disability': p.disability,
+        'dis_level': p.dis_level or '',
         'dibao': p.dibao,
         'tekun': p.tekun or '',
         'tekun_type': p.tekun_type or '',

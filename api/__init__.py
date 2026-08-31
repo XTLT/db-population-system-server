@@ -13,6 +13,9 @@ from .reports import bp as reports_bp
 from .land_subsidy import bp as land_subsidy_bp
 from .treatment_payment import bp as treatment_payment_bp
 from .pension_insurance import bp as pension_insurance_bp
+from .dibao_payment import bp as dibao_payment_bp
+from .tekun_payment import bp as tekun_payment_bp
+from .update import bp as update_bp
 
 __all__ = [
     'auth_bp',
@@ -28,5 +31,8 @@ __all__ = [
     'reports_bp',
     'land_subsidy_bp',
     'treatment_payment_bp',
-    'pension_insurance_bp'
+    'pension_insurance_bp',
+    'dibao_payment_bp',
+    'tekun_payment_bp',
+    'update_bp',
 ]

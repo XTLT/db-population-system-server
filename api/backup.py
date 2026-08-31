@@ -95,6 +95,14 @@ def api_backup_list():
     return jsonify({'backups': backups})
 
 
+@bp.route('/status')
+@require_auth
+def api_backup_status():
+    """获取备份状态"""
+    status = get_backup_status()
+    return jsonify(status)
+
+
 @bp.route('/restore', methods=['POST'])
 @require_auth
 def api_backup_restore():
