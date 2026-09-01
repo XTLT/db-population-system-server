@@ -106,7 +106,7 @@ def import_student_education(file_path: str, mode: str = "incremental", progress
                         guardian=safe_str(row.get("监护人", "")),
                         guardian_phone=safe_str(row.get("监护人电话", "")),
                         is_left_behind=safe_str(row.get("是否留守儿童", "否")),
-                        student_status=safe_str(row.get("学生状态", "在读")),
+                        student_status=safe_str(row.get("学生状态", "")),
                         enrollment_date=safe_str(row.get("入学日期", ""))
                     )
                     session.add(edu)

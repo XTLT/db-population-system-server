@@ -224,9 +224,11 @@ function showPerson(personId) {
                 <div class="detail-item"><label>脱贫户</label><span>${data.poor_type === '无' ? '' : data.poor_type}</span></div>
                 <div class="detail-item"><label>备注</label><span>${data.remark === '无' ? '' : data.remark}</span></div>
                 <div class="detail-item"><label>残疾</label><span>${data.disability === '无' ? '' : data.disability}</span></div>
-                <div class="detail-item"><label>残疾等级</label><span>${data.dis_level === '无' ? '' : data.dis_level}</span></div>
+                ${data.disability === '是' ? `<div class="detail-item"><label>残疾类型</label><span>${data.disability_type === '无' ? '' : (data.disability_type || '')}</span></div><div class="detail-item"><label>残疾等级</label><span>${data.dis_level === '无' ? '' : (data.dis_level || '')}</span></div>` : ''}
                 <div class="detail-item"><label>低保</label><span>${data.dibao === '无' ? '' : data.dibao}</span></div>
                 <div class="detail-item"><label>计生家庭</label><span>${data.jisheng === '无' ? '' : data.jisheng}</span></div>
+                <div class="detail-item"><label>特困供养</label><span>${data.tekun === '无' ? '' : (data.tekun || '')}</span></div>
+                ${data.tekun === '是' ? `<div class="detail-item"><label>供养类型</label><span>${data.tekun_type === '无' ? '' : (data.tekun_type || '')}</span></div>` : ''}
                 <div class="detail-item"><label>土地面积</label><span>${data.land_area || ''}</span></div>
                 ${data.land_area_change_reason ? `<div class="detail-item"><label>土地变更原因</label><span>${data.land_area_change_reason}</span></div><div class="detail-item"><label>土地变更时间</label><span>${data.land_area_change_time}</span></div>` : ''}
             `;
@@ -255,25 +257,54 @@ function editPerson() {
         .then(data => {
             currentPersonUpdatedAt = data.updated_at || '';
             document.getElementById('editId').value = data.id;
-            document.getElementById('editName').value = data.name;
             document.getElementById('editIdCard').value = data.id_card;
+            document.getElementById('editName').value = data.name;
+            document.getElementById('editHuHao').value = data.hu_hao || '';
             document.getElementById('editRelation').value = data.relation || '';
-            document.getElementById('editPhone').value = data.phone === '无' ? '' : data.phone;
-            document.getElementById('editIsDead').value = data.is_dead;
+            document.getElementById('editIsDead').value = data.is_dead || '';
+            document.getElementById('editPhone').value = (data.phone && data.phone !== '无') ? data.phone : '';
+            document.getElementById('editAddress').value = (data.address && data.address !== '无') ? data.address : '';
             document.getElementById('editLandArea').value = data.land_area || '';
             currentPersonLandArea = data.land_area || '';
-            document.getElementById('editSocial1').value = data.social_card1 === '无' ? '' : (data.social_card1 || '');
-            document.getElementById('editSocial2').value = data.social_card2 === '无' ? '' : (data.social_card2 || '');
-            document.getElementById('editSocial3').value = data.social_card3 === '无' ? '' : (data.social_card3 || '');
+            document.getElementById('editSocial1').value = (data.social_card1 && data.social_card1 !== '无') ? data.social_card1 : '';
+            document.getElementById('editSocial2').value = (data.social_card2 && data.social_card2 !== '无') ? data.social_card2 : '';
+            document.getElementById('editSocial3').value = (data.social_card3 && data.social_card3 !== '无') ? data.social_card3 : '';
+            document.getElementById('editRemark').value = (data.remark && data.remark !== '无') ? data.remark : '';
 
-            if (data.education) {
+            // 社会保障
+            document.getElementById('editPoorType').value = (data.poor_type && data.poor_type !== '无') ? data.poor_type : '';
+
+            const disValue = (data.disability && data.disability !== '无') ? data.disability : '';
+            document.getElementById('editDisability').value = disValue;
+            toggleDisabilityDetail();
+            if (disValue === '是') {
+                document.getElementById('editDisabilityType').value = (data.disability_type && data.disability_type !== '无') ? data.disability_type : '';
+                document.getElementById('editDisLevel').value = (data.dis_level && data.dis_level !== '无') ? data.dis_level : '';
+            }
+
+            document.getElementById('editDibao').value = (data.dibao && data.dibao !== '无') ? data.dibao : '';
+            document.getElementById('editJisheng').value = (data.jisheng && data.jisheng !== '无') ? data.jisheng : '';
+
+            const tekunValue = (data.tekun && data.tekun !== '无') ? data.tekun : '';
+            document.getElementById('editTekun').value = tekunValue;
+            toggleTekunDetail();
+            if (tekunValue === '是') {
+                document.getElementById('editTekunType').value = (data.tekun_type && data.tekun_type !== '无') ? data.tekun_type : '';
+            }
+
+            // 就读信息
+            const hasEducation = data.education && (data.education.school_name || data.education.grade || data.education.class_name);
+            document.getElementById('editHasEducation').value = hasEducation ? '是' : '否';
+            toggleEducationFields();
+            if (hasEducation) {
                 document.getElementById('editEduSchool').value = data.education.school_name || '';
                 document.getElementById('editEduClass').value = data.education.class_name || '';
                 document.getElementById('editEduGuardian').value = data.education.guardian || '';
                 document.getElementById('editEduGuardianPhone').value = data.education.guardian_phone || '';
-                document.getElementById('editEduLeftBehind').value = data.education.is_left_behind || '否';
-                document.getElementById('editEduStatus').value = data.education.student_status || '在读';
+                document.getElementById('editEduLeftBehind').value = data.education.is_left_behind || '';
+                document.getElementById('editEduStatus').value = data.education.student_status || '';
                 document.getElementById('editEduEnrollDate').value = data.education.enrollment_date || '';
+                document.getElementById('editEduGradDate').value = data.education.graduation_date || '';
                 setTimeout(() => { document.getElementById('editEduGrade').value = data.education.grade || ''; }, 0);
             } else {
                 document.getElementById('editEduSchool').value = '';
@@ -281,9 +312,10 @@ function editPerson() {
                 document.getElementById('editEduClass').value = '';
                 document.getElementById('editEduGuardian').value = '';
                 document.getElementById('editEduGuardianPhone').value = '';
-                document.getElementById('editEduLeftBehind').value = '否';
-                document.getElementById('editEduStatus').value = '在读';
+                document.getElementById('editEduLeftBehind').value = '';
+                document.getElementById('editEduStatus').value = '';
                 document.getElementById('editEduEnrollDate').value = '';
+                document.getElementById('editEduGradDate').value = '';
             }
 
             const gradeSelect = document.getElementById('editEduGrade');
@@ -313,6 +345,28 @@ function editPerson() {
         });
 }
 
+function toggleDisabilityDetail() {
+    const val = document.getElementById('editDisability').value;
+    document.getElementById('disabilityDetail').style.display = val === '是' ? 'block' : 'none';
+    if (val !== '是') {
+        document.getElementById('editDisabilityType').value = '';
+        document.getElementById('editDisLevel').value = '';
+    }
+}
+
+function toggleTekunDetail() {
+    const val = document.getElementById('editTekun').value;
+    document.getElementById('tekunDetail').style.display = val === '是' ? 'block' : 'none';
+    if (val !== '是') {
+        document.getElementById('editTekunType').value = '';
+    }
+}
+
+function toggleEducationFields() {
+    const val = document.getElementById('editHasEducation').value;
+    document.getElementById('educationFields').style.display = val === '是' ? 'block' : 'none';
+}
+
 function closeEdit() {
     document.getElementById('editModal').style.display = 'none';
 }
@@ -323,8 +377,8 @@ document.getElementById('editForm').onsubmit = function(e) {
     const newLandArea = document.getElementById('editLandArea').value;
     const oldLandArea = currentPersonLandArea || '';
 
-    if (newLandArea !== oldLandArea) {
-        const reason = prompt(`土地面积从「${oldLandArea || '空'}」变更为「${newLandArea || '空'}」\n\n请输入变更原因：`);
+    if (newLandArea !== oldLandArea && oldLandArea) {
+        const reason = prompt(`土地面积从「${oldLandArea}」变更为「${newLandArea || '空'}」\n\n请输入变更原因：`);
         if (!reason || !reason.trim()) {
             alert('土地面积变更时必须填写变更原因！');
             return;
@@ -334,16 +388,28 @@ document.getElementById('editForm').onsubmit = function(e) {
         window._landAreaChangeReason = '';
     }
 
+    const disabilityVal = document.getElementById('editDisability').value;
+    const tekunVal = document.getElementById('editTekun').value;
     const data = {
         name: document.getElementById('editName').value,
         relation: document.getElementById('editRelation').value,
         phone: document.getElementById('editPhone').value || '无',
-        is_dead: document.getElementById('editIsDead').value,
-        land_area: newLandArea,
-        land_area_change_reason: window._landAreaChangeReason,
+        address: document.getElementById('editAddress').value || '',
+        is_dead: document.getElementById('editIsDead').value || '否',
+        remark: document.getElementById('editRemark').value || '',
+        poor_type: document.getElementById('editPoorType').value || '无',
+        disability: disabilityVal || '无',
+        disability_type: disabilityVal === '是' ? (document.getElementById('editDisabilityType').value || '无') : '无',
+        dis_level: disabilityVal === '是' ? (document.getElementById('editDisLevel').value || '无') : '无',
+        dibao: document.getElementById('editDibao').value || '无',
+        jisheng: document.getElementById('editJisheng').value || '无',
+        tekun: tekunVal || '无',
+        tekun_type: tekunVal === '是' ? (document.getElementById('editTekunType').value || '无') : '无',
         social_card1: document.getElementById('editSocial1').value || '无',
         social_card2: document.getElementById('editSocial2').value || '无',
         social_card3: document.getElementById('editSocial3').value || '无',
+        land_area: newLandArea,
+        land_area_change_reason: window._landAreaChangeReason,
         updated_at: currentPersonUpdatedAt
     };
 
@@ -369,25 +435,27 @@ document.getElementById('editForm').onsubmit = function(e) {
         if (result && result.success) {
             currentPersonUpdatedAt = result.updated_at || '';
 
-            const eduData = {
-                school_name: document.getElementById('editEduSchool').value.trim(),
-                grade: document.getElementById('editEduGrade').value,
-                class_name: document.getElementById('editEduClass').value.trim(),
-                guardian: document.getElementById('editEduGuardian').value.trim(),
-                guardian_phone: document.getElementById('editEduGuardianPhone').value.trim(),
-                is_left_behind: document.getElementById('editEduLeftBehind').value,
-                student_status: document.getElementById('editEduStatus').value,
-                enrollment_date: document.getElementById('editEduEnrollDate').value
-            };
-
-            return fetch(`/api/person/${id}/education`, {
+            const hasEdu = document.getElementById('editHasEducation').value === '是';
+            const eduPromise = hasEdu ? fetch(`/api/person/${id}/education`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
-                body: JSON.stringify(eduData)
-            }).then(r => r.json()).then(() => {
+                body: JSON.stringify({
+                    school_name: document.getElementById('editEduSchool').value.trim(),
+                    grade: document.getElementById('editEduGrade').value,
+                    class_name: document.getElementById('editEduClass').value.trim(),
+                    guardian: document.getElementById('editEduGuardian').value.trim(),
+                    guardian_phone: document.getElementById('editEduGuardianPhone').value.trim(),
+                    is_left_behind: document.getElementById('editEduLeftBehind').value,
+                    student_status: document.getElementById('editEduStatus').value,
+                    enrollment_date: document.getElementById('editEduEnrollDate').value,
+                    graduation_date: document.getElementById('editEduGradDate').value
+                })
+            }).then(r => r.json()) : Promise.resolve();
+
+            return eduPromise.then(() => {
                 closeEdit();
                 showFamily(currentHuHao, data.name);
                 showPerson(id);
@@ -448,6 +516,10 @@ function closeDetail() {
 document.getElementById('searchInput').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') doSearch();
 });
+
+document.getElementById('editDisability').addEventListener('change', toggleDisabilityDetail);
+document.getElementById('editTekun').addEventListener('change', toggleTekunDetail);
+document.getElementById('editHasEducation').addEventListener('change', toggleEducationFields);
 
 window.onload = function() {
     fetch('/api/status').then(r => r.json()).then(data => {

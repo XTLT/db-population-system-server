@@ -171,7 +171,7 @@ class StudentEducation(Base):
     guardian = Column(String, default="")
     guardian_phone = Column(String, default="")
     is_left_behind = Column(String, default="否")
-    student_status = Column(String, default="在读")
+    student_status = Column(String, default="")
     enrollment_date = Column(String, default="")
     graduation_date = Column(String, default="")
 

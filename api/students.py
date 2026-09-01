@@ -93,7 +93,7 @@ def create_student():
             guardian=data.get('guardian', ''),
             guardian_phone=data.get('guardian_phone', ''),
             is_left_behind=data.get('is_left_behind', '否'),
-            student_status=data.get('student_status', '在读'),
+            student_status=data.get('student_status', ''),
             enrollment_date=data.get('enrollment_date', '')
         )
         

@@ -1928,7 +1928,7 @@ def api_save_education(person_id):
             edu.guardian = data.get('guardian', '')
             edu.guardian_phone = data.get('guardian_phone', '')
             edu.is_left_behind = data.get('is_left_behind', '否')
-            edu.student_status = data.get('student_status', '在读')
+            edu.student_status = data.get('student_status', '')
             edu.enrollment_date = data.get('enrollment_date', '')
             edu.graduation_date = data.get('graduation_date', '')
         else:
@@ -1942,7 +1942,7 @@ def api_save_education(person_id):
                 guardian=data.get('guardian', ''),
                 guardian_phone=data.get('guardian_phone', ''),
                 is_left_behind=data.get('is_left_behind', '否'),
-                student_status=data.get('student_status', '在读'),
+                student_status=data.get('student_status', ''),
                 enrollment_date=data.get('enrollment_date', ''),
                 graduation_date=data.get('graduation_date', '')
             )
@@ -3795,7 +3795,7 @@ def api_create_student():
             guardian=data.get('guardian', ''),
             guardian_phone=data.get('guardian_phone', ''),
             is_left_behind=data.get('is_left_behind', '否'),
-            student_status=data.get('student_status', '在读'),
+            student_status=data.get('student_status', ''),
             enrollment_date=data.get('enrollment_date', '')
         )
         

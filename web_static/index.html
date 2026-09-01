@@ -172,37 +172,133 @@
         </div>
 
         <div id="editModal" class="modal" style="display:none;">
-            <div class="modal-content">
+            <div class="modal-content" style="max-width:700px;max-height:85vh;overflow-y:auto;">
                 <h2>编辑人员信息</h2>
                 <form id="editForm">
                     <input type="hidden" id="editId">
+
+                    <!-- 基本信息 -->
+                    <p style="font-weight:bold;color:#333;margin:12px 0 8px;">基本信息</p>
+                    <div class="form-group">
+                        <label>身份证号：</label>
+                        <input type="text" id="editIdCard" disabled>
+                    </div>
                     <div class="form-group">
                         <label>姓名：</label>
                         <input type="text" id="editName" required>
                     </div>
                     <div class="form-group">
-                        <label>身份证号：</label>
-                        <input type="text" id="editIdCard" required>
+                        <label>户号：</label>
+                        <input type="text" id="editHuHao" disabled>
                     </div>
                     <div class="form-group">
                         <label>与户主关系：</label>
                         <input type="text" id="editRelation">
                     </div>
                     <div class="form-group">
+                        <label>是否死亡：</label>
+                        <select id="editIsDead">
+                            <option value="">请选择</option>
+                            <option value="是">是</option>
+                            <option value="否">否</option>
+                        </select>
+                    </div>
+
+                    <!-- 联系信息 -->
+                    <p style="font-weight:bold;color:#333;margin:12px 0 8px;">联系信息</p>
+                    <div class="form-group">
                         <label>电话：</label>
                         <input type="text" id="editPhone">
                     </div>
                     <div class="form-group">
-                        <label>是否死亡：</label>
-                        <select id="editIsDead">
-                            <option value="否">否</option>
-                            <option value="是">是</option>
+                        <label>地址：</label>
+                        <input type="text" id="editAddress">
+                    </div>
+
+                    <!-- 社会保障 -->
+                    <p style="font-weight:bold;color:#333;margin:12px 0 8px;">社会保障</p>
+                    <div class="form-group">
+                        <label>脱贫户或监测户：</label>
+                        <select id="editPoorType">
+                            <option value="">请选择</option>
+                            <option value="脱贫户">脱贫户</option>
+                            <option value="脱贫不稳定户">脱贫不稳定户</option>
+                            <option value="突发严重困难户">突发严重困难户</option>
+                            <option value="边缘易致贫户">边缘易致贫户</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>土地面积：</label>
-                        <input type="text" id="editLandArea" placeholder="亩">
+                        <label>残疾：</label>
+                        <select id="editDisability">
+                            <option value="">请选择</option>
+                            <option value="是">是</option>
+                            <option value="否">否</option>
+                        </select>
                     </div>
+                    <div id="disabilityDetail" style="display:none;">
+                        <div class="form-group">
+                            <label>残疾类型：</label>
+                            <select id="editDisabilityType">
+                                <option value="">请选择</option>
+                                <option value="视力残疾">视力残疾</option>
+                                <option value="听力残疾">听力残疾</option>
+                                <option value="言语残疾">言语残疾</option>
+                                <option value="肢体残疾">肢体残疾</option>
+                                <option value="智力残疾">智力残疾</option>
+                                <option value="精神残疾">精神残疾</option>
+                                <option value="多重残疾">多重残疾</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>残疾等级：</label>
+                            <select id="editDisLevel">
+                                <option value="">请选择</option>
+                                <option value="一级">一级</option>
+                                <option value="二级">二级</option>
+                                <option value="三级">三级</option>
+                                <option value="四级">四级</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>低保：</label>
+                        <select id="editDibao">
+                            <option value="">请选择</option>
+                            <option value="是">是</option>
+                            <option value="否">否</option>
+                            <option value="低保边缘家庭">低保边缘家庭</option>
+                            <option value="特困家庭">特困家庭</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>是否计生家庭：</label>
+                        <select id="editJisheng">
+                            <option value="">请选择</option>
+                            <option value="是">是</option>
+                            <option value="否">否</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>是否特困供养：</label>
+                        <select id="editTekun">
+                            <option value="">请选择</option>
+                            <option value="是">是</option>
+                            <option value="否">否</option>
+                        </select>
+                    </div>
+                    <div id="tekunDetail" style="display:none;">
+                        <div class="form-group">
+                            <label>供养类型：</label>
+                            <select id="editTekunType">
+                                <option value="">请选择</option>
+                                <option value="集中供养">集中供养</option>
+                                <option value="散居特困">散居特困</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 社保卡信息 -->
+                    <p style="font-weight:bold;color:#333;margin:12px 0 8px;">社保卡信息</p>
                     <div class="form-group">
                         <label>社保卡号1：</label>
                         <input type="text" id="editSocial1">
@@ -215,50 +311,76 @@
                         <label>社保卡号3：</label>
                         <input type="text" id="editSocial3">
                     </div>
-                    <hr style="margin:10px 0;border-color:#ddd;">
-                    <p style="font-weight:bold;color:#333;margin-bottom:8px;">就读信息</p>
+
+                    <!-- 就读信息 -->
+                    <p style="font-weight:bold;color:#333;margin:12px 0 8px;">就读信息</p>
                     <div class="form-group">
-                        <label>学校：</label>
-                        <input type="text" id="editEduSchool">
-                    </div>
-                    <div class="form-group">
-                        <label>年级：</label>
-                        <select id="editEduGrade"><option value="">请选择</option></select>
-                    </div>
-                    <div class="form-group">
-                        <label>班级：</label>
-                        <input type="text" id="editEduClass">
-                    </div>
-                    <div class="form-group">
-                        <label>监护人：</label>
-                        <input type="text" id="editEduGuardian">
-                    </div>
-                    <div class="form-group">
-                        <label>监护人电话：</label>
-                        <input type="text" id="editEduGuardianPhone">
-                    </div>
-                    <div class="form-group">
-                        <label>留守儿童：</label>
-                        <select id="editEduLeftBehind">
+                        <label>是否有就读信息：</label>
+                        <select id="editHasEducation">
                             <option value="否">否</option>
                             <option value="是">是</option>
                         </select>
                     </div>
+                    <div id="educationFields" style="display:none;">
+                        <div class="form-group">
+                            <label>学校名称：</label>
+                            <input type="text" id="editEduSchool">
+                        </div>
+                        <div class="form-group">
+                            <label>年级：</label>
+                            <select id="editEduGrade"><option value="">请选择</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>班级：</label>
+                            <input type="text" id="editEduClass">
+                        </div>
+                        <div class="form-group">
+                            <label>监护人：</label>
+                            <input type="text" id="editEduGuardian">
+                        </div>
+                        <div class="form-group">
+                            <label>监护人电话：</label>
+                            <input type="text" id="editEduGuardianPhone">
+                        </div>
+                        <div class="form-group">
+                            <label>是否留守儿童：</label>
+                            <select id="editEduLeftBehind">
+                                <option value="">请选择</option>
+                                <option value="是">是</option>
+                                <option value="否">否</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>学生状态：</label>
+                            <select id="editEduStatus">
+                                <option value="">请选择</option>
+                                <option value="在读">在读</option>
+                                <option value="休学">休学</option>
+                                <option value="辍学">辍学</option>
+                                <option value="毕业">毕业</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>入学日期：</label>
+                            <input type="text" id="editEduEnrollDate" placeholder="如：2023-09">
+                        </div>
+                        <div class="form-group">
+                            <label>毕业时间：</label>
+                            <input type="text" id="editEduGradDate" placeholder="如：2029-06">
+                        </div>
+                    </div>
+
+                    <!-- 其他信息 -->
+                    <p style="font-weight:bold;color:#333;margin:12px 0 8px;">其他信息</p>
                     <div class="form-group">
-                        <label>学生状态：</label>
-                        <select id="editEduStatus">
-                            <option value="在读">在读</option>
-                            <option value="留级">留级</option>
-                            <option value="跳级">跳级</option>
-                            <option value="休学">休学</option>
-                            <option value="转学">转学</option>
-                            <option value="毕业">毕业</option>
-                        </select>
+                        <label>土地面积（亩）：</label>
+                        <input type="text" id="editLandArea" placeholder="亩">
                     </div>
                     <div class="form-group">
-                        <label>入学日期：</label>
-                        <input type="date" id="editEduEnrollDate">
+                        <label>备注：</label>
+                        <input type="text" id="editRemark">
                     </div>
+
                     <div class="form-buttons">
                         <button type="submit" class="btn-save">保存</button>
                         <button type="button" onclick="closeEdit()" class="btn-cancel">取消</button>
