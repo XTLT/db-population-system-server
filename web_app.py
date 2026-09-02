@@ -12,7 +12,7 @@ from sqlalchemy import func
 from database import init_db, get_session, Person, StudentEducation, search_by_name, search_persons_advanced, get_family_members, get_person_count, update_person, add_person, delete_person, migrate_person, get_student_education, get_all_students, search_students, create_user, get_all_users, delete_user, User, OperationLog, add_operation_log, get_operation_logs, get_operation_types, get_operation_log_stats, validate_password, ReportOperationLog, add_report_log, get_report_logs, get_all_report_logs, create_notification, get_notifications, mark_notification_read, get_unread_count, get_person_trend_data, get_person_distribution, get_person_comparison, create_custom_report, get_custom_reports, get_custom_report, update_custom_report, delete_custom_report, generate_report_data
 from utils import calculate_age, find_existing_photo, get_photo_base_name, clean_filename
 from utils.security import create_token, get_token_data, remove_token, require_auth, hash_password, verify_password
-from config import GRADE_DISPLAY, TOKEN_EXPIRY_HOURS, PHOTO_EXTENSIONS, BASE_DIR, LOGIN_LOCK_MINUTES
+from config import GRADE_DISPLAY, GRADE_CODE_MAP, TOKEN_EXPIRY_HOURS, PHOTO_EXTENSIONS, BASE_DIR, LOGIN_LOCK_MINUTES
 import config
 from update_checker import check_update, download_update, verify_file, update_local_version, apply_update
 from ssl_utils import get_cert_paths
@@ -1070,7 +1070,7 @@ def api_person(person_id):
                 'updated_at': p.updated_at or '',
                 'education': {
                     'school_name': edu.school_name,
-                    'grade': edu.grade,
+                    'grade': GRADE_DISPLAY.get(edu.grade, edu.grade) if edu.grade else '',
                     'class_name': edu.class_name,
                     'guardian': edu.guardian,
                     'guardian_phone': edu.guardian_phone,
@@ -1915,6 +1915,10 @@ def api_save_education(person_id):
         school = data.get('school_name', '').strip()
         grade = data.get('grade', '')
         class_name = data.get('class_name', '').strip()
+
+        # 将中文年级名称转换为代码（如果需要）
+        if grade and grade in GRADE_CODE_MAP:
+            grade = GRADE_CODE_MAP[grade]
 
         if not school and not grade and not class_name:
             if edu:

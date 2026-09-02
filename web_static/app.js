@@ -293,53 +293,21 @@ function editPerson() {
             }
 
             // 就读信息
-            const hasEducation = data.education && (data.education.school_name || data.education.grade || data.education.class_name);
-            document.getElementById('editHasEducation').value = hasEducation ? '是' : '否';
-            toggleEducationFields();
-            if (hasEducation) {
-                document.getElementById('editEduSchool').value = data.education.school_name || '';
-                document.getElementById('editEduClass').value = data.education.class_name || '';
-                document.getElementById('editEduGuardian').value = data.education.guardian || '';
-                document.getElementById('editEduGuardianPhone').value = data.education.guardian_phone || '';
-                document.getElementById('editEduLeftBehind').value = data.education.is_left_behind || '';
-                document.getElementById('editEduStatus').value = data.education.student_status || '';
-                document.getElementById('editEduEnrollDate').value = data.education.enrollment_date || '';
-                document.getElementById('editEduGradDate').value = data.education.graduation_date || '';
-                setTimeout(() => { document.getElementById('editEduGrade').value = data.education.grade || ''; }, 0);
-            } else {
-                document.getElementById('editEduSchool').value = '';
-                document.getElementById('editEduGrade').value = '';
-                document.getElementById('editEduClass').value = '';
-                document.getElementById('editEduGuardian').value = '';
-                document.getElementById('editEduGuardianPhone').value = '';
-                document.getElementById('editEduLeftBehind').value = '';
-                document.getElementById('editEduStatus').value = '';
-                document.getElementById('editEduEnrollDate').value = '';
-                document.getElementById('editEduGradDate').value = '';
-            }
+            document.getElementById('editEduSchool').value = data.education?.school_name || '';
+            document.getElementById('editEduClass').value = data.education?.class_name || '';
+            document.getElementById('editEduGuardian').value = data.education?.guardian || '';
+            document.getElementById('editEduGuardianPhone').value = data.education?.guardian_phone || '';
+            document.getElementById('editEduLeftBehind').value = data.education?.is_left_behind || '';
+            document.getElementById('editEduStatus').value = data.education?.student_status || '';
+            document.getElementById('editEduEnrollDate').value = data.education?.enrollment_date || '';
+            document.getElementById('editEduGradDate').value = data.education?.graduation_date || '';
+            document.getElementById('editEduGrade').value = data.education?.grade || '';
 
+            // 添加年级变化监听，自动计算入学和毕业日期
             const gradeSelect = document.getElementById('editEduGrade');
-            if (gradeSelect.options.length <= 1) {
-                const grades = [
-                    ['','请选择'],['T1','托班'],
-                    ['K1','幼儿园小班'],['K2','幼儿园中班'],['K3','幼儿园大班'],
-                    ['G1','小学1年级'],['G2','小学2年级'],['G3','小学3年级'],['G4','小学4年级'],['G5','小学5年级'],['G6','小学6年级'],
-                    ['G7','初中1年级'],['G8','初中2年级'],['G9','初中3年级'],
-                    ['G10','高中1年级'],['G11','高中2年级'],['G12','高中3年级'],
-                    ['V1','职高1年级'],['V2','职高2年级'],['V3','职高3年级'],
-                    ['C1','中专1年级'],['C2','中专2年级'],['C3','中专3年级'],
-                    ['U1','大学1年级'],['U2','大学2年级'],['U3','大学3年级'],['U4','大学4年级'],['U5','大学5年级'],
-                    ['M1','硕士1年级'],['M2','硕士2年级'],['M3','硕士3年级'],
-                    ['D1','博士1年级'],['D2','博士2年级'],['D3','博士3年级'],['D4','博士4年级'],
-                    ['GRADUATED','已毕业']
-                ];
-                grades.forEach(([code, label]) => {
-                    const opt = document.createElement('option');
-                    opt.value = code;
-                    opt.textContent = label;
-                    gradeSelect.appendChild(opt);
-                });
-            }
+            gradeSelect.onchange = function() {
+                calculateEnrollmentAndGraduation();
+            };
 
             document.getElementById('editModal').style.display = 'flex';
         });
@@ -362,9 +330,47 @@ function toggleTekunDetail() {
     }
 }
 
-function toggleEducationFields() {
-    const val = document.getElementById('editHasEducation').value;
-    document.getElementById('educationFields').style.display = val === '是' ? 'block' : 'none';
+function calculateEnrollmentAndGraduation() {
+    const grade = document.getElementById('editEduGrade').value;
+    if (!grade) return;
+
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1;
+
+    const gradeToYears = {
+        '一年级': 6, '二年级': 5, '三年级': 4, '四年级': 3, '五年级': 2, '六年级': 1,
+        '七年级': 3, '八年级': 2, '九年级': 1,
+        '高一': 3, '高二': 2, '高三': 1,
+    };
+
+    const gradeToOffset = {
+        '一年级': 0, '二年级': 1, '三年级': 2, '四年级': 3, '五年级': 4, '六年级': 5,
+        '七年级': 0, '八年级': 1, '九年级': 2,
+        '高一': 0, '高二': 1, '高三': 2,
+    };
+
+    const offset = gradeToOffset[grade] ?? 0;
+    const totalYears = gradeToYears[grade] ?? 0;
+
+    let enrollmentYear;
+    if (currentMonth >= 9) {
+        enrollmentYear = currentYear - offset;
+    } else {
+        enrollmentYear = currentYear - offset - 1;
+    }
+
+    const enrollDateField = document.getElementById('editEduEnrollDate');
+    const gradDateField = document.getElementById('editEduGradDate');
+
+    if (!enrollDateField.value) {
+        enrollDateField.value = `${enrollmentYear}-09`;
+    }
+
+    if (!gradDateField.value && totalYears > 0) {
+        const gradYear = enrollmentYear + totalYears;
+        gradDateField.value = `${gradYear}-06`;
+    }
 }
 
 function closeEdit() {
@@ -435,21 +441,25 @@ document.getElementById('editForm').onsubmit = function(e) {
         if (result && result.success) {
             currentPersonUpdatedAt = result.updated_at || '';
 
-            const hasEdu = document.getElementById('editHasEducation').value === '是';
-            const eduPromise = hasEdu ? fetch(`/api/person/${id}/education`, {
+            // 检查是否有就读信息需要保存
+            const schoolName = document.getElementById('editEduSchool').value.trim();
+            const grade = document.getElementById('editEduGrade').value;
+            const hasEducation = schoolName || grade;
+
+            const eduPromise = hasEducation ? fetch(`/api/person/${id}/education`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${authToken}`
                 },
                 body: JSON.stringify({
-                    school_name: document.getElementById('editEduSchool').value.trim(),
-                    grade: document.getElementById('editEduGrade').value,
+                    school_name: schoolName,
+                    grade: grade,
                     class_name: document.getElementById('editEduClass').value.trim(),
                     guardian: document.getElementById('editEduGuardian').value.trim(),
                     guardian_phone: document.getElementById('editEduGuardianPhone').value.trim(),
-                    is_left_behind: document.getElementById('editEduLeftBehind').value,
-                    student_status: document.getElementById('editEduStatus').value,
+                    is_left_behind: document.getElementById('editEduLeftBehind').value || '否',
+                    student_status: document.getElementById('editEduStatus').value || '在读',
                     enrollment_date: document.getElementById('editEduEnrollDate').value,
                     graduation_date: document.getElementById('editEduGradDate').value
                 })
@@ -519,7 +529,6 @@ document.getElementById('searchInput').addEventListener('keypress', function(e) 
 
 document.getElementById('editDisability').addEventListener('change', toggleDisabilityDetail);
 document.getElementById('editTekun').addEventListener('change', toggleTekunDetail);
-document.getElementById('editHasEducation').addEventListener('change', toggleEducationFields);
 
 window.onload = function() {
     fetch('/api/status').then(r => r.json()).then(data => {

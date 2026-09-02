@@ -130,6 +130,9 @@ GRADE_DISPLAY = {
     "GRADUATED": "已毕业"
 }
 
+# 反向映射：中文年级名称 -> 代码
+GRADE_CODE_MAP = {v: k for k, v in GRADE_DISPLAY.items()}
+
 GRADE_PROMOTION_MAP = {
     "T1": "K1",
     "K1": "K2", "K2": "K3", "K3": "G1",

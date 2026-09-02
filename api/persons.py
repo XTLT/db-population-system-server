@@ -13,7 +13,7 @@ from database import (
 from utils.security import require_auth, check_id_card_rate_limit
 from utils.response import safe_error, safe_exception, get_json_data
 from utils import calculate_age, escape_like, validate_id_card, validate_phone
-from config import GRADE_DISPLAY, MAX_UPLOAD_SIZE
+from config import GRADE_DISPLAY, GRADE_CODE_MAP, MAX_UPLOAD_SIZE
 from excel_importer import get_person_subsidy_total
 
 
@@ -323,7 +323,7 @@ def api_person(person_id):
                 'updated_at': p.updated_at or '',
                 'education': {
                     'school_name': edu.school_name,
-                    'grade': edu.grade,
+                    'grade': GRADE_DISPLAY.get(edu.grade, edu.grade) if edu.grade else '',
                     'class_name': edu.class_name,
                     'guardian': edu.guardian,
                     'guardian_phone': edu.guardian_phone,
@@ -537,6 +537,10 @@ def api_save_education(person_id):
         school = data.get('school_name', '').strip()
         grade = data.get('grade', '')
         class_name = data.get('class_name', '').strip()
+
+        # 将中文年级名称转换为代码（如果需要）
+        if grade and grade in GRADE_CODE_MAP:
+            grade = GRADE_CODE_MAP[grade]
 
         if not school and not grade and not class_name:
             if edu:
