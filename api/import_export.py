@@ -131,8 +131,8 @@ def export_excel():
         password: 用户密码
         filters: 筛选条件（可选）
     """
-    import hashlib
     from database import User
+    from utils.security import verify_password
     
     if request.current_user.get('role') not in ['admin', 'user']:
         return jsonify({'error': '权限不足'}), 403
@@ -150,14 +150,9 @@ def export_excel():
         if not user:
             return jsonify({'error': '用户不存在'}), 404
         
-        salt, stored_hash = user.password_hash.split(":")
-        
-        password_sha256 = hashlib.sha256(password.encode()).hexdigest()
-        new_hash = hashlib.sha256((salt + password_sha256).encode()).hexdigest()
-        if new_hash != stored_hash:
-            old_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-            if old_hash != stored_hash:
-                return jsonify({'error': '密码错误'}), 401
+        is_valid, _ = verify_password(password, user.password_hash)
+        if not is_valid:
+            return jsonify({'error': '密码错误'}), 401
     finally:
         session.close()
     

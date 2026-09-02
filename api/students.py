@@ -435,6 +435,8 @@ def export_students():
     if not password:
         return jsonify({'error': '导出敏感数据需要验证密码'}), 401
     
+    from utils.security import verify_password
+    
     user_id = request.current_user['id']
     session = get_session()
     try:
@@ -442,9 +444,8 @@ def export_students():
         if not user:
             return jsonify({'error': '用户不存在'}), 404
         
-        salt, stored_hash = user.password_hash.split(":")
-        password_hash = hashlib.sha256((salt + password).encode()).hexdigest()
-        if password_hash != stored_hash:
+        is_valid, _ = verify_password(password, user.password_hash)
+        if not is_valid:
             return jsonify({'error': '密码错误'}), 401
     finally:
         session.close()
