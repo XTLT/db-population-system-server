@@ -54,7 +54,7 @@ def import_dibao_payment():
 @bp.route('/dibao_payment')
 @require_auth
 def list_dibao_payments():
-    if request.current_user.get('role') != 'admin':
+    if request.current_user.get('role') not in ['admin', 'user']:
         return jsonify({'error': '权限不足'}), 403
 
     period = request.args.get('period', '')

@@ -53,7 +53,7 @@ def import_pension_insurance():
 @bp.route('/pension_insurance')
 @require_auth
 def list_pension_insurance():
-    if request.current_user.get('role') != 'admin':
+    if request.current_user.get('role') not in ['admin', 'user']:
         return jsonify({'error': '权限不足'}), 403
     
     period = request.args.get('period', '')

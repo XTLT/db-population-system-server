@@ -1153,7 +1153,7 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None, period: s
     2. 通用格式：包含姓名/人员姓名、身份证号、金额/家庭保障总金额
     
     只导入身份证号在数据库中存在的人员
-    period: 手动指定费款所属期（Excel无此列时使用）
+    period: 用户指定的费款所属期，Excel中无费款所属期列时使用
     """
     from database import get_session, DibaoPayment, Person
 
@@ -1261,13 +1261,13 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None, period: s
 
 def import_tekun_payment_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
     """导入特困发放数据
-
+    
     支持两种Excel格式：
     1. 低保特困发放台账：包含救助类型列，只导入救助类型包含'特困'的记录
     2. 通用格式：包含姓名/人员姓名、身份证号、金额/家庭保障总金额
-
+    
     只导入身份证号在数据库中存在的人员
-    period: 手动指定费款所属期（Excel无此列时使用）
+    period: 用户指定的费款所属期，Excel中无费款所属期列时使用
     """
     from database import get_session, TekunPayment, Person
 
