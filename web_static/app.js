@@ -1765,9 +1765,11 @@ function closeDibaoImportModal() {
 function doDibaoImport() {
     const fileInput = document.getElementById('dibaoImportFile');
     if (!fileInput.files.length) { alert('请选择文件'); return; }
+    const period = document.getElementById('dibaoImportPeriod').value.trim();
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
+    if (period) formData.append('period', period);
 
     document.getElementById('dibaoImportProgress').style.display = 'block';
     document.getElementById('dibaoImportStatus').textContent = '正在导入...';
@@ -1896,9 +1898,11 @@ function closeTekunImportModal() {
 function doTekunImport() {
     const fileInput = document.getElementById('tekunImportFile');
     if (!fileInput.files.length) { alert('请选择文件'); return; }
+    const period = document.getElementById('tekunImportPeriod').value.trim();
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
+    if (period) formData.append('period', period);
 
     document.getElementById('tekunImportProgress').style.display = 'block';
     document.getElementById('tekunImportStatus').textContent = '正在导入...';

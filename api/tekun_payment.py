@@ -31,7 +31,8 @@ def import_tekun_payment():
     try:
         file.save(tmp_path)
         from excel_importer import import_tekun_payment_excel
-        result = import_tekun_payment_excel(tmp_path)
+        period = request.form.get('period', '').strip()
+        result = import_tekun_payment_excel(tmp_path, period=period)
 
         add_operation_log(
             request.current_user['id'],

@@ -1145,7 +1145,7 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None) -> di
     return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
 
 
-def import_dibao_payment_excel(file_path: str, progress_callback=None) -> dict:
+def import_dibao_payment_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
     """导入低保发放数据
     
     支持两种Excel格式：
@@ -1153,6 +1153,7 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None) -> dict:
     2. 通用格式：包含姓名/人员姓名、身份证号、金额/家庭保障总金额
     
     只导入身份证号在数据库中存在的人员
+    period: 手动指定费款所属期（Excel无此列时使用）
     """
     from database import get_session, DibaoPayment, Person
 
@@ -1229,7 +1230,7 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None) -> dict:
                     id_card=id_card,
                     town=safe_str(row.get("所属乡镇", "")),
                     village=safe_str(row.get("所属村", "")),
-                    period=safe_str(row.get("费款所属期", "")),
+                    period=safe_str(row.get("费款所属期", "")) or period,
                     payment_status=safe_str(row.get("支付标志", "")),
                     personal_code=safe_str(row.get("个人编号", "")),
                     bank_account=safe_str(row.get("银行账号", "")),
@@ -1258,14 +1259,15 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None) -> dict:
     return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
 
 
-def import_tekun_payment_excel(file_path: str, progress_callback=None) -> dict:
+def import_tekun_payment_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
     """导入特困发放数据
-    
+
     支持两种Excel格式：
     1. 低保特困发放台账：包含救助类型列，只导入救助类型包含'特困'的记录
     2. 通用格式：包含姓名/人员姓名、身份证号、金额/家庭保障总金额
-    
+
     只导入身份证号在数据库中存在的人员
+    period: 手动指定费款所属期（Excel无此列时使用）
     """
     from database import get_session, TekunPayment, Person
 
@@ -1342,7 +1344,7 @@ def import_tekun_payment_excel(file_path: str, progress_callback=None) -> dict:
                     id_card=id_card,
                     town=safe_str(row.get("所属乡镇", "")),
                     village=safe_str(row.get("所属村", "")),
-                    period=safe_str(row.get("费款所属期", "")),
+                    period=safe_str(row.get("费款所属期", "")) or period,
                     payment_status=safe_str(row.get("支付标志", "")),
                     personal_code=safe_str(row.get("个人编号", "")),
                     bank_account=safe_str(row.get("银行账号", "")),
