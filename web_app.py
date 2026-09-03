@@ -2839,6 +2839,7 @@ def api_backup_status():
     return jsonify(status)
 
 
+@app.route('/api/backup/list')
 @app.route('/api/backups')
 @require_auth
 def api_backup_list():

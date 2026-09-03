@@ -83,7 +83,7 @@ def api_backup_download():
     return jsonify({'error': '备份文件不存在'}), 404
 
 
-@bp.route('s')  # /api/backups
+@bp.route('/list')  # /api/backup/list
 @require_auth
 def api_backup_list():
     """获取备份列表（仅管理员）"""
