@@ -121,6 +121,12 @@ def create_app():
     def internal_error(error):
         return {'error': '服务器内部错误'}, 500
     
+    from database import init_db
+    init_db()
+
+    from api.auth import _ensure_default_admin
+    _ensure_default_admin()
+
     return app
 
 
@@ -128,12 +134,6 @@ app = create_app()
 
 
 if __name__ == '__main__':
-    from database import init_db
-    init_db()
-    
-    from api.auth import _ensure_default_admin
-    _ensure_default_admin()
-    
     port = int(os.getenv('PORT', 5000))
     
     from ssl_utils import generate_self_signed_cert
