@@ -367,7 +367,7 @@ def api_add_person():
 
     # 验证电话号码格式（如果提供）
     phone = data.get('phone', '')
-    if phone and phone != '无':
+    if phone:
         valid, msg = validate_phone(phone)
         if not valid:
             return jsonify({'error': f'电话号码: {msg}'}), 400
@@ -387,7 +387,7 @@ def api_add_person():
         age=calculate_age(id_card),
         address=data.get('address', ''),
         relation=data.get('relation', ''),
-        phone=data.get('phone', '无'),
+        phone=data.get('phone', ''),
         is_dead=data.get('is_dead', '否'),
         land_area=data.get('land_area', ''),
         social_card1=data.get('social_card1', ''),

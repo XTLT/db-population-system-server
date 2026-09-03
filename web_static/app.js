@@ -399,16 +399,16 @@ document.getElementById('editForm').onsubmit = function(e) {
     const data = {
         name: document.getElementById('editName').value,
         relation: document.getElementById('editRelation').value,
-        phone: document.getElementById('editPhone').value || '无',
+        phone: document.getElementById('editPhone').value,
         address: document.getElementById('editAddress').value || '',
         is_dead: document.getElementById('editIsDead').value || '否',
-        remark: document.getElementById('editRemark').value || '',
-        poor_type: document.getElementById('editPoorType').value || '无',
-        disability: disabilityVal || '无',
-        disability_type: disabilityVal === '是' ? (document.getElementById('editDisabilityType').value || '无') : '无',
-        dis_level: disabilityVal === '是' ? (document.getElementById('editDisLevel').value || '无') : '无',
-        dibao: document.getElementById('editDibao').value || '无',
-        jisheng: document.getElementById('editJisheng').value || '无',
+        remark: document.getElementById('editRemark').value,
+        poor_type: document.getElementById('editPoorType').value,
+        disability: disabilityVal,
+        disability_type: disabilityVal === '是' ? document.getElementById('editDisabilityType').value : '',
+        dis_level: disabilityVal === '是' ? document.getElementById('editDisLevel').value : '',
+        dibao: document.getElementById('editDibao').value,
+        jisheng: document.getElementById('editJisheng').value,
         tekun: tekunVal,
         tekun_type: tekunVal === '是' ? document.getElementById('editTekunType').value : '',
         social_card1: document.getElementById('editSocial1').value,
@@ -1277,7 +1277,7 @@ document.getElementById('addPersonForm').onsubmit = function(e) {
         id_card: document.getElementById('addPersonIdCard').value.trim(),
         relation: document.getElementById('addPersonRelation').value.trim(),
         address: document.getElementById('addPersonAddress').value.trim(),
-        phone: document.getElementById('addPersonPhone').value.trim() || '无',
+        phone: document.getElementById('addPersonPhone').value.trim(),
         land_area: document.getElementById('addPersonLandArea').value.trim()
     };
     if (!data.name || !data.id_card) {

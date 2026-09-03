@@ -1107,7 +1107,7 @@ def api_add_person():
         age=calculate_age(data['id_card']),
         address=data.get('address', ''),
         relation=data.get('relation', ''),
-        phone=data.get('phone', '无'),
+        phone=data.get('phone', ''),
         is_dead=data.get('is_dead', '否'),
         land_area=data.get('land_area', ''),
         social_card1=data.get('social_card1', ''),

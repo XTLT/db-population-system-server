@@ -201,7 +201,7 @@ def calculate_enrollment_date(grade: str, birth_date_str: str = None) -> str:
 
 
 def validate_phone(phone: str) -> tuple[bool, str]:
-    if not phone or phone == "无":
+    if not phone:
         return True, ""
     
     phone = phone.strip()
