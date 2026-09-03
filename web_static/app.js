@@ -1501,10 +1501,13 @@ function closeTreatmentImportModal() {
 
 function doTreatmentImport() {
     const fileInput = document.getElementById('treatmentImportFile');
+    const periodInput = document.getElementById('treatmentImportPeriod');
     if (!fileInput.files.length) { alert('请选择文件'); return; }
+    if (!periodInput.value.trim()) { alert('请输入费款所属期'); return; }
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
+    formData.append('period', periodInput.value.trim());
 
     document.getElementById('treatmentImportProgress').style.display = 'block';
     document.getElementById('treatmentImportStatus').textContent = '正在导入...';
@@ -1636,10 +1639,13 @@ function closePensionImportModal() {
 
 function doPensionImport() {
     const fileInput = document.getElementById('pensionImportFile');
+    const periodInput = document.getElementById('pensionImportPeriod');
     if (!fileInput.files.length) { alert('请选择文件'); return; }
+    if (!periodInput.value.trim()) { alert('请输入费款所属期'); return; }
 
     const formData = new FormData();
     formData.append('file', fileInput.files[0]);
+    formData.append('period', periodInput.value.trim());
 
     document.getElementById('pensionImportProgress').style.display = 'block';
     document.getElementById('pensionImportStatus').textContent = '正在导入...';

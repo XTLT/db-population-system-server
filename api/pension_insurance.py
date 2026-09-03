@@ -31,7 +31,8 @@ def import_pension_insurance():
     try:
         file.save(tmp_path)
         from excel_importer import import_pension_insurance_excel
-        result = import_pension_insurance_excel(tmp_path)
+        period = request.form.get('period', '').strip()
+        result = import_pension_insurance_excel(tmp_path, period=period)
         
         add_operation_log(
             request.current_user['id'],

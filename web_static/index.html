@@ -843,6 +843,10 @@
             <div class="modal-content">
                 <h2>导入待遇发放数据</h2>
                 <div class="form-group">
+                    <label>费款所属期（如202606）：</label>
+                    <input type="text" id="treatmentImportPeriod" placeholder="如202606" style="padding:6px 12px;font-size:13px;width:140px;" required>
+                </div>
+                <div class="form-group">
                     <label>选择文件：</label>
                     <input type="file" id="treatmentImportFile" accept=".xlsx,.xls">
                 </div>
@@ -893,6 +897,10 @@
         <div id="pensionImportModal" class="modal" style="display:none;">
             <div class="modal-content">
                 <h2>导入养老保险数据</h2>
+                <div class="form-group">
+                    <label>费款所属期（如202606）：</label>
+                    <input type="text" id="pensionImportPeriod" placeholder="如202606" style="padding:6px 12px;font-size:13px;width:140px;" required>
+                </div>
                 <div class="form-group">
                     <label>选择文件：</label>
                     <input type="file" id="pensionImportFile" accept=".xlsx,.xls">

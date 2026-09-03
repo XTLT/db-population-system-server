@@ -36,7 +36,7 @@ def backup_database():
 
 def import_student_education(file_path: str, mode: str = "incremental", progress_callback=None) -> dict:
     backup_database()
-    df = _read_excel_robust(file_path)
+    df = _read_excel_robust(file_path, header=0)
     df = df.fillna("")
     total = len(df)
     imported = 0

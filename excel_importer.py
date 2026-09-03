@@ -304,7 +304,7 @@ def _decrypt_backup(backup_dir: str, password: str):
 
 def import_excel_full(file_path: str, progress_callback=None) -> dict:
     backup_database()
-    df = _read_excel_robust(file_path)
+    df = _read_excel_robust(file_path, header=0)
     df = df.fillna("")
     total = len(df)
     imported = 0
@@ -335,7 +335,7 @@ def import_excel_full(file_path: str, progress_callback=None) -> dict:
 
 def import_excel_incremental(file_path: str, progress_callback=None) -> dict:
     backup_database()
-    df = _read_excel_robust(file_path)
+    df = _read_excel_robust(file_path, header=0)
     df = df.fillna("")
     total = len(df)
     imported = 0
@@ -749,7 +749,7 @@ def get_year_subsidy_totals() -> dict:
         session.close()
 
 
-def import_treatment_payment(file_path: str, progress_callback=None) -> dict:
+def import_treatment_payment(file_path: str, progress_callback=None, period: str = "") -> dict:
     """导入待遇发放数据，支持三种表格格式：
     1. 待遇发放成功信息表：包含所属乡镇、所属村、费款所属期、支付标志、个人编号、公民身份证号码、姓名、银行账号、金额、失败原因
     2. 待遇支付信息表：包含所属乡镇、所属村、费款所属期、姓名、公民身份证号码、银行账号、金额、支付标志
@@ -831,7 +831,7 @@ def import_treatment_payment(file_path: str, progress_callback=None) -> dict:
                 # 根据表格类型提取其他字段
                 town = safe_str(row.get("所属乡镇", ""))
                 village = safe_str(row.get("所属村", ""))
-                period = safe_str(row.get("费款所属期", ""))
+                row_period = safe_str(row.get("费款所属期", "")) or period
                 payment_status = safe_str(row.get("支付标志", ""))
                 personal_code = safe_str(row.get("个人编号", ""))
                 bank_account = safe_str(row.get("银行账号", ""))
@@ -845,7 +845,7 @@ def import_treatment_payment(file_path: str, progress_callback=None) -> dict:
                     id_card=id_card,
                     town=town,
                     village=village,
-                    period=period,
+                    period=row_period,
                     payment_status=payment_status,
                     personal_code=personal_code,
                     bank_account=bank_account,
@@ -910,9 +910,9 @@ def delete_treatment_payment(payment_id: str):
 
 
 # API 别名函数
-def import_treatment_payment_excel(file_path: str, progress_callback=None) -> dict:
+def import_treatment_payment_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
     """导入待遇发放数据 - API 别名"""
-    return import_treatment_payment(file_path, progress_callback)
+    return import_treatment_payment(file_path, progress_callback, period=period)
 
 
 def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_callback=None) -> dict:
@@ -1046,7 +1046,7 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
     return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
 
 
-def import_pension_insurance_excel(file_path: str, progress_callback=None) -> dict:
+def import_pension_insurance_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
     """导入养老保险数据
     
     只导入身份证号在数据库中存在的人员
@@ -1054,6 +1054,7 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None) -> di
     Args:
         file_path: Excel 文件路径
         progress_callback: 进度回调函数
+        period: 费款所属期（如Excel中无此列则使用此值）
     
     Returns:
         导入结果字典
@@ -1116,7 +1117,7 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None) -> di
                     id_card=id_card,
                     town=safe_str(row.get("所属乡镇", "")),
                     village=safe_str(row.get("所属村", "")),
-                    period=safe_str(row.get("费款所属期", "")),
+                    period=safe_str(row.get("费款所属期", "")) or period,
                     payment_status=safe_str(row.get("支付标志", "")),
                     personal_code=safe_str(row.get("个人编号", "")),
                     person_id=safe_str(row.get("享受定期待遇人员ID", "")),
