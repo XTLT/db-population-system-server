@@ -46,30 +46,3 @@ def get_cert_paths():
     cert_file = os.path.join(CERT_DIR, "server.crt")
     key_file = os.path.join(CERT_DIR, "server.key")
     return cert_file, key_file
-
-
-def get_certificate_pem() -> str:
-    """获取证书 PEM 内容（用于客户端证书固定）"""
-    cert_file = os.path.join(CERT_DIR, "server.crt")
-    if os.path.exists(cert_file):
-        with open(cert_file, 'r') as f:
-            return f.read()
-    return ""
-
-
-def get_certificate_fingerprint() -> str:
-    """获取证书 SHA256 指纹（用于客户端验证）"""
-    cert_file = os.path.join(CERT_DIR, "server.crt")
-    if not os.path.exists(cert_file):
-        return ""
-    
-    try:
-        result = subprocess.run(
-            ["openssl", "x509", "-in", cert_file, "-noout", "-fingerprint", "-sha256"],
-            capture_output=True, text=True
-        )
-        # 输出格式: SHA256 Fingerprint=XX:XX:XX:...
-        fingerprint = result.stdout.strip().split('=')[1] if '=' in result.stdout else ""
-        return fingerprint.replace(':', '').lower()
-    except Exception:
-        return ""

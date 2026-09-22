@@ -41,16 +41,6 @@ def get_db_password() -> str:
     return ""
 
 
-def clear_db_password():
-    global _db_password
-    _db_password = None
-    try:
-        import keyring
-        keyring.delete_password(SERVICE_NAME, "db_password")
-    except Exception as e:
-        logger.warning(f"无法从系统密钥环删除密码: {e}")
-
-
 def _derive_key(password: str, salt: bytes) -> bytes:
     return hashlib.pbkdf2_hmac('sha256', password.encode(), salt, 310000)
 
@@ -932,14 +922,6 @@ def get_family_members(hu_hao: str) -> list[Person]:
         session.close()
 
 
-def get_person_by_id(person_id: str) -> Person | None:
-    session = get_session()
-    try:
-        return session.query(Person).filter(Person.id == person_id).first()
-    finally:
-        session.close()
-
-
 def add_person(person: Person):
     session = get_session()
     try:
@@ -966,19 +948,6 @@ def update_person(person: Person):
         session.close()
 
 
-def get_all_persons(limit: int = None, offset: int = None) -> list[Person]:
-    session = get_session()
-    try:
-        query = session.query(Person)
-        if limit is not None:
-            query = query.limit(limit)
-        if offset is not None:
-            query = query.offset(offset)
-        return query.all()
-    finally:
-        session.close()
-
-
 def get_person_count() -> int:
     session = get_session()
     try:
@@ -994,21 +963,6 @@ def check_duplicate_id_card(hu_hao: str, id_card: str, exclude_id: str = None) -
         if exclude_id:
             q = q.filter(Person.id != exclude_id)
         return q.first() is not None
-    finally:
-        session.close()
-
-
-def update_all_ages():
-    from utils import calculate_age
-    session = get_session()
-    try:
-        persons = session.query(Person).all()
-        for p in persons:
-            p.age = calculate_age(p.id_card)
-        session.commit()
-    except Exception:
-        session.rollback()
-        raise
     finally:
         session.close()
 
@@ -1266,28 +1220,10 @@ def get_report_logs(report_id: str) -> list:
         session.close()
 
 
-def get_all_report_logs(limit: int = 200) -> list:
-    session = get_session()
-    try:
-        return session.query(ReportOperationLog).order_by(
-            ReportOperationLog.created_at.desc()
-        ).limit(limit).all()
-    finally:
-        session.close()
-
-
 def get_student_education(person_id: str) -> 'StudentEducation | None':
     session = get_session()
     try:
         return session.query(StudentEducation).filter(StudentEducation.person_id == person_id).first()
-    finally:
-        session.close()
-
-
-def get_student_education_by_id_card(id_card: str) -> 'StudentEducation | None':
-    session = get_session()
-    try:
-        return session.query(StudentEducation).filter(StudentEducation.id_card == id_card).first()
     finally:
         session.close()
 
@@ -1299,6 +1235,27 @@ def save_student_education(education: StudentEducation):
             StudentEducation.person_id == education.person_id
         ).first()
         if existing:
+            changed = (
+                existing.school_name != education.school_name or
+                existing.grade != education.grade or
+                existing.class_name != education.class_name or
+                existing.student_status != education.student_status
+            )
+            if changed:
+                from datetime import datetime
+                import uuid
+                history = EducationHistory(
+                    id=str(uuid.uuid4()),
+                    person_id=education.person_id,
+                    id_card=existing.id_card,
+                    school_name=existing.school_name,
+                    grade=existing.grade,
+                    class_name=existing.class_name,
+                    student_status=existing.student_status,
+                    change_date=datetime.now().strftime("%Y-%m-%d"),
+                    change_reason="编辑更新"
+                )
+                session.add(history)
             existing.school_name = education.school_name
             existing.grade = education.grade
             existing.class_name = education.class_name
@@ -1324,18 +1281,6 @@ def delete_student_education(person_id: str):
         if edu:
             session.delete(edu)
             session.commit()
-    except Exception:
-        session.rollback()
-        raise
-    finally:
-        session.close()
-
-
-def add_education_history(history: EducationHistory):
-    session = get_session()
-    try:
-        session.add(history)
-        session.commit()
     except Exception:
         session.rollback()
         raise

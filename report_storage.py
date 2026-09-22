@@ -120,11 +120,6 @@ def list_all_reports() -> list:
     return reports
 
 
-def get_user_reports(username: str) -> list:
-    all_reports = list_all_reports()
-    return [r for r in all_reports if r.get("username") == username]
-
-
 def find_report_by_id(report_id: str) -> dict | None:
     all_reports = list_all_reports()
     for r in all_reports:

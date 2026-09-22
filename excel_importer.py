@@ -724,25 +724,6 @@ def get_person_subsidy_total(id_card: str, subsidy_year: str = None) -> str:
         session.close()
 
 
-def get_year_subsidy_totals() -> dict:
-
-    session = get_session()
-    try:
-        subsidies = session.query(LandSubsidy).all()
-        totals = {}
-        for s in subsidies:
-            year = s.year or "未知"
-            if year not in totals:
-                totals[year] = 0.0
-            try:
-                totals[year] += float(s.total_amount)
-            except (ValueError, TypeError):
-                pass
-        return totals
-    finally:
-        session.close()
-
-
 def import_treatment_payment(file_path: str, progress_callback=None, period: str = "") -> dict:
     """导入待遇发放数据，支持三种表格格式：
     1. 待遇发放成功信息表：包含所属乡镇、所属村、费款所属期、支付标志、个人编号、公民身份证号码、姓名、银行账号、金额、失败原因
