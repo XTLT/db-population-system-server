@@ -119,7 +119,7 @@ def safe_str(val) -> str:
     return str(val)
 
 
-def calculate_enrollment_date(grade: str, birth_date_str: str = None) -> str:
+def calculate_enrollment_date(grade: str, _birth_date_str: str = None) -> str:
     """计算入学日期"""
     from config import GRADE_DISPLAY
     

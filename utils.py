@@ -161,7 +161,7 @@ def safe_str(val) -> str:
     return str(val).strip()
 
 
-def calculate_enrollment_date(grade: str, birth_date_str: str = None) -> str:
+def calculate_enrollment_date(grade: str, _birth_date_str: str = None) -> str:
     today = date.today()
     current_year = today.year
 
