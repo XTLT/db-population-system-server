@@ -1,7 +1,6 @@
 import os
 import shutil
 import subprocess
-from PIL import Image
 
 from config import PHOTOS_DIR, PHOTO_EXTENSIONS
 

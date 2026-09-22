@@ -8,7 +8,7 @@ from utils.security import (
     create_token, remove_token, require_auth,
     DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD, hash_password, verify_password
 )
-from utils.response import safe_error, get_json_data, safe_exception
+from utils.response import get_json_data, safe_exception
 from utils import validate_username, validate_real_name
 from config import TOKEN_EXPIRY_HOURS, LOGIN_LOCK_MINUTES
 from database import validate_password, create_user, get_all_users
@@ -35,7 +35,7 @@ def _ensure_default_admin():
             )
             session.add(user)
             session.commit()
-    except Exception as e:
+    except Exception:
         session.rollback()
     finally:
         session.close()
@@ -268,7 +268,7 @@ def api_change_password():
             return jsonify({'error': '用户不存在'}), 404
         
         # 验证旧密码
-        is_valid, needs_rehash = verify_password(old_password, user.password_hash)
+        is_valid, _ = verify_password(old_password, user.password_hash)
         if not is_valid:
             return jsonify({'error': '原密码错误'}), 400
         

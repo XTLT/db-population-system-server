@@ -5,7 +5,7 @@ from database import (
     mark_notification_read, get_unread_count
 )
 from utils.security import require_auth
-from utils.response import safe_error, get_json_data
+from utils.response import get_json_data
 
 
 bp = Blueprint('notifications', __name__)

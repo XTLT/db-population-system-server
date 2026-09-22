@@ -8,7 +8,6 @@ from database import (
     get_person_trend_data, get_person_distribution, get_person_comparison
 )
 from utils.security import require_auth
-from utils.response import get_json_data, safe_error
 from config import GRADE_DISPLAY
 
 
@@ -36,7 +35,7 @@ def api_statistics():
         poor_type_distribution = {}
         poor_type_person_count = {}
         
-        from sqlalchemy import case, literal_column
+        from sqlalchemy import case
         
         hu_hao_poor_types = session.query(
             Person.hu_hao,
@@ -246,9 +245,7 @@ def api_statistics_comparison():
     
     if not dimensions:
         dimensions = ['age', 'disability', 'dibao', 'migration', 'student']
-    
-    valid_dims = ['age', 'disability', 'dibao', 'migration', 'death', 'student', 'gender_male', 'gender_female']
-    
+
     try:
         data = get_person_comparison(dimensions)
         return jsonify(data)

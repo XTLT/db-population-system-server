@@ -11,9 +11,9 @@ from database import (
     add_operation_log
 )
 from utils.security import require_auth, check_id_card_rate_limit
-from utils.response import safe_error, safe_exception, get_json_data
+from utils.response import safe_exception, get_json_data
 from utils import calculate_age, escape_like, validate_id_card, validate_phone
-from config import GRADE_DISPLAY, GRADE_CODE_MAP, MAX_UPLOAD_SIZE
+from config import GRADE_DISPLAY, GRADE_CODE_MAP
 from excel_importer import get_person_subsidy_total
 
 
@@ -531,7 +531,7 @@ def api_save_education(person_id):
         if error:
             return error
 
-        from database import save_student_education, delete_student_education
+        from database import delete_student_education
         edu = session.query(StudentEducation).filter(StudentEducation.person_id == p.id).first()
 
         school = data.get('school_name', '').strip()

@@ -68,7 +68,6 @@ proc_name = 'population-api'
 # 当工作进程退出时的行为
 def on_exit(server):
     """服务退出时的清理工作"""
-    pass
 
 def when_ready(server):
     """服务就绪时的初始化工作"""
@@ -76,8 +75,6 @@ def when_ready(server):
 
 def pre_fork(server, worker):
     """Fork 前的准备工作"""
-    pass
 
 def post_fork(server, worker):
     """Fork 后的清理工作"""
-    pass

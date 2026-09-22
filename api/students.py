@@ -1,7 +1,5 @@
 import secrets
-from datetime import datetime
 from flask import Blueprint, request, jsonify
-from sqlalchemy import func
 
 from utils.security import require_auth
 from utils.response import get_json_data, safe_error
@@ -379,7 +377,6 @@ def batch_update_students():
 @require_auth
 def import_students():
     import os
-    import secrets
     
     if request.current_user.get('role') not in ['admin', 'user']:
         return jsonify({'error': '权限不足'}), 403
@@ -420,8 +417,6 @@ def import_students():
 @require_auth
 def export_students():
     import os
-    import secrets
-    import hashlib
     from flask import send_file
     from datetime import datetime
     from database import User
@@ -497,7 +492,6 @@ def promote_grades():
 @require_auth
 def download_student_template():
     import os
-    import secrets
     from flask import send_file
     from config import BASE_DIR
     

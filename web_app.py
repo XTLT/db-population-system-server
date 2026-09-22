@@ -2,16 +2,14 @@ import sys
 import os
 import json
 import secrets
-import functools
-import shutil
 from datetime import datetime, timedelta
 
 from flask import Flask, jsonify, request, send_from_directory, send_file
 from flask_cors import CORS
 from sqlalchemy import func
-from database import init_db, get_session, Person, StudentEducation, search_by_name, search_persons_advanced, get_family_members, get_person_count, update_person, add_person, delete_person, migrate_person, get_student_education, get_all_students, search_students, create_user, get_all_users, delete_user, User, OperationLog, add_operation_log, get_operation_logs, get_operation_types, get_operation_log_stats, validate_password, ReportOperationLog, add_report_log, get_report_logs, get_all_report_logs, create_notification, get_notifications, mark_notification_read, get_unread_count, get_person_trend_data, get_person_distribution, get_person_comparison, create_custom_report, get_custom_reports, get_custom_report, update_custom_report, delete_custom_report, generate_report_data
+from database import init_db, get_session, Person, StudentEducation, search_by_name, search_persons_advanced, get_family_members, get_person_count, update_person, add_person, delete_person, migrate_person, get_student_education, search_students, create_user, get_all_users, delete_user, User, add_operation_log, get_operation_logs, get_operation_types, get_operation_log_stats, validate_password, add_report_log, get_report_logs, create_notification, get_notifications, mark_notification_read, get_unread_count, get_person_trend_data, get_person_distribution, get_person_comparison, create_custom_report, get_custom_reports, get_custom_report, update_custom_report, delete_custom_report, generate_report_data
 from utils import calculate_age, find_existing_photo, get_photo_base_name, clean_filename
-from utils.security import create_token, get_token_data, remove_token, require_auth, hash_password, verify_password
+from utils.security import create_token, remove_token, require_auth, hash_password, verify_password
 from config import GRADE_DISPLAY, GRADE_CODE_MAP, TOKEN_EXPIRY_HOURS, PHOTO_EXTENSIONS, BASE_DIR, LOGIN_LOCK_MINUTES
 import config
 from update_checker import check_update, download_update, verify_file, update_local_version, apply_update
@@ -300,7 +298,7 @@ def _ensure_default_admin():
             )
             session.add(user)
             session.commit()
-    except Exception as e:
+    except Exception:
         session.rollback()
     finally:
         session.close()
@@ -1386,9 +1384,7 @@ def api_statistics_comparison():
     
     if not dimensions:
         dimensions = ['age', 'disability', 'dibao', 'migration', 'student']
-    
-    valid_dims = ['age', 'disability', 'dibao', 'migration', 'death', 'student', 'gender_male', 'gender_female']
-    
+
     try:
         data = get_person_comparison(dimensions)
         return jsonify(data)
@@ -1909,7 +1905,7 @@ def api_save_education(person_id):
         if error:
             return error
 
-        from database import StudentEducation, save_student_education, delete_student_education
+        from database import StudentEducation, delete_student_education
         edu = session.query(StudentEducation).filter(StudentEducation.person_id == p.id).first()
 
         school = data.get('school_name', '').strip()
@@ -2597,7 +2593,7 @@ def api_report_data(report_id):
 def api_report_save_data(report_id):
     user = request.current_user
     username = user.get('username', '')
-    from report_storage import find_report_by_id, update_report, append_report_log, get_report_dir
+    from report_storage import find_report_by_id, update_report, append_report_log
     report = find_report_by_id(report_id)
     
     has_perm, error_msg = check_report_permission(report, user)
@@ -2664,7 +2660,7 @@ def api_report_save_data(report_id):
 def api_report_import_ids(report_id):
     user = request.current_user
     username = user.get('username', '')
-    from report_storage import find_report_by_id, load_report, update_report, append_report_log, get_report_dir
+    from report_storage import find_report_by_id, load_report, update_report, append_report_log
     report = find_report_by_id(report_id)
     
     has_perm, error_msg = check_report_permission(report, user)
@@ -3704,7 +3700,7 @@ def api_change_password():
         if not user:
             return jsonify({'success': False, 'message': '用户不存在'}), 404
         
-        is_valid, needs_rehash = verify_password(old_password, user.password_hash)
+        is_valid, _ = verify_password(old_password, user.password_hash)
         if not is_valid:
             return jsonify({'success': False, 'message': '旧密码错误'}), 400
         
@@ -3911,7 +3907,7 @@ def api_delete_student(id_card):
 
 
 if __name__ == '__main__':
-    from database import is_database_encrypted, decrypt_database, encrypt_database, reset_engine, set_db_password, get_db_password, clear_db_password
+    from database import is_database_encrypted, decrypt_database, encrypt_database, reset_engine, set_db_password, get_db_password
     import atexit
 
     def _init_database():
@@ -3923,7 +3919,7 @@ if __name__ == '__main__':
                     return True
             if getattr(sys, 'frozen', False):
                 from PyQt6.QtWidgets import QApplication, QInputDialog, QLineEdit
-                _app = QApplication.instance() or QApplication(sys.argv)
+                QApplication.instance() or QApplication(sys.argv)
                 password, ok = QInputDialog.getText(
                     None, "数据库密码", "检测到加密数据库，请输入密码：",
                     QLineEdit.EchoMode.Password
@@ -4292,7 +4288,7 @@ if __name__ == '__main__':
                 cert_file, key_file = generate_self_signed_cert()
                 if cert_file and key_file:
                     use_https = True
-                    print(f"✓ 自签名证书生成成功")
+                    print("✓ 自签名证书生成成功")
                     print(f"  证书位置: {cert_file}")
                 else:
                     print("✗ 自签名证书生成失败")
@@ -4305,8 +4301,8 @@ if __name__ == '__main__':
                 sys.exit(1)
         
         if use_https:
-            print(f"\n✓ HTTPS已启用")
-            print(f"  访问地址: https://127.0.0.1:5000")
+            print("\n✓ HTTPS已启用")
+            print("  访问地址: https://127.0.0.1:5000")
             print(f"  证书文件: {cert_file}")
             print("\n⚠ 注意: 使用自签名证书，浏览器会提示不安全")
             print("  这是正常的，点击'继续访问'即可")
@@ -4317,7 +4313,7 @@ if __name__ == '__main__':
             print("\n" + "!" * 60)
             print("警告: 使用HTTP运行，所有数据明文传输！")
             print("!" * 60)
-            print(f"  访问地址: http://127.0.0.1:5000")
+            print("  访问地址: http://127.0.0.1:5000")
             print("\n强烈建议启用HTTPS以保护数据安全")
         
         print("=" * 60)

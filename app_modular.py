@@ -124,6 +124,9 @@ def create_app():
     from database import init_db
     init_db()
 
+    from utils.security import cleanup_expired_tokens
+    cleanup_expired_tokens()
+
     from api.auth import _ensure_default_admin
     _ensure_default_admin()
 

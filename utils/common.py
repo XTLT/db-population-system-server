@@ -133,7 +133,6 @@ def calculate_enrollment_date(grade: str, birth_date_str: str = None) -> str:
     
     # 假设一年级入学年龄为6岁
     current_year = datetime.now().year
-    current_grade = 0
     
     # 找到当前年级对应的最大年级
     max_grade_order = max(GRADE_DISPLAY.values())

@@ -21,9 +21,7 @@ import json
 import hashlib
 import subprocess
 import tempfile
-from typing import Optional, Dict, Tuple, List
-from datetime import datetime
-import ssl
+from typing import Optional, Dict, Tuple
 import urllib3
 import requests
 
@@ -167,7 +165,6 @@ def check_update(app_type: str = "desktop") -> Tuple[Optional[Dict], str]:
         (版本信息, 错误信息) - 如果有新版本返回版本信息，否则返回 (None, "")
     """
     config = load_local_config()
-    current_version = config.get("current_version", "1.0.0")
     current_code = config.get("version_code", 1)
     
     try:
@@ -194,10 +191,8 @@ def check_update(app_type: str = "desktop") -> Tuple[Optional[Dict], str]:
         
         # 根据应用类型获取对应的版本信息
         if app_type == "desktop":
-            latest_version = data.get("desktop_version", data.get("latest_version", "0.0.0"))
             latest_code = data.get("desktop_version_code", data.get("version_code", 0))
         else:
-            latest_version = data.get("server_version", data.get("latest_version", "0.0.0"))
             latest_code = data.get("server_version_code", data.get("version_code", 0))
         
         # 版本比较
@@ -282,7 +277,7 @@ def download_update(version_info: Dict, progress_callback=None) -> Tuple[Optiona
                     if not verify_file(filepath, checksum):
                         if os.path.exists(filepath):
                             os.remove(filepath)
-                        return None, f"文件校验失败：SHA256不匹配，可能被篡改"
+                        return None, "文件校验失败：SHA256不匹配，可能被篡改"
                     break
             
             # 验证 GPG 签名（如果提供）
@@ -313,7 +308,7 @@ def download_update(version_info: Dict, progress_callback=None) -> Tuple[Optiona
             
             return filepath, ""
             
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException:
             if os.path.exists(filepath):
                 os.remove(filepath)
             continue

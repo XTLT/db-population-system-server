@@ -7,8 +7,8 @@ import hashlib
 import secrets
 import json
 
-from config import DB_PATH, BACKUP_DIR, PHOTOS_DIR, EXCEL_TEMPLATE_COLUMNS, DB_FIELD_MAP
-from database import get_session, Person, get_person_count, get_db_password, _derive_key
+from config import DB_PATH, BACKUP_DIR, PHOTOS_DIR, EXCEL_TEMPLATE_COLUMNS
+from database import get_session, Person, get_db_password, _derive_key, LandSubsidy, TreatmentPayment, PensionInsurance, DibaoPayment, TekunPayment
 from utils import safe_str, calculate_age
 
 
@@ -539,8 +539,6 @@ def _update_person_from_row(person: Person, row):
 
 
 def import_land_subsidy(file_path: str, subsidy_year: str = "", progress_callback=None) -> dict:
-    from database import get_session, LandSubsidy
-    import secrets
 
     df = _read_excel_robust(file_path, header=None)
     df = df.fillna("")
@@ -679,7 +677,6 @@ def import_land_subsidy(file_path: str, subsidy_year: str = "", progress_callbac
 
 
 def get_all_land_subsidies(subsidy_year: str = None) -> list:
-    from database import get_session, LandSubsidy
 
     session = get_session()
     try:
@@ -692,7 +689,6 @@ def get_all_land_subsidies(subsidy_year: str = None) -> list:
 
 
 def delete_land_subsidy(subsidy_id: str):
-    from database import get_session, LandSubsidy
 
     session = get_session()
     try:
@@ -708,7 +704,6 @@ def delete_land_subsidy(subsidy_id: str):
 
 
 def get_person_subsidy_total(id_card: str, subsidy_year: str = None) -> str:
-    from database import get_session, LandSubsidy
 
     session = get_session()
     try:
@@ -730,7 +725,6 @@ def get_person_subsidy_total(id_card: str, subsidy_year: str = None) -> str:
 
 
 def get_year_subsidy_totals() -> dict:
-    from database import get_session, LandSubsidy
 
     session = get_session()
     try:
@@ -757,9 +751,6 @@ def import_treatment_payment(file_path: str, progress_callback=None, period: str
     
     只导入身份证号在数据库中存在的人员
     """
-    from database import get_session, TreatmentPayment, Person
-    import secrets
-    import os
 
     df = _read_excel_robust(file_path, header=0)
     df = df.fillna("")
@@ -768,10 +759,6 @@ def import_treatment_payment(file_path: str, progress_callback=None, period: str
     columns = list(df.columns)
     file_name = os.path.basename(file_path)
 
-    # 格式1：待遇发放成功信息（包含个人编号、享受定期待遇人员ID等）
-    has_format1 = "个人编号" in columns and "享受定期待遇人员ID" in columns
-    # 格式2：待遇支付信息（只有基本信息）
-    has_format2 = "所属乡镇" in columns and "费款所属期" in columns and "个人编号" not in columns
     # 格式3：低保特困发放台账
     has_format3 = "救助类型" in columns and "人员身份证号" in columns
 
@@ -876,7 +863,6 @@ def import_treatment_payment(file_path: str, progress_callback=None, period: str
 
 
 def get_all_treatment_payments(period: str = None, id_card: str = None, subsidy_type: str = None) -> list:
-    from database import get_session, TreatmentPayment
 
     session = get_session()
     try:
@@ -894,7 +880,6 @@ def get_all_treatment_payments(period: str = None, id_card: str = None, subsidy_
 
 
 def delete_treatment_payment(payment_id: str):
-    from database import get_session, TreatmentPayment
 
     session = get_session()
     try:
@@ -928,7 +913,6 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
     Returns:
         导入结果字典
     """
-    from database import get_session, LandSubsidy, Person
     
     df = _read_excel_robust(file_path, header=0)
     df = df.fillna("")
@@ -1059,7 +1043,6 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None, perio
     Returns:
         导入结果字典
     """
-    from database import get_session, PensionInsurance, Person
     
     df = _read_excel_robust(file_path, header=0)
     df = df.fillna("")
@@ -1156,7 +1139,6 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None, period: s
     只导入身份证号在数据库中存在的人员
     period: 用户指定的费款所属期，Excel中无费款所属期列时使用
     """
-    from database import get_session, DibaoPayment, Person
 
     df = _read_excel_robust(file_path, header=0)
     df = df.fillna("")
@@ -1270,7 +1252,6 @@ def import_tekun_payment_excel(file_path: str, progress_callback=None, period: s
     只导入身份证号在数据库中存在的人员
     period: 用户指定的费款所属期，Excel中无费款所属期列时使用
     """
-    from database import get_session, TekunPayment, Person
 
     df = _read_excel_robust(file_path, header=0)
     df = df.fillna("")

@@ -3,7 +3,6 @@ from flask import Blueprint, request, jsonify
 
 from database import get_operation_logs, get_operation_types, get_operation_log_stats
 from utils.security import require_auth
-from utils.response import safe_error
 
 
 bp = Blueprint('logs', __name__)

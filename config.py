@@ -1,6 +1,5 @@
 import os
 import sys
-import hashlib
 import base64
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes

@@ -2,12 +2,10 @@ import os
 import secrets
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_file
-from sqlalchemy import func
 
 from utils.security import require_auth
-from utils.response import safe_error
-from utils import escape_like, validate_year
-from database import get_session, TreatmentPayment, Person, add_operation_log
+from utils import escape_like
+from database import get_session, TreatmentPayment, add_operation_log
 from config import BASE_DIR
 
 bp = Blueprint('treatment_payment', __name__)

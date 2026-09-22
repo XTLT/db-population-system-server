@@ -4,7 +4,6 @@ from flask import Blueprint, request, jsonify, send_file
 
 from database import get_session, Person, add_operation_log
 from utils.security import require_auth
-from utils.response import safe_error, get_json_data
 from utils import find_existing_photo, get_photo_base_name, clean_filename
 from config import PHOTO_EXTENSIONS, BASE_DIR, MAX_UPLOAD_SIZE
 

@@ -2,10 +2,9 @@ import os
 import secrets
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_file
-from sqlalchemy import func, distinct
+from sqlalchemy import distinct
 
 from utils.security import require_auth
-from utils.response import safe_error
 from utils import escape_like
 from database import get_session, TekunPayment, add_operation_log
 from config import BASE_DIR

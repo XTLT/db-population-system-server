@@ -1,12 +1,9 @@
-import secrets
-import hashlib
-from datetime import datetime
 from flask import Blueprint, request, jsonify
 
-from database import get_session, User, create_user, delete_user, get_all_users, add_operation_log
-from utils.security import require_auth, hash_password, verify_password, DEFAULT_ADMIN_USERNAME
+from database import get_session, User, create_user, get_all_users, add_operation_log
+from utils.security import require_auth, hash_password, verify_password
 from utils.response import get_json_data, safe_exception
-from utils import validate_username, validate_real_name, validate_phone
+from utils import validate_username, validate_real_name
 from database import validate_password
 
 

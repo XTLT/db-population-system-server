@@ -569,8 +569,6 @@ def validate_password(password: str) -> tuple[bool, str]:
 
 
 def create_user(username: str, password: str, real_name: str = "", role: str = "user") -> User:
-    import hashlib
-    import secrets
     from datetime import datetime
     valid, msg = validate_password(password)
     if not valid:
@@ -603,7 +601,6 @@ def create_user(username: str, password: str, real_name: str = "", role: str = "
 
 
 def authenticate_user(username: str, password: str, ip_address: str = "", client_type: str = "") -> User | None:
-    import hashlib
     from datetime import datetime, timedelta
     session = get_session()
     try:
@@ -644,7 +641,6 @@ def authenticate_user(username: str, password: str, ip_address: str = "", client
 
 def add_operation_log(user_id: str, username: str, operation_type: str, operation_target: str = "", ip_address: str = "", client_type: str = "", is_high_risk: str = "否"):
     from datetime import datetime
-    import secrets
     session = get_session()
     try:
         log = OperationLog(
@@ -698,7 +694,6 @@ def get_operation_logs(limit: int = 100, username: str = None, operation_type: s
 def get_operation_types() -> list:
     session = get_session()
     try:
-        from sqlalchemy import func
         result = session.query(
             OperationLog.operation_type
         ).distinct().order_by(OperationLog.operation_type).all()
@@ -711,7 +706,7 @@ def get_operation_log_stats() -> dict:
     session = get_session()
     try:
         from sqlalchemy import func
-        from datetime import datetime, date
+        from datetime import date
         
         # 总记录数
         total = session.query(func.count(OperationLog.id)).scalar()
@@ -809,7 +804,7 @@ def change_user_password(user_id: str, old_password: str, new_password: str) -> 
         if not user:
             return False, "用户不存在"
         
-        is_valid, needs_rehash = verify_password(old_password, user.password_hash)
+        is_valid, _ = verify_password(old_password, user.password_hash)
         if not is_valid:
             return False, "原密码错误"
         
@@ -1240,7 +1235,6 @@ def get_deleted_persons(limit: int = None) -> list:
 
 def add_report_log(report_id: str, user_id: str, username: str, operation_type: str, detail: str = "", ip_address: str = "", client_type: str = ""):
     from datetime import datetime
-    import secrets
     session = get_session()
     try:
         log = ReportOperationLog(
@@ -1458,7 +1452,6 @@ def promote_all_grades():
 def create_notification(title: str, content: str, notification_type: str = "system",
                         target_user: str = "", sender_id: str = "", sender_name: str = "") -> dict:
     from datetime import datetime
-    import secrets
     session = get_session()
     try:
         notification = Notification(
@@ -1552,7 +1545,6 @@ def get_unread_count(username: str) -> int:
 
 def get_person_trend_data(start_date: str, end_date: str, group_by: str = 'month') -> dict:
     from datetime import datetime, timedelta
-    from sqlalchemy import func
     
     session = get_session()
     try:
@@ -1949,7 +1941,6 @@ def create_custom_report(user_id: str, title: str, report_type: str,
                          chart_type: str = "bar", filters: dict = None) -> dict:
     from datetime import datetime
     import json
-    import secrets
     
     session = get_session()
     try:
@@ -2109,7 +2100,7 @@ def delete_custom_report(report_id: str) -> bool:
 
 def generate_report_data(report_type: str, dimensions: list, 
                          date_range: dict = None, filters: dict = None) -> dict:
-    import json
+    pass
     
     start_date = date_range.get('start', '') if date_range else ''
     end_date = date_range.get('end', '') if date_range else ''
@@ -2175,7 +2166,7 @@ def generate_report_data(report_type: str, dimensions: list,
         # 学生统计报表
         session = get_session()
         try:
-            from sqlalchemy import func
+            pass
             
             # 应用筛选条件
             query = session.query(StudentEducation)
@@ -2233,7 +2224,7 @@ def generate_report_data(report_type: str, dimensions: list,
         # 补贴统计报表
         session = get_session()
         try:
-            from sqlalchemy import func
+            pass
             
             query = session.query(LandSubsidy)
             

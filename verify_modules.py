@@ -108,10 +108,10 @@ def main():
         print(f"❌ 发现 {len(errors)} 个问题: {', '.join(errors)}")
         return 1
     else:
-        print(f"✅ 所有模块检查通过")
+        print("✅ 所有模块检查通过")
         print(f"   - API 模块: {len(modules)} 个")
         print(f"   - 总路由数: {total_routes} 个")
-        print(f"   - 工具模块: 3 个")
+        print("   - 工具模块: 3 个")
         print("")
         print("运行方式:")
         print("   cd server && python app_modular.py")

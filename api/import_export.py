@@ -3,10 +3,9 @@ import secrets
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_file
 
-from database import get_session, Person, add_operation_log
+from database import get_session, add_operation_log
 from utils.security import require_auth
-from utils.response import get_json_data, safe_error
-from config import BASE_DIR, EXCEL_TEMPLATE_COLUMNS, STUDENT_EDUCATION_COLUMNS, MAX_EXCEL_UPLOAD_SIZE
+from config import BASE_DIR, EXCEL_TEMPLATE_COLUMNS, MAX_EXCEL_UPLOAD_SIZE
 
 ALLOWED_EXTENSIONS = {'.xlsx', '.xls'}
 

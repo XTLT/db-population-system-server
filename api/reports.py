@@ -10,7 +10,7 @@ from database import (
     add_operation_log
 )
 from utils.security import require_auth
-from utils.response import get_json_data, safe_error
+from utils.response import get_json_data
 
 
 bp = Blueprint('reports', __name__)

@@ -2,12 +2,10 @@ import os
 import secrets
 from datetime import datetime
 from flask import Blueprint, request, jsonify, send_file
-from sqlalchemy import func
 
 from utils.security import require_auth
-from utils.response import safe_error
-from utils import escape_like, validate_year, validate_id_card
-from database import get_session, LandSubsidy, Person, add_operation_log
+from utils import escape_like, validate_year
+from database import get_session, LandSubsidy, add_operation_log
 from config import BASE_DIR
 
 bp = Blueprint('land_subsidy', __name__)
