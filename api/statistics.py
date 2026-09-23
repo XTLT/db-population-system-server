@@ -183,14 +183,23 @@ def api_students_statistics():
         for school, count in schools:
             if school:
                 school_stats[school] = count
-        
+
+        status_stats = {}
+        statuses = session.query(StudentEducation.student_status, func.count(StudentEducation.id)).group_by(
+            StudentEducation.student_status
+        ).all()
+        for status, count in statuses:
+            if status:
+                status_stats[status] = count
+
         return jsonify({
             'total': total,
             'studying': studying,
             'graduated': graduated,
             'left_behind': left_behind,
             'grade_distribution': grade_stats,
-            'school_distribution': school_stats
+            'school_distribution': school_stats,
+            'status_distribution': status_stats
         })
     finally:
         session.close()
