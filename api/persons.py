@@ -6,7 +6,7 @@ from database import (
     get_session, Person, StudentEducation,
     search_by_name, search_persons_advanced, get_family_members,
     add_person, update_person, delete_person, migrate_person,
-    get_student_education, check_duplicate_id_card,
+    get_student_education, check_duplicate_id_card, id_card_exists,
     split_household, merge_household, add_new_household, generate_new_hu_hao,
     add_operation_log
 )
@@ -362,7 +362,7 @@ def api_add_person():
         return jsonify({'error': '身份证号不能为空'}), 400
 
     # 检查身份证号是否已存在
-    if check_duplicate_id_card(id_card):
+    if id_card_exists(id_card):
         return jsonify({'error': '身份证号已存在'}), 400
 
     # 验证电话号码格式（如果提供）

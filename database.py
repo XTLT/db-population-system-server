@@ -967,6 +967,15 @@ def check_duplicate_id_card(hu_hao: str, id_card: str, exclude_id: str = None) -
         session.close()
 
 
+def id_card_exists(id_card: str) -> bool:
+    """检查身份证号在全局是否已存在（不限户号）"""
+    session = get_session()
+    try:
+        return session.query(Person).filter(Person.id_card == id_card).first() is not None
+    finally:
+        session.close()
+
+
 def generate_new_hu_hao() -> str:
     session = get_session()
     try:

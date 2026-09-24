@@ -119,6 +119,8 @@ def create_app():
     
     @app.errorhandler(500)
     def internal_error(error):
+        import traceback
+        app.logger.error("500 Internal Error: %s\n%s", error, traceback.format_exc())
         return {'error': '服务器内部错误'}, 500
     
     from database import init_db
