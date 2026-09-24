@@ -4023,7 +4023,7 @@ if __name__ == '__main__':
         local_url = f"{protocol}://127.0.0.1:5000"
 
         window = QMainWindow()
-        window.setWindowTitle("人口信息查询系统 - 服务器")
+        window.setWindowTitle("人口通 - 服务器")
         window.setFixedSize(420, 280)
         window.setWindowIcon(_make_icon())
 
@@ -4031,7 +4031,7 @@ if __name__ == '__main__':
         window.setCentralWidget(central)
         layout = QVBoxLayout(central)
 
-        title = QLabel("人口信息查询系统 服务器端")
+        title = QLabel("人口通 服务器端")
         title.setFont(QFont("微软雅黑", 14, QFont.Weight.Bold))
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title)
@@ -4065,7 +4065,7 @@ if __name__ == '__main__':
         layout.addLayout(btn_layout)
 
         tray_icon = QSystemTrayIcon(_make_icon())
-        tray_icon.setToolTip(f"人口信息查询系统服务器\n{lan_url}")
+        tray_icon.setToolTip(f"人口通服务器\n{lan_url}")
 
         tray_menu = QMenu()
         tray_menu.addAction("显示窗口", window.showNormal)
@@ -4271,7 +4271,7 @@ if __name__ == '__main__':
         sys.exit(tray_app.exec())
     else:
         print("=" * 60)
-        print("人口信息查询系统 - 安全启动")
+        print("人口通 - 安全启动")
         print("=" * 60)
         
         # 强制HTTPS检查

@@ -143,10 +143,10 @@ if __name__ == '__main__':
     cert_file, key_file = generate_self_signed_cert()
     
     if cert_file and key_file:
-        logger.info(f"人口信息查询系统启动 - HTTPS 已启用，端口: {port}")
+        logger.info(f"人口通启动 - HTTPS 已启用，端口: {port}")
         ssl_context = (cert_file, key_file)
     else:
-        logger.info(f"人口信息查询系统启动 - HTTP 模式，端口: {port}")
+        logger.info(f"人口通启动 - HTTP 模式，端口: {port}")
         ssl_context = None
     
     app.run(

@@ -132,7 +132,7 @@ class Config:
     @property
     def app_name(self) -> str:
         """应用名称"""
-        return self.get('app.name', '人口信息查询系统')
+        return self.get('app.name', '人口通')
     
     @property
     def version(self) -> str:

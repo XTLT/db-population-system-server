@@ -31,7 +31,7 @@ FROM python:3.11-slim
 # 设置标签
 LABEL maintainer="your-email@example.com"
 LABEL version="1.0.0"
-LABEL description="人口信息查询系统 - Flask 后端"
+LABEL description="人口通 - Flask 后端"
 
 # 创建非 root 用户
 RUN groupadd -r appuser && useradd -r -g appuser appuser

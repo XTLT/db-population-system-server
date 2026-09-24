@@ -1,11 +1,12 @@
 import os
 import sys
+import shutil
 import base64
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
-APP_NAME = "人口信息查询系统"
+APP_NAME = "人口通"
 APP_VERSION = "0.0.1"
 
 if getattr(sys, 'frozen', False):
@@ -17,6 +18,31 @@ if sys.platform == "win32":
     APPDATA_DIR = os.path.join(os.environ.get("APPDATA", BASE_DIR), APP_NAME)
 else:
     APPDATA_DIR = os.path.join(os.path.expanduser("~"), ".config", APP_NAME)
+
+_OLD_APP_NAME = "人口信息查询系统"
+if sys.platform == "win32":
+    _OLD_APPDATA_DIR = os.path.join(os.environ.get("APPDATA", BASE_DIR), _OLD_APP_NAME)
+else:
+    _OLD_APPDATA_DIR = os.path.join(os.path.expanduser("~"), ".config", _OLD_APP_NAME)
+
+
+def _migrate_old_appdata():
+    """从旧应用名目录迁移配置文件到新目录（仅升级时执行一次）。"""
+    if not os.path.isdir(_OLD_APPDATA_DIR):
+        return
+    os.makedirs(APPDATA_DIR, exist_ok=True)
+    for item in os.listdir(_OLD_APPDATA_DIR):
+        src = os.path.join(_OLD_APPDATA_DIR, item)
+        dst = os.path.join(APPDATA_DIR, item)
+        if os.path.exists(dst):
+            continue
+        if os.path.isfile(src):
+            shutil.copy2(src, dst)
+        elif os.path.isdir(src):
+            shutil.copytree(src, dst)
+
+
+_migrate_old_appdata()
 
 CONFIG_FILE = os.path.join(APPDATA_DIR, "data_path.conf")
 _SALT = b'population_config_salt_v1'
