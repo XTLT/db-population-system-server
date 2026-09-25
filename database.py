@@ -143,6 +143,9 @@ class Person(Base):
     land_area = Column(String, default="")
     land_area_change_reason = Column(String, default="")
     land_area_change_time = Column(String, default="")
+    forest_area = Column(String, default="")
+    forest_area_change_reason = Column(String, default="")
+    forest_area_change_time = Column(String, default="")
 
     __table_args__ = (
         Index("idx_name_hu_hao", "name", "hu_hao"),
@@ -466,6 +469,21 @@ def _migrate_db(engine):
             pass
         try:
             conn.execute(text("ALTER TABLE persons ADD COLUMN land_area_change_time VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN forest_area VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN forest_area_change_reason VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN forest_area_change_time VARCHAR DEFAULT ''"))
             conn.commit()
         except Exception:
             pass
@@ -1065,6 +1083,7 @@ def add_new_household(hu_hao: str, name: str, id_card: str, relation: str = "户
             address=kwargs.get("address", ""),
             phone=phone,
             land_area=kwargs.get("land_area", ""),
+            forest_area=kwargs.get("forest_area", ""),
         )
         session.add(person)
         session.commit()

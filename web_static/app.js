@@ -5,6 +5,7 @@ let currentUser = null;
 let userRole = '';
 let currentPersonUpdatedAt = '';
 let currentPersonLandArea = '';
+let currentPersonForestArea = '';
 let isDefaultUser = false;
 
 function apiRequest(method, path, data = null) {
@@ -194,6 +195,7 @@ function displayFamily(members) {
             <td>${m.age}</td>
             <td>${m.phone === '无' ? '' : m.phone}</td>
             <td>${m.land_area || ''}</td>
+            <td>${m.forest_area || ''}</td>
             <td>${m.is_dead === '是' ? '已故' : (m.is_migrated === '是' ? '已迁出' : '正常')}</td>
             <td class="student-mark">${m.student_mark}</td>
             <td>${editBtn}</td>
@@ -231,6 +233,8 @@ function showPerson(personId) {
                 ${data.tekun === '是' ? `<div class="detail-item"><label>供养类型</label><span>${data.tekun_type === '无' ? '' : (data.tekun_type || '')}</span></div>` : ''}
                 <div class="detail-item"><label>土地面积</label><span>${data.land_area || ''}</span></div>
                 ${data.land_area_change_reason ? `<div class="detail-item"><label>土地变更原因</label><span>${data.land_area_change_reason}</span></div><div class="detail-item"><label>土地变更时间</label><span>${data.land_area_change_time}</span></div>` : ''}
+                <div class="detail-item"><label>林地面积</label><span>${data.forest_area || ''}</span></div>
+                ${data.forest_area_change_reason ? `<div class="detail-item"><label>林地变更原因</label><span>${data.forest_area_change_reason}</span></div><div class="detail-item"><label>林地变更时间</label><span>${data.forest_area_change_time}</span></div>` : ''}
             `;
 
             if (data.education) {
@@ -266,6 +270,8 @@ function editPerson() {
             document.getElementById('editAddress').value = (data.address && data.address !== '无') ? data.address : '';
             document.getElementById('editLandArea').value = data.land_area || '';
             currentPersonLandArea = data.land_area || '';
+            document.getElementById('editForestArea').value = data.forest_area || '';
+            currentPersonForestArea = data.forest_area || '';
             document.getElementById('editSocial1').value = (data.social_card1 && data.social_card1 !== '无') ? data.social_card1 : '';
             document.getElementById('editSocial2').value = (data.social_card2 && data.social_card2 !== '无') ? data.social_card2 : '';
             document.getElementById('editSocial3').value = (data.social_card3 && data.social_card3 !== '无') ? data.social_card3 : '';
@@ -394,6 +400,20 @@ document.getElementById('editForm').onsubmit = function(e) {
         window._landAreaChangeReason = '';
     }
 
+    const newForestArea = document.getElementById('editForestArea').value;
+    const oldForestArea = currentPersonForestArea || '';
+
+    if (newForestArea !== oldForestArea && oldForestArea) {
+        const reason = prompt(`林地面积从「${oldForestArea}」变更为「${newForestArea || '空'}」\n\n请输入变更原因：`);
+        if (!reason || !reason.trim()) {
+            alert('林地面积变更时必须填写变更原因！');
+            return;
+        }
+        window._forestAreaChangeReason = reason.trim();
+    } else {
+        window._forestAreaChangeReason = '';
+    }
+
     const disabilityVal = document.getElementById('editDisability').value;
     const tekunVal = document.getElementById('editTekun').value;
     const data = {
@@ -416,6 +436,8 @@ document.getElementById('editForm').onsubmit = function(e) {
         social_card3: document.getElementById('editSocial3').value,
         land_area: newLandArea,
         land_area_change_reason: window._landAreaChangeReason,
+        forest_area: newForestArea,
+        forest_area_change_reason: window._forestAreaChangeReason,
         updated_at: currentPersonUpdatedAt
     };
 
@@ -1143,6 +1165,7 @@ function showAddHouseholdModal() {
     document.getElementById('newHhAddress').value = '';
     document.getElementById('newHhPhone').value = '';
     document.getElementById('newHhLandArea').value = '';
+    document.getElementById('newHhForestArea').value = '';
     document.getElementById('addHouseholdModal').style.display = 'flex';
 }
 
@@ -1158,7 +1181,8 @@ document.getElementById('addHouseholdForm').onsubmit = function(e) {
         id_card: document.getElementById('newHhIdCard').value.trim(),
         address: document.getElementById('newHhAddress').value.trim(),
         phone: document.getElementById('newHhPhone').value.trim(),
-        land_area: document.getElementById('newHhLandArea').value.trim()
+        land_area: document.getElementById('newHhLandArea').value.trim(),
+        forest_area: document.getElementById('newHhForestArea').value.trim()
     };
     fetch('/api/household/add', {
         method: 'POST',
@@ -1257,6 +1281,7 @@ function showAddPersonModal() {
     document.getElementById('addPersonRelation').value = '';
     document.getElementById('addPersonPhone').value = '';
     document.getElementById('addPersonLandArea').value = '';
+    document.getElementById('addPersonForestArea').value = '';
     apiRequest('GET', `/api/family/${currentHuHao}`).then(members => {
         if (members.length > 0) {
             document.getElementById('addPersonAddress').value = members[0].address || '';
@@ -1278,7 +1303,8 @@ document.getElementById('addPersonForm').onsubmit = function(e) {
         relation: document.getElementById('addPersonRelation').value.trim(),
         address: document.getElementById('addPersonAddress').value.trim(),
         phone: document.getElementById('addPersonPhone').value.trim(),
-        land_area: document.getElementById('addPersonLandArea').value.trim()
+        land_area: document.getElementById('addPersonLandArea').value.trim(),
+        forest_area: document.getElementById('addPersonForestArea').value.trim()
     };
     if (!data.name || !data.id_card) {
         alert('姓名和身份证号不能为空！');

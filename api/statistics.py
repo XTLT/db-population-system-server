@@ -90,6 +90,20 @@ def api_statistics():
                 pass
         avg_land_area = round(total_land_area / land_count, 2) if land_count > 0 else 0
 
+        forest_areas = session.query(Person.forest_area).filter(
+            Person.forest_area != '', Person.forest_area.isnot(None)
+        ).all()
+        total_forest_area = 0.0
+        forest_count = 0
+        for fa in forest_areas:
+            try:
+                area = float(fa[0])
+                total_forest_area += area
+                forest_count += 1
+            except (ValueError, TypeError):
+                pass
+        avg_forest_area = round(total_forest_area / forest_count, 2) if forest_count > 0 else 0
+
         return jsonify({
             'total': total,
             'dead': dead,
@@ -104,7 +118,9 @@ def api_statistics():
             'dis_level_distribution': dis_level_distribution,
             'tekun_type_distribution': tekun_type_distribution,
             'total_land_area': round(total_land_area, 2),
-            'avg_land_area': avg_land_area
+            'avg_land_area': avg_land_area,
+            'total_forest_area': round(total_forest_area, 2),
+            'avg_forest_area': avg_forest_area
         })
     finally:
         session.close()

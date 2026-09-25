@@ -136,7 +136,8 @@ def api_search():
         'social_card2': p.social_card2 or '',
         'social_card3': p.social_card3 or '',
         'is_migrated': p.is_migrated or '否',
-        'land_area': p.land_area or ''
+        'land_area': p.land_area or '',
+        'forest_area': p.forest_area or ''
     } for p in persons]})
 
 
@@ -206,7 +207,8 @@ def api_search_advanced():
         'tekun_type': p.tekun_type or '',
         'is_dead': p.is_dead,
         'is_migrated': p.is_migrated,
-        'land_area': p.land_area or ''
+        'land_area': p.land_area or '',
+        'forest_area': p.forest_area or ''
     } for p in persons])
 
 
@@ -264,6 +266,9 @@ def api_family(hu_hao):
             'land_area': m.land_area or '',
             'land_area_change_reason': m.land_area_change_reason or '',
             'land_area_change_time': m.land_area_change_time or '',
+            'forest_area': m.forest_area or '',
+            'forest_area_change_reason': m.forest_area_change_reason or '',
+            'forest_area_change_time': m.forest_area_change_time or '',
             'student_mark': student_mark,
             'subsidy_amount': subsidy_amount
         })
@@ -320,6 +325,9 @@ def api_person(person_id):
                 'land_area': p.land_area or '',
                 'land_area_change_reason': p.land_area_change_reason or '',
                 'land_area_change_time': p.land_area_change_time or '',
+                'forest_area': p.forest_area or '',
+                'forest_area_change_reason': p.forest_area_change_reason or '',
+                'forest_area_change_time': p.forest_area_change_time or '',
                 'updated_at': p.updated_at or '',
                 'education': {
                     'school_name': edu.school_name,
@@ -390,6 +398,7 @@ def api_add_person():
         phone=data.get('phone', ''),
         is_dead=data.get('is_dead', '否'),
         land_area=data.get('land_area', ''),
+        forest_area=data.get('forest_area', ''),
         social_card1=data.get('social_card1', ''),
         social_card2=data.get('social_card2', ''),
         social_card3=data.get('social_card3', ''),
@@ -472,6 +481,20 @@ def api_update_person(person_id):
         elif new_land_area != old_land_area:
             # 首次填写土地面积，不需要原因
             p.land_area = new_land_area
+        new_forest_area = data.get('forest_area', p.forest_area)
+        old_forest_area = p.forest_area or ''
+        
+        # 只在已有林地面积发生变化时才要求填写原因（首次填写不要求）
+        if new_forest_area != old_forest_area and old_forest_area:
+            forest_reason = data.get('forest_area_change_reason', '')
+            if not forest_reason:
+                return jsonify({'error': '林地面积变更时必须填写变更原因'}), 400
+            p.forest_area = new_forest_area
+            p.forest_area_change_reason = forest_reason
+            p.forest_area_change_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        elif new_forest_area != old_forest_area:
+            # 首次填写林地面积，不需要原因
+            p.forest_area = new_forest_area
         update_person(p)
         add_operation_log(
             request.current_user['id'],
@@ -698,7 +721,8 @@ def api_add_household():
             relation=data.get('relation', '户主'),
             address=data.get('address', ''),
             phone=data.get('phone', ''),
-            land_area=data.get('land_area', '')
+            land_area=data.get('land_area', ''),
+            forest_area=data.get('forest_area', '')
         )
         add_operation_log(
             request.current_user['id'],
@@ -730,7 +754,7 @@ MAX_BATCH_UPDATE_COUNT = 200  # 单次最大更新数量
 BATCH_UPDATE_ALLOWED_FIELDS = {
     'relation', 'phone', 'address', 'remark', 
     'disability', 'dis_level', 'dibao', 'tekun', 'tekun_type', 'jisheng',
-    'social_card1', 'social_card2', 'social_card3', 'land_area'
+    'social_card1', 'social_card2', 'social_card3', 'land_area', 'forest_area'
 }
 
 
