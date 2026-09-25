@@ -117,7 +117,7 @@ DISK_SPACE_ALERT_GB = 10
 EXCEL_TEMPLATE_COLUMNS = [
     "户号", "身份证号", "姓名", "地址", "与户主关系", "是否死亡",
     "电话", "备注", "脱贫户或监测户", "残疾", "残疾等级",
-    "低保", "特困供养", "供养类型", "是否计生家庭", "社保卡号1", "社保卡号2", "社保卡号3", "土地面积", "林地面积"
+    "低保", "特困供养", "供养类型", "是否计生家庭", "社保卡号1", "社保卡号2", "社保卡号3", "土地面积", "地方公益林", "国家公益林", "非国有天然商品林"
 ]
 
 STUDENT_EDUCATION_COLUMNS = [
@@ -198,7 +198,9 @@ DB_FIELD_MAP = {
     "社保卡号2": "social_card2",
     "社保卡号3": "social_card3",
     "土地面积": "land_area",
-    "林地面积": "forest_area",
+    "地方公益林": "local_welfare_forest_area",
+    "国家公益林": "national_welfare_forest_area",
+    "非国有天然商品林": "commercial_forest_area",
 }
 
 PHOTO_TYPES = ["身份证", "社保卡1", "社保卡2", "社保卡3"]

@@ -10,6 +10,16 @@ import json
 from config import DB_PATH, BACKUP_DIR, PHOTOS_DIR, EXCEL_TEMPLATE_COLUMNS
 from database import get_session, Person, get_db_password, _derive_key, LandSubsidy, TreatmentPayment, PensionInsurance, DibaoPayment, TekunPayment
 from utils import safe_str, calculate_age
+from excel_area_fields import (
+    apply_land_area_filter,
+    apply_local_welfare_forest_filter, apply_national_welfare_forest_filter, apply_commercial_forest_filter,
+    get_land_area_export_value,
+    get_local_welfare_forest_export_value, get_national_welfare_forest_export_value, get_commercial_forest_export_value,
+    get_land_area_from_row,
+    get_local_welfare_forest_from_row, get_national_welfare_forest_from_row, get_commercial_forest_from_row,
+    get_land_area_from_row_existing,
+    get_local_welfare_forest_from_row_existing, get_national_welfare_forest_from_row_existing, get_commercial_forest_from_row_existing,
+)
 
 
 def _read_excel_robust(file_path: str, header=None):
@@ -405,19 +415,13 @@ def query_persons_with_filters(filters: dict) -> list:
         if filters.get("jisheng") and filters["jisheng"] != "全部":
             query = query.filter(Person.jisheng == filters["jisheng"])
         land = filters.get("land_area", "全部")
-        if land == "不为0":
-            query = query.filter(Person.land_area != "", Person.land_area.isnot(None))
-        elif land == "空白":
-            query = query.filter(
-                (Person.land_area == "") | (Person.land_area.is_(None))
-            )
-        forest = filters.get("forest_area", "全部")
-        if forest == "不为0":
-            query = query.filter(Person.forest_area != "", Person.forest_area.isnot(None))
-        elif forest == "空白":
-            query = query.filter(
-                (Person.forest_area == "") | (Person.forest_area.is_(None))
-            )
+        query = apply_land_area_filter(query, land, Person)
+        local_welfare_forest = filters.get("local_welfare_forest_area", "全部")
+        query = apply_local_welfare_forest_filter(query, local_welfare_forest, Person)
+        national_welfare_forest = filters.get("national_welfare_forest_area", "全部")
+        query = apply_national_welfare_forest_filter(query, national_welfare_forest, Person)
+        commercial_forest = filters.get("commercial_forest_area", "全部")
+        query = apply_commercial_forest_filter(query, commercial_forest, Person)
 
         persons = query.all()
 
@@ -482,8 +486,10 @@ def export_excel(file_path: str, progress_callback=None, filters: dict = None) -
             "社保卡号1": p.social_card1,
             "社保卡号2": p.social_card2,
             "社保卡号3": p.social_card3,
-            "土地面积": p.land_area or "",
-            "林地面积": p.forest_area or "",
+            "土地面积": get_land_area_export_value(p),
+            "地方公益林": get_local_welfare_forest_export_value(p),
+            "国家公益林": get_national_welfare_forest_export_value(p),
+            "非国有天然商品林": get_commercial_forest_export_value(p),
         })
         if progress_callback and (i + 1) % 100 == 0:
             progress_callback(int((i + 1) / len(persons) * 100))
@@ -520,8 +526,10 @@ def _row_to_person(row, idx) -> Person:
         social_card1=safe_str(row.get("社保卡号1", "")),
         social_card2=safe_str(row.get("社保卡号2", "")),
         social_card3=safe_str(row.get("社保卡号3", "")),
-        land_area=safe_str(row.get("土地面积", "")),
-        forest_area=safe_str(row.get("林地面积", "")),
+        land_area=get_land_area_from_row(row),
+        local_welfare_forest_area=get_local_welfare_forest_from_row(row),
+        national_welfare_forest_area=get_national_welfare_forest_from_row(row),
+        commercial_forest_area=get_commercial_forest_from_row(row),
     )
 
 
@@ -544,8 +552,10 @@ def _update_person_from_row(person: Person, row):
     person.social_card1 = safe_str(row.get("社保卡号1", person.social_card1))
     person.social_card2 = safe_str(row.get("社保卡号2", person.social_card2))
     person.social_card3 = safe_str(row.get("社保卡号3", person.social_card3))
-    person.land_area = safe_str(row.get("土地面积", person.land_area))
-    person.forest_area = safe_str(row.get("林地面积", person.forest_area))
+    person.land_area = get_land_area_from_row_existing(row, person)
+    person.local_welfare_forest_area = get_local_welfare_forest_from_row_existing(row, person)
+    person.national_welfare_forest_area = get_national_welfare_forest_from_row_existing(row, person)
+    person.commercial_forest_area = get_commercial_forest_from_row_existing(row, person)
 
 
 def import_land_subsidy(file_path: str, subsidy_year: str = "", progress_callback=None) -> dict:

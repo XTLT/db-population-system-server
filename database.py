@@ -143,9 +143,15 @@ class Person(Base):
     land_area = Column(String, default="")
     land_area_change_reason = Column(String, default="")
     land_area_change_time = Column(String, default="")
-    forest_area = Column(String, default="")
-    forest_area_change_reason = Column(String, default="")
-    forest_area_change_time = Column(String, default="")
+    local_welfare_forest_area = Column(String, default="")
+    local_welfare_forest_change_reason = Column(String, default="")
+    local_welfare_forest_change_time = Column(String, default="")
+    national_welfare_forest_area = Column(String, default="")
+    national_welfare_forest_change_reason = Column(String, default="")
+    national_welfare_forest_change_time = Column(String, default="")
+    commercial_forest_area = Column(String, default="")
+    commercial_forest_change_reason = Column(String, default="")
+    commercial_forest_change_time = Column(String, default="")
 
     __table_args__ = (
         Index("idx_name_hu_hao", "name", "hu_hao"),
@@ -473,17 +479,47 @@ def _migrate_db(engine):
         except Exception:
             pass
         try:
-            conn.execute(text("ALTER TABLE persons ADD COLUMN forest_area VARCHAR DEFAULT ''"))
+            conn.execute(text("ALTER TABLE persons ADD COLUMN local_welfare_forest_area VARCHAR DEFAULT ''"))
             conn.commit()
         except Exception:
             pass
         try:
-            conn.execute(text("ALTER TABLE persons ADD COLUMN forest_area_change_reason VARCHAR DEFAULT ''"))
+            conn.execute(text("ALTER TABLE persons ADD COLUMN local_welfare_forest_change_reason VARCHAR DEFAULT ''"))
             conn.commit()
         except Exception:
             pass
         try:
-            conn.execute(text("ALTER TABLE persons ADD COLUMN forest_area_change_time VARCHAR DEFAULT ''"))
+            conn.execute(text("ALTER TABLE persons ADD COLUMN local_welfare_forest_change_time VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN national_welfare_forest_area VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN national_welfare_forest_change_reason VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN national_welfare_forest_change_time VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN commercial_forest_area VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN commercial_forest_change_reason VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN commercial_forest_change_time VARCHAR DEFAULT ''"))
             conn.commit()
         except Exception:
             pass
@@ -1083,7 +1119,9 @@ def add_new_household(hu_hao: str, name: str, id_card: str, relation: str = "户
             address=kwargs.get("address", ""),
             phone=phone,
             land_area=kwargs.get("land_area", ""),
-            forest_area=kwargs.get("forest_area", ""),
+            local_welfare_forest_area=kwargs.get("local_welfare_forest_area", ""),
+            national_welfare_forest_area=kwargs.get("national_welfare_forest_area", ""),
+            commercial_forest_area=kwargs.get("commercial_forest_area", ""),
         )
         session.add(person)
         session.commit()

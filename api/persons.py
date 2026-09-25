@@ -137,7 +137,9 @@ def api_search():
         'social_card3': p.social_card3 or '',
         'is_migrated': p.is_migrated or '否',
         'land_area': p.land_area or '',
-        'forest_area': p.forest_area or ''
+        'local_welfare_forest_area': p.local_welfare_forest_area or '',
+        'national_welfare_forest_area': p.national_welfare_forest_area or '',
+        'commercial_forest_area': p.commercial_forest_area or ''
     } for p in persons]})
 
 
@@ -208,7 +210,9 @@ def api_search_advanced():
         'is_dead': p.is_dead,
         'is_migrated': p.is_migrated,
         'land_area': p.land_area or '',
-        'forest_area': p.forest_area or ''
+        'local_welfare_forest_area': p.local_welfare_forest_area or '',
+        'national_welfare_forest_area': p.national_welfare_forest_area or '',
+        'commercial_forest_area': p.commercial_forest_area or ''
     } for p in persons])
 
 
@@ -266,9 +270,15 @@ def api_family(hu_hao):
             'land_area': m.land_area or '',
             'land_area_change_reason': m.land_area_change_reason or '',
             'land_area_change_time': m.land_area_change_time or '',
-            'forest_area': m.forest_area or '',
-            'forest_area_change_reason': m.forest_area_change_reason or '',
-            'forest_area_change_time': m.forest_area_change_time or '',
+            'local_welfare_forest_area': m.local_welfare_forest_area or '',
+            'local_welfare_forest_change_reason': m.local_welfare_forest_change_reason or '',
+            'local_welfare_forest_change_time': m.local_welfare_forest_change_time or '',
+            'national_welfare_forest_area': m.national_welfare_forest_area or '',
+            'national_welfare_forest_change_reason': m.national_welfare_forest_change_reason or '',
+            'national_welfare_forest_change_time': m.national_welfare_forest_change_time or '',
+            'commercial_forest_area': m.commercial_forest_area or '',
+            'commercial_forest_change_reason': m.commercial_forest_change_reason or '',
+            'commercial_forest_change_time': m.commercial_forest_change_time or '',
             'student_mark': student_mark,
             'subsidy_amount': subsidy_amount
         })
@@ -325,9 +335,15 @@ def api_person(person_id):
                 'land_area': p.land_area or '',
                 'land_area_change_reason': p.land_area_change_reason or '',
                 'land_area_change_time': p.land_area_change_time or '',
-                'forest_area': p.forest_area or '',
-                'forest_area_change_reason': p.forest_area_change_reason or '',
-                'forest_area_change_time': p.forest_area_change_time or '',
+                'local_welfare_forest_area': p.local_welfare_forest_area or '',
+                'local_welfare_forest_change_reason': p.local_welfare_forest_change_reason or '',
+                'local_welfare_forest_change_time': p.local_welfare_forest_change_time or '',
+                'national_welfare_forest_area': p.national_welfare_forest_area or '',
+                'national_welfare_forest_change_reason': p.national_welfare_forest_change_reason or '',
+                'national_welfare_forest_change_time': p.national_welfare_forest_change_time or '',
+                'commercial_forest_area': p.commercial_forest_area or '',
+                'commercial_forest_change_reason': p.commercial_forest_change_reason or '',
+                'commercial_forest_change_time': p.commercial_forest_change_time or '',
                 'updated_at': p.updated_at or '',
                 'education': {
                     'school_name': edu.school_name,
@@ -398,7 +414,9 @@ def api_add_person():
         phone=data.get('phone', ''),
         is_dead=data.get('is_dead', '否'),
         land_area=data.get('land_area', ''),
-        forest_area=data.get('forest_area', ''),
+        local_welfare_forest_area=data.get('local_welfare_forest_area', ''),
+        national_welfare_forest_area=data.get('national_welfare_forest_area', ''),
+        commercial_forest_area=data.get('commercial_forest_area', ''),
         social_card1=data.get('social_card1', ''),
         social_card2=data.get('social_card2', ''),
         social_card3=data.get('social_card3', ''),
@@ -481,20 +499,42 @@ def api_update_person(person_id):
         elif new_land_area != old_land_area:
             # 首次填写土地面积，不需要原因
             p.land_area = new_land_area
-        new_forest_area = data.get('forest_area', p.forest_area)
-        old_forest_area = p.forest_area or ''
-        
-        # 只在已有林地面积发生变化时才要求填写原因（首次填写不要求）
-        if new_forest_area != old_forest_area and old_forest_area:
-            forest_reason = data.get('forest_area_change_reason', '')
-            if not forest_reason:
-                return jsonify({'error': '林地面积变更时必须填写变更原因'}), 400
-            p.forest_area = new_forest_area
-            p.forest_area_change_reason = forest_reason
-            p.forest_area_change_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        elif new_forest_area != old_forest_area:
-            # 首次填写林地面积，不需要原因
-            p.forest_area = new_forest_area
+        new_local_welfare_forest_area = data.get('local_welfare_forest_area', p.local_welfare_forest_area)
+        old_local_welfare_forest_area = p.local_welfare_forest_area or ''
+
+        if new_local_welfare_forest_area != old_local_welfare_forest_area and old_local_welfare_forest_area:
+            local_welfare_forest_reason = data.get('local_welfare_forest_change_reason', '')
+            if not local_welfare_forest_reason:
+                return jsonify({'error': '地方公益林变更时必须填写变更原因'}), 400
+            p.local_welfare_forest_area = new_local_welfare_forest_area
+            p.local_welfare_forest_change_reason = local_welfare_forest_reason
+            p.local_welfare_forest_change_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        elif new_local_welfare_forest_area != old_local_welfare_forest_area:
+            p.local_welfare_forest_area = new_local_welfare_forest_area
+        new_national_welfare_forest_area = data.get('national_welfare_forest_area', p.national_welfare_forest_area)
+        old_national_welfare_forest_area = p.national_welfare_forest_area or ''
+
+        if new_national_welfare_forest_area != old_national_welfare_forest_area and old_national_welfare_forest_area:
+            national_welfare_forest_reason = data.get('national_welfare_forest_change_reason', '')
+            if not national_welfare_forest_reason:
+                return jsonify({'error': '国家公益林变更时必须填写变更原因'}), 400
+            p.national_welfare_forest_area = new_national_welfare_forest_area
+            p.national_welfare_forest_change_reason = national_welfare_forest_reason
+            p.national_welfare_forest_change_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        elif new_national_welfare_forest_area != old_national_welfare_forest_area:
+            p.national_welfare_forest_area = new_national_welfare_forest_area
+        new_commercial_forest_area = data.get('commercial_forest_area', p.commercial_forest_area)
+        old_commercial_forest_area = p.commercial_forest_area or ''
+
+        if new_commercial_forest_area != old_commercial_forest_area and old_commercial_forest_area:
+            commercial_forest_reason = data.get('commercial_forest_change_reason', '')
+            if not commercial_forest_reason:
+                return jsonify({'error': '非国有天然商品林变更时必须填写变更原因'}), 400
+            p.commercial_forest_area = new_commercial_forest_area
+            p.commercial_forest_change_reason = commercial_forest_reason
+            p.commercial_forest_change_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        elif new_commercial_forest_area != old_commercial_forest_area:
+            p.commercial_forest_area = new_commercial_forest_area
         update_person(p)
         add_operation_log(
             request.current_user['id'],
@@ -722,7 +762,9 @@ def api_add_household():
             address=data.get('address', ''),
             phone=data.get('phone', ''),
             land_area=data.get('land_area', ''),
-            forest_area=data.get('forest_area', '')
+            local_welfare_forest_area=data.get('local_welfare_forest_area', ''),
+            national_welfare_forest_area=data.get('national_welfare_forest_area', ''),
+            commercial_forest_area=data.get('commercial_forest_area', '')
         )
         add_operation_log(
             request.current_user['id'],
@@ -754,7 +796,8 @@ MAX_BATCH_UPDATE_COUNT = 200  # 单次最大更新数量
 BATCH_UPDATE_ALLOWED_FIELDS = {
     'relation', 'phone', 'address', 'remark', 
     'disability', 'dis_level', 'dibao', 'tekun', 'tekun_type', 'jisheng',
-    'social_card1', 'social_card2', 'social_card3', 'land_area', 'forest_area'
+    'social_card1', 'social_card2', 'social_card3', 'land_area',
+    'local_welfare_forest_area', 'national_welfare_forest_area', 'commercial_forest_area'
 }
 
 
