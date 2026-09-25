@@ -162,7 +162,7 @@ git pull origin master >> {_DEPLOY_LOG} 2>&1
 git rev-parse --short HEAD >> {_DEPLOY_LOG} 2>&1
 find server -name "*.pyc" -delete >> {_DEPLOY_LOG} 2>&1
 find server -name "__pycache__" -type d -exec rm -rf {{}} + 2>/dev/null
-systemctl restart gunicorn.service >> {_DEPLOY_LOG} 2>&1
+systemctl restart population-server >> {_DEPLOY_LOG} 2>&1
 echo "=== $(date) 更新完成 ===" >> {_DEPLOY_LOG}
 '''
 

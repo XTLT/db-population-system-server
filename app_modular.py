@@ -80,7 +80,11 @@ def create_app():
     app.register_blueprint(dibao_payment_bp, url_prefix='/api')
     app.register_blueprint(tekun_payment_bp, url_prefix='/api')
     app.register_blueprint(update_bp, url_prefix='/api/update')
-    
+
+    @app.route('/api/health')
+    def health_check():
+        return jsonify({'healthy': True})
+
     @app.route('/')
     def index():
         return send_from_directory(STATIC_DIR, 'index.html')
