@@ -215,6 +215,46 @@ def download_excel_template():
         return jsonify({'error': str(e)}), 400
 
 
+# ── 支付类模板下载 ──
+# 遵循"功能模块单独写、最后统一调用"：模板生成在 excel_payment_templates.py，API 统一调用
+
+PAYMENT_TEMPLATE_MAP = {
+    'land_subsidy': ('excel_payment_templates', 'generate_land_subsidy_template', '地力补贴导入模板.xlsx'),
+    'treatment_payment': ('excel_payment_templates', 'generate_treatment_payment_template', '待遇发放导入模板.xlsx'),
+    'pension_insurance': ('excel_payment_templates', 'generate_pension_insurance_template', '养老保险导入模板.xlsx'),
+    'dibao_payment': ('excel_payment_templates', 'generate_dibao_payment_template', '低保发放导入模板.xlsx'),
+    'tekun_payment': ('excel_payment_templates', 'generate_tekun_payment_template', '特困发放导入模板.xlsx'),
+}
+
+
+@bp.route('/template/payment/<payment_type>')
+@require_auth
+def download_payment_template(payment_type):
+    """下载支付类导入模板
+
+    Args:
+        payment_type: land_subsidy | treatment_payment | pension_insurance | dibao_payment | tekun_payment
+
+    Returns:
+        Excel 模板文件
+    """
+    config = PAYMENT_TEMPLATE_MAP.get(payment_type)
+    if not config:
+        return jsonify({'error': f'未知的模板类型: {payment_type}'}), 400
+
+    module_name, func_name, download_name = config
+    tmp_path = os.path.join(BASE_DIR, f'_tmp_tpl_{payment_type}_{secrets.token_hex(4)}.xlsx')
+
+    try:
+        import importlib
+        mod = importlib.import_module(module_name)
+        func = getattr(mod, func_name)
+        func(tmp_path)
+        return send_file(tmp_path, as_attachment=True, download_name=download_name)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+
 @bp.route('/template/student')
 @require_auth
 def download_student_template():
