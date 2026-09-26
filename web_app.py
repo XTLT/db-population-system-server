@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import secrets
+import subprocess
 from datetime import datetime, timedelta
 
 from flask import Flask, jsonify, request, send_from_directory, send_file
@@ -2866,27 +2867,96 @@ def api_backup_restore():
     if '..' in backup_name or '/' in backup_name or '\\' in backup_name:
         return jsonify({'error': '无效的备份名称'}), 400
     
-    from config import BACKUP_DIR
+    from config import BACKUP_DIR, DB_PATH, PHOTOS_DIR, LOG_DIR
     backup_path = os.path.join(BACKUP_DIR, backup_name)
     
     if not os.path.exists(backup_path):
         return jsonify({'error': '备份不存在'}), 404
     
-    from excel_importer import restore_database
-    result = restore_database(backup_path, password if password else None)
+    complete_file = os.path.join(backup_path, "backup_complete.txt")
+    if not os.path.exists(complete_file):
+        return jsonify({'error': '备份不完整'}), 400
     
-    if result.get('success'):
-        add_operation_log(
-            user['id'],
-            user['username'],
-            "恢复备份",
-            result.get('timestamp', ''),
-            request.remote_addr,
-            "Web"
-        )
-        return jsonify(result)
-    else:
-        return jsonify(result), 400
+    try:
+        with open(complete_file, "r") as f:
+            manifest = json.load(f)
+    except Exception as e:
+        return jsonify({'error': f'读取备份清单失败: {str(e)}'}), 500
+    
+    encrypted = manifest.get("encrypted", False)
+    if encrypted:
+        if not password:
+            return jsonify({'error': '需要解密密码'}), 400
+        try:
+            from excel_importer import _decrypt_backup
+            _decrypt_backup(backup_path, password)
+        except Exception as e:
+            return jsonify({'error': f'解密失败: {str(e)}'}), 400
+    
+    db_backup = os.path.join(backup_path, "population.db")
+    if not os.path.exists(db_backup):
+        return jsonify({'error': '数据库备份文件不存在'}), 400
+    
+    photos_backup = os.path.join(backup_path, "photos.tar.gz")
+    
+    add_operation_log(
+        user['id'],
+        user['username'],
+        "恢复备份",
+        manifest.get("timestamp", ""),
+        request.remote_addr,
+        "Web"
+    )
+    
+    restore_log = os.path.join(LOG_DIR, 'backup_restore.log')
+    encrypted_flag = '1' if encrypted else '0'
+    
+    restore_script = f'''#!/bin/bash
+export TZ=Asia/Shanghai
+sleep 2
+echo "=== $(date) 开始恢复备份: {backup_name} ===" > "{restore_log}"
+
+systemctl stop population-server >> "{restore_log}" 2>&1
+echo "服务器已停止" >> "{restore_log}"
+
+if [ -f "{DB_PATH}" ]; then
+    cp "{DB_PATH}" "{DB_PATH}.before_restore"
+    echo "已备份当前数据库到 .before_restore" >> "{restore_log}"
+fi
+
+cp "{db_backup}" "{DB_PATH}"
+echo "数据库已恢复" >> "{restore_log}"
+
+if [ -f "{photos_backup}" ]; then
+    rm -rf "{PHOTOS_DIR}"
+    mkdir -p "{PHOTOS_DIR}"
+    tar -xzf "{photos_backup}" -C "{PHOTOS_DIR}" --no-same-owner >> "{restore_log}" 2>&1
+    echo "照片已恢复" >> "{restore_log}"
+fi
+
+if [ "{encrypted_flag}" = "1" ]; then
+    rm -f "{backup_path}/population.db" "{backup_path}/photos.tar.gz"
+    echo "已清理解密临时文件" >> "{restore_log}"
+fi
+
+systemctl start population-server >> "{restore_log}" 2>&1
+echo "服务器已重启" >> "{restore_log}"
+echo "=== $(date) 恢复完成 ===" >> "{restore_log}"
+'''
+    
+    subprocess.Popen(
+        ['bash', '-c', restore_script],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        start_new_session=True
+    )
+    
+    return jsonify({
+        'success': True,
+        'message': '备份恢复中，服务器将自动重启',
+        'timestamp': manifest.get('timestamp'),
+        'restored_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    })
 
 
 def validate_date(date_str):
