@@ -50,10 +50,15 @@ def _find_asset(release, app_type):
             name = asset.get('name', '').lower()
             if name.endswith('.apk'):
                 return asset
+    elif app_type == 'desktop':
+        for asset in assets:
+            name = asset.get('name', '')
+            if name.endswith('.zip') and '服务器' not in name and '服务' not in name:
+                return asset
     else:
         for asset in assets:
-            name = asset.get('name', '').lower()
-            if name.endswith('.exe'):
+            name = asset.get('name', '')
+            if name.endswith('.zip') and ('服务器' in name or '服务' in name):
                 return asset
 
     return None
