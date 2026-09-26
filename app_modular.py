@@ -128,6 +128,9 @@ def create_app():
         app.logger.error("500 Internal Error: %s\n%s", error, traceback.format_exc())
         return {'error': '服务器内部错误'}, 500
     
+    from config import ensure_dirs
+    ensure_dirs()
+
     from database import init_db
     init_db()
 

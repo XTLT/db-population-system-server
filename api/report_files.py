@@ -67,6 +67,7 @@ def api_upload_report():
     stored_filename = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{secure_filename(original_name)}"
     file_path = os.path.join(REPORTS_DIR, stored_filename)
 
+    os.makedirs(REPORTS_DIR, exist_ok=True)
     with open(file_path, 'wb') as f:
         f.write(file_data)
 
