@@ -7,6 +7,7 @@ import urllib.request
 from flask import Blueprint, jsonify, request
 
 from utils.security import require_auth
+from config import LOG_DIR
 
 bp = Blueprint('update', __name__)
 
@@ -129,7 +130,8 @@ def check_update():
     return jsonify(result)
 
 
-_DEPLOY_LOG = '/tmp/server_update.log'
+_DEPLOY_LOG = os.path.join(LOG_DIR, 'server_update.log')
+os.makedirs(LOG_DIR, exist_ok=True)
 
 
 @bp.route('/server', methods=['POST'])
