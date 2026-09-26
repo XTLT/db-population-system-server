@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Index, event
+from sqlalchemy import create_engine, Column, String, Integer, Index, event
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from config import DB_PATH
 import os
@@ -383,6 +383,20 @@ class ReportOperationLog(Base):
     operation_detail = Column(String, default="")
     ip_address = Column(String, default="")
     client_type = Column(String, default="")
+    created_at = Column(String, nullable=False)
+
+
+class ReportFile(Base):
+    __tablename__ = "report_files"
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    original_name = Column(String, nullable=False)
+    stored_filename = Column(String, nullable=False)
+    file_path = Column(String, nullable=False)
+    file_size = Column(Integer, default=0)
+    upload_user_id = Column(String, nullable=False)
+    username = Column(String, nullable=False)
+    upload_time = Column(String, nullable=False)
     created_at = Column(String, nullable=False)
 
 
@@ -1253,35 +1267,143 @@ def get_deleted_persons(limit: int = None) -> list:
         session.close()
 
 
-def add_report_log(report_id: str, user_id: str, username: str, operation_type: str, detail: str = "", ip_address: str = "", client_type: str = ""):
+def get_report_logs(report_id: str) -> list:
+    session = get_session()
+    try:
+        logs = session.query(ReportOperationLog).filter(
+            ReportOperationLog.report_id == report_id
+        ).order_by(ReportOperationLog.created_at.desc()).all()
+        return [
+            {
+                'time': log.created_at,
+                'user': log.username,
+                'action': log.operation_type,
+                'detail': log.operation_detail,
+                'ip': log.ip_address,
+            }
+            for log in logs
+        ]
+    finally:
+        session.close()
+
+
+def create_report_file(name: str, original_name: str, stored_filename: str,
+                       file_path: str, file_size: int, user_id: str, username: str) -> dict:
     from datetime import datetime
+    import uuid
+    session = get_session()
+    try:
+        report_id = f"rpt_{uuid.uuid4().hex[:12]}"
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        report = ReportFile(
+            id=report_id,
+            name=name,
+            original_name=original_name,
+            stored_filename=stored_filename,
+            file_path=file_path,
+            file_size=file_size,
+            upload_user_id=user_id,
+            username=username,
+            upload_time=now,
+            created_at=now,
+        )
+        session.add(report)
+        session.commit()
+        return {
+            'report_id': report_id,
+            'name': name,
+            'original_name': original_name,
+            'username': username,
+            'upload_time': now,
+            'file_size': file_size,
+        }
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def get_report_files() -> list:
+    session = get_session()
+    try:
+        reports = session.query(ReportFile).order_by(
+            ReportFile.created_at.desc()
+        ).all()
+        return [
+            {
+                'report_id': r.id,
+                'name': r.name,
+                'original_name': r.original_name,
+                'username': r.username,
+                'upload_time': r.upload_time,
+                'file_size': r.file_size,
+            }
+            for r in reports
+        ]
+    finally:
+        session.close()
+
+
+def get_report_file(report_id: str) -> dict:
+    session = get_session()
+    try:
+        r = session.query(ReportFile).filter(ReportFile.id == report_id).first()
+        if not r:
+            return None
+        return {
+            'report_id': r.id,
+            'name': r.name,
+            'original_name': r.original_name,
+            'stored_filename': r.stored_filename,
+            'file_path': r.file_path,
+            'file_size': r.file_size,
+            'upload_user_id': r.upload_user_id,
+            'username': r.username,
+            'upload_time': r.upload_time,
+        }
+    finally:
+        session.close()
+
+
+def delete_report_file(report_id: str) -> bool:
+    session = get_session()
+    try:
+        r = session.query(ReportFile).filter(ReportFile.id == report_id).first()
+        if r:
+            session.delete(r)
+            session.commit()
+            return True
+        return False
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
+def add_report_log(report_id: str, user_id: str, username: str,
+                   operation_type: str, operation_detail: str = "",
+                   ip_address: str = "", client_type: str = ""):
+    from datetime import datetime
+    import uuid
     session = get_session()
     try:
         log = ReportOperationLog(
-            id=f"rlog_{secrets.token_hex(8)}",
+            id=f"rlog_{uuid.uuid4().hex[:12]}",
             report_id=report_id,
             user_id=user_id,
             username=username,
             operation_type=operation_type,
-            operation_detail=detail,
+            operation_detail=operation_detail,
             ip_address=ip_address,
             client_type=client_type,
-            created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         )
         session.add(log)
         session.commit()
     except Exception:
         session.rollback()
-    finally:
-        session.close()
-
-
-def get_report_logs(report_id: str) -> list:
-    session = get_session()
-    try:
-        return session.query(ReportOperationLog).filter(
-            ReportOperationLog.report_id == report_id
-        ).order_by(ReportOperationLog.created_at.desc()).all()
     finally:
         session.close()
 

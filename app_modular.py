@@ -60,7 +60,7 @@ def create_app():
         backup_bp, logs_bp, notifications_bp, reports_bp,
         land_subsidy_bp, treatment_payment_bp, pension_insurance_bp,
         dibao_payment_bp, tekun_payment_bp,
-        update_bp
+        update_bp, report_files_bp
     )
     
     app.register_blueprint(auth_bp, url_prefix='/api')
@@ -74,6 +74,7 @@ def create_app():
     app.register_blueprint(logs_bp, url_prefix='/api/logs')
     app.register_blueprint(notifications_bp, url_prefix='/api/notifications')
     app.register_blueprint(reports_bp, url_prefix='/api/reports')
+    app.register_blueprint(report_files_bp, url_prefix='/api/reports')
     app.register_blueprint(land_subsidy_bp, url_prefix='/api')
     app.register_blueprint(treatment_payment_bp, url_prefix='/api')
     app.register_blueprint(pension_insurance_bp, url_prefix='/api')
