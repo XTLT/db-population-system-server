@@ -157,6 +157,7 @@ def update_server():
     # 分离子进程：等待HTTP响应完成后再执行git pull + 重启
     # start_new_session=True 确保子进程在 gunicorn 重启后存活
     deploy_script = f'''#!/bin/bash
+export TZ=Asia/Shanghai
 sleep 2
 echo "=== $(date) 开始更新 ===" > {_DEPLOY_LOG}
 cd {project_dir}
