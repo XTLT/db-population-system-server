@@ -70,7 +70,6 @@ def _parse_version(tag_name):
 
 
 @bp.route('/check')
-@require_auth
 def check_update():
     app_type = request.args.get('type', 'mobile')
     current_code = request.args.get('version_code', 0, type=int)
