@@ -68,15 +68,24 @@ def get_land_area_from_row(row):
 
 
 def get_local_welfare_forest_from_row(row):
-    return safe_str(row.get("地方公益林", ""))
+    val = row.get("地方公益林")
+    if val is None:
+        val = row.get("地方公益林（亩）", "")
+    return safe_str(val)
 
 
 def get_national_welfare_forest_from_row(row):
-    return safe_str(row.get("国家公益林", ""))
+    val = row.get("国家公益林")
+    if val is None:
+        val = row.get("国家公益林（亩）", "")
+    return safe_str(val)
 
 
 def get_commercial_forest_from_row(row):
-    return safe_str(row.get("非国有天然商品林", ""))
+    val = row.get("非国有天然商品林")
+    if val is None:
+        val = row.get("非国有天然商品林（亩）", "")
+    return safe_str(val)
 
 
 def get_land_area_from_row_existing(row, person):
@@ -84,12 +93,21 @@ def get_land_area_from_row_existing(row, person):
 
 
 def get_local_welfare_forest_from_row_existing(row, person):
-    return safe_str(row.get("地方公益林", person.local_welfare_forest_area))
+    val = row.get("地方公益林")
+    if val is None:
+        val = row.get("地方公益林（亩）", person.local_welfare_forest_area)
+    return safe_str(val)
 
 
 def get_national_welfare_forest_from_row_existing(row, person):
-    return safe_str(row.get("国家公益林", person.national_welfare_forest_area))
+    val = row.get("国家公益林")
+    if val is None:
+        val = row.get("国家公益林（亩）", person.national_welfare_forest_area)
+    return safe_str(val)
 
 
 def get_commercial_forest_from_row_existing(row, person):
-    return safe_str(row.get("非国有天然商品林", person.commercial_forest_area))
+    val = row.get("非国有天然商品林")
+    if val is None:
+        val = row.get("非国有天然商品林（亩）", person.commercial_forest_area)
+    return safe_str(val)
