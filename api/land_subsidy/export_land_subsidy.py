@@ -1,0 +1,63 @@
+import os
+import secrets
+from datetime import datetime
+from flask import request, jsonify, send_file
+
+from utils.security import require_auth
+from database import get_session, LandSubsidy, add_operation_log
+from config import BASE_DIR
+from . import bp
+
+
+@bp.route('/land_subsidy/export')
+@require_auth
+def export_land_subsidy():
+    if request.current_user.get('role') != 'admin':
+        return jsonify({'error': '权限不足'}), 403
+
+    year = request.args.get('year', '')
+
+    session = get_session()
+    try:
+        query = session.query(LandSubsidy)
+        if year:
+            query = query.filter(LandSubsidy.year == year)
+
+        subsidies = query.order_by(LandSubsidy.year.desc()).all()
+
+        if not subsidies:
+            return jsonify({'error': '没有数据可导出'}), 404
+
+        import pandas as pd
+        data = [{
+            '身份证号': s.id_card,
+            '姓名': s.name,
+            '年份': s.year,
+            '确权面积': s.certified_area,
+            '补贴面积': s.subsidy_area,
+            '基础标准': s.base_standard,
+            '油菜面积': s.rape_area,
+            '油菜金额': s.rape_amount,
+            '补贴总金额': s.total_amount,
+            '导入时间': s.import_time or s.created_at
+        } for s in subsidies]
+
+        df = pd.DataFrame(data)
+        tmp_path = os.path.join(BASE_DIR, f'_tmp_land_exp_{secrets.token_hex(4)}.xlsx')
+        df.to_excel(tmp_path, index=False, engine='openpyxl')
+
+        add_operation_log(
+            request.current_user['id'],
+            request.current_user['username'],
+            "导出土地补贴",
+            f"导出{len(subsidies)}条记录",
+            request.remote_addr,
+            request.headers.get('X-Client-Type', 'Web')
+        )
+
+        return send_file(tmp_path, as_attachment=True,
+                        download_name=f'土地补贴_{datetime.now().strftime("%Y%m%d")}.xlsx')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+    finally:
+        session.close()

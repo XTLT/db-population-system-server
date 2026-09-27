@@ -19,23 +19,14 @@ from .common import (
     has_any_photo,
     get_photo_base_name,
     safe_str,
-    calculate_enrollment_date
+    calculate_enrollment_date,
+    escape_like,
+    validate_id_card,
+    validate_phone,
+    validate_username,
+    validate_year,
+    validate_real_name
 )
-
-# 从 server/utils.py 导入验证函数
-import os
-import importlib.util
-_utils_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'utils.py')
-_spec = importlib.util.spec_from_file_location('server_utils', _utils_path)
-_server_utils = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(_server_utils)
-
-escape_like = _server_utils.escape_like
-validate_id_card = _server_utils.validate_id_card
-validate_phone = _server_utils.validate_phone
-validate_username = _server_utils.validate_username
-validate_year = _server_utils.validate_year
-validate_real_name = _server_utils.validate_real_name
 
 __all__ = [
     # security
