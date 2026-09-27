@@ -1,7 +1,7 @@
 from flask import request, jsonify
 
 from . import bp
-from ._fetch_gitee_releases import _fetch_gitee_releases
+from ._fetch_releases import _fetch_releases
 from ._find_asset import _find_asset
 from ._parse_version import _parse_version
 
@@ -11,7 +11,7 @@ def check_update():
     app_type = request.args.get('type', 'mobile')
     current_code = request.args.get('version_code', 0, type=int)
 
-    releases = _fetch_gitee_releases()
+    releases = _fetch_releases()
     if not releases:
         return jsonify({'error': '无法获取版本信息'}), 500
 

@@ -1,11 +1,10 @@
 # 版本检测 URL（仅支持HTTPS）
 VERSION_URLS = [
-    "https://gitee.com/tension0712/population-query-system/raw/main/updates/version.json",
+    "https://raw.githubusercontent.com/XTLT/db-population-system/master/updates/version.json",
 ]
 
 # 更新源白名单域名
 ALLOWED_DOMAINS = [
-    "gitee.com",
     "github.com",
     "githubusercontent.com",
 ]
