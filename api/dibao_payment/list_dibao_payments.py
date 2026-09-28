@@ -2,7 +2,7 @@ from flask import request, jsonify
 
 from utils.security import require_auth
 from utils import escape_like
-from database import get_session, DibaoPayment
+from database import get_session, Person, DibaoPayment
 from . import bp
 
 
@@ -31,11 +31,14 @@ def list_dibao_payments():
 
         records = query.order_by(DibaoPayment.period.desc()).limit(500).all()
 
+        person_map = {p.id_card: p.dis_level for p in session.query(Person).all()}
+
         return jsonify({
             'records': [{
                 'id': p.id,
                 'name': p.name,
                 'id_card': p.id_card,
+                'dis_level': person_map.get(p.id_card, ''),
                 'town': p.town,
                 'village': p.village,
                 'period': p.period,

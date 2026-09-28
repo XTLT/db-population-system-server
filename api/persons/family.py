@@ -34,6 +34,8 @@ def api_family(hu_hao):
             'social_card1': m.social_card1,
             'social_card2': m.social_card2,
             'social_card3': m.social_card3,
+            'social_card2_source': m.social_card2_source or '',
+            'social_card3_source': m.social_card3_source or '',
             'poor_type': m.poor_type,
             'remark': m.remark,
             'disability': m.disability,

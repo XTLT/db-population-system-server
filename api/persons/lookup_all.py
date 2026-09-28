@@ -21,6 +21,8 @@ def api_persons_lookup_all():
                 'social_card1': p.social_card1 or '',
                 'social_card2': p.social_card2 or '',
                 'social_card3': p.social_card3 or '',
+                'social_card2_source': p.social_card2_source or '',
+                'social_card3_source': p.social_card3_source or '',
                 'hu_hao': p.hu_hao or '',
                 'address': p.address or '',
                 'relation': p.relation or ''

@@ -42,6 +42,8 @@ def api_person(person_id):
                 'social_card1': p.social_card1,
                 'social_card2': p.social_card2,
                 'social_card3': p.social_card3,
+                'social_card2_source': p.social_card2_source or '',
+                'social_card3_source': p.social_card3_source or '',
                 'poor_type': p.poor_type,
                 'remark': p.remark,
                 'disability': p.disability,

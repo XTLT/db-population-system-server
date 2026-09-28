@@ -308,4 +308,14 @@ def _migrate_db(engine):
             conn.commit()
         except Exception:
             pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN social_card2_source VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN social_card3_source VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
 

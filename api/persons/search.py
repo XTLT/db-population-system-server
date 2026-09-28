@@ -46,6 +46,8 @@ def api_search():
         'social_card1': p.social_card1 or '',
         'social_card2': p.social_card2 or '',
         'social_card3': p.social_card3 or '',
+        'social_card2_source': p.social_card2_source or '',
+        'social_card3_source': p.social_card3_source or '',
         'is_migrated': p.is_migrated or '否',
         'land_area': p.land_area or '',
         'local_welfare_forest_area': p.local_welfare_forest_area or '',

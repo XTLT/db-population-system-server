@@ -4,6 +4,7 @@ from datetime import datetime
 from database import get_session, Person, PensionInsurance
 from utils import safe_str
 from ._read_excel_robust import _read_excel_robust
+from ._backfill_social_card import _backfill_social_card
 
 
 def import_pension_insurance_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
@@ -48,9 +49,11 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None, perio
 
     # 获取数据库中所有身份证号
     existing_id_cards = set()
+    person_map = {}
     try:
-        persons = session.query(Person.id_card).all()
+        persons = session.query(Person).all()
         existing_id_cards = {p.id_card for p in persons if p.id_card}
+        person_map = {p.id_card: p for p in persons if p.id_card}
     except Exception:
         pass
 
@@ -69,6 +72,13 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None, perio
                     not_found.append(f"{name}({id_card})")
                     skipped += 1
                     continue
+
+                # 方案C：社保卡2/3 自动回填（期数为空则跳过回填）
+                card = safe_str(row.get("卡号", "")).strip()
+                period_value = safe_str(row.get("费款所属期", "")) or period
+                person = person_map.get(id_card)
+                if person and card and period_value:
+                    _backfill_social_card(person, f"养老保险{period_value}", card)
 
                 pension = PensionInsurance(
                     id=f"pi_{secrets.token_hex(8)}",

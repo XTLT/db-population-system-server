@@ -25,8 +25,12 @@ def _update_person_from_row(person: Person, row):
     person.tekun_type = safe_str(row.get("供养类型", person.tekun_type))
     person.jisheng = safe_str(row.get("是否计生家庭", person.jisheng))
     person.social_card1 = safe_str(row.get("社保卡号1", person.social_card1))
-    person.social_card2 = safe_str(row.get("社保卡号2", person.social_card2))
-    person.social_card3 = safe_str(row.get("社保卡号3", person.social_card3))
+    _card2 = safe_str(row.get("社保卡号2", "")).strip()
+    if _card2:
+        person.social_card2 = _card2
+    _card3 = safe_str(row.get("社保卡号3", "")).strip()
+    if _card3:
+        person.social_card3 = _card3
     person.land_area = get_land_area_from_row_existing(row, person)
     person.local_welfare_forest_area = get_local_welfare_forest_from_row_existing(row, person)
     person.national_welfare_forest_area = get_national_welfare_forest_from_row_existing(row, person)

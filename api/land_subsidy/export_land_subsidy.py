@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import request, jsonify, send_file
 
 from utils.security import require_auth
-from database import get_session, LandSubsidy, add_operation_log
+from database import get_session, Person, LandSubsidy, add_operation_log
 from config import BASE_DIR
 from . import bp
 
@@ -29,8 +29,10 @@ def export_land_subsidy():
             return jsonify({'error': '没有数据可导出'}), 404
 
         import pandas as pd
+        person_map = {p.id_card: p.dis_level for p in session.query(Person).all()}
         data = [{
             '身份证号': s.id_card,
+            '残疾等级': person_map.get(s.id_card, ''),
             '姓名': s.name,
             '年份': s.year,
             '确权面积': s.certified_area,

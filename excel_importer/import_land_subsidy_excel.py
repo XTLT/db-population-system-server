@@ -3,6 +3,7 @@ from datetime import datetime
 from database import get_session, Person, LandSubsidy
 from utils import safe_str
 from ._read_excel_robust import _read_excel_robust
+from ._backfill_social_card import _backfill_social_card
 
 
 def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_callback=None) -> dict:
@@ -68,9 +69,11 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
 
     # 获取数据库中所有身份证号
     existing_id_cards = set()
+    person_map = {}
     try:
-        persons = session.query(Person.id_card).all()
+        persons = session.query(Person).all()
         existing_id_cards = {p.id_card for p in persons if p.id_card}
+        person_map = {p.id_card: p for p in persons if p.id_card}
     except Exception:
         pass
 
@@ -89,6 +92,12 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                     not_found.append(f"{name}({id_card})")
                     skipped += 1
                     continue
+
+                # 方案C：社保卡2/3 自动回填（期数为空则跳过回填）
+                card = safe_str(row.get("卡号", "")).strip()
+                person = person_map.get(id_card)
+                if person and card and subsidy_year:
+                    _backfill_social_card(person, f"地力补贴{subsidy_year}", card)
 
                 land_area = safe_str(row.get(area_col, "")) if area_col else ""
                 subsidy_amount = safe_str(row.get(amount_col, "")) if amount_col else ""

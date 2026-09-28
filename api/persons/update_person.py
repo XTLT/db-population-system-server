@@ -49,8 +49,6 @@ def api_update_person(person_id):
         p.tekun_type = data.get('tekun_type', p.tekun_type)
         p.jisheng = data.get('jisheng', p.jisheng)
         p.social_card1 = data.get('social_card1', p.social_card1)
-        p.social_card2 = data.get('social_card2', p.social_card2)
-        p.social_card3 = data.get('social_card3', p.social_card3)
         new_land_area = data.get('land_area', p.land_area)
         old_land_area = p.land_area or ''
         

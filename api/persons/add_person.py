@@ -64,8 +64,6 @@ def api_add_person():
         national_welfare_forest_area=data.get('national_welfare_forest_area', ''),
         commercial_forest_area=data.get('commercial_forest_area', ''),
         social_card1=data.get('social_card1', ''),
-        social_card2=data.get('social_card2', ''),
-        social_card3=data.get('social_card3', ''),
         poor_type=data.get('poor_type', ''),
         remark=data.get('remark', ''),
         disability=data.get('disability', ''),
