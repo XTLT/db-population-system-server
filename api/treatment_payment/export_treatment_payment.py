@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import request, jsonify, send_file
 
 from utils.security import require_auth
-from database import get_session, Person, TreatmentPayment, add_operation_log
+from database import get_session, TreatmentPayment, add_operation_log
 from config import BASE_DIR
 from . import bp
 
@@ -32,14 +32,12 @@ def export_treatment_payment():
             return jsonify({'error': '没有数据可导出'}), 404
 
         import pandas as pd
-        person_map = {p.id_card: p.dis_level for p in session.query(Person).all()}
         data = [{
             '所属乡镇': p.town,
             '所属村': p.village,
             '费款所属期': p.period,
             '姓名': p.name,
             '身份证号': p.id_card,
-            '残疾等级': person_map.get(p.id_card, ''),
             '银行账号': p.bank_account,
             '金额': p.amount,
             '支付标志': p.payment_status,

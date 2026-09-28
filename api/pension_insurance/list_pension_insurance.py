@@ -2,7 +2,7 @@ from flask import request, jsonify
 
 from utils.security import require_auth
 from utils import escape_like
-from database import get_session, Person, PensionInsurance
+from database import get_session, PensionInsurance
 from . import bp
 
 
@@ -31,14 +31,12 @@ def list_pension_insurance():
 
         records = query.order_by(PensionInsurance.period.desc()).limit(500).all()
 
-        person_map = {p.id_card: p.dis_level for p in session.query(Person).all()}
 
         return jsonify({
             'records': [{
                 'id': p.id,
                 'name': p.name,
                 'id_card': p.id_card,
-                'dis_level': person_map.get(p.id_card, ''),
                 'town': p.town,
                 'village': p.village,
                 'period': p.period,

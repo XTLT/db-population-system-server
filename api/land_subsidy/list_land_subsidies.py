@@ -2,7 +2,7 @@ from flask import request, jsonify
 
 from utils.security import require_auth
 from utils import escape_like, validate_year
-from database import get_session, Person, LandSubsidy
+from database import get_session, LandSubsidy
 from . import bp
 
 
@@ -32,14 +32,12 @@ def list_land_subsidies():
 
         subsidies = query.order_by(LandSubsidy.year.desc()).limit(500).all()
 
-        person_map = {p.id_card: p.dis_level for p in session.query(Person).all()}
 
         return jsonify({
             'subsidies': [{
                 'id': s.id,
                 'person_id': s.person_id,
                 'id_card': s.id_card,
-                'dis_level': person_map.get(s.id_card, ''),
                 'name': s.name,
                 'year': s.year,
                 'certified_area': s.certified_area,
