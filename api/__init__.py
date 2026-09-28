@@ -16,6 +16,8 @@ from .treatment_payment import bp as treatment_payment_bp
 from .pension_insurance import bp as pension_insurance_bp
 from .dibao_payment import bp as dibao_payment_bp
 from .tekun_payment import bp as tekun_payment_bp
+from .disability_care_payment import bp as disability_care_payment_bp
+from .elderly_allowance import bp as elderly_allowance_bp
 from .update import bp as update_bp
 
 __all__ = [
@@ -36,5 +38,7 @@ __all__ = [
     'pension_insurance_bp',
     'dibao_payment_bp',
     'tekun_payment_bp',
+    'disability_care_payment_bp',
+    'elderly_allowance_bp',
     'update_bp',
 ]

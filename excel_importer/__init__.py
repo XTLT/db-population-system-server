@@ -27,6 +27,8 @@ from .import_land_subsidy_excel import import_land_subsidy_excel
 from .import_pension_insurance_excel import import_pension_insurance_excel
 from .import_dibao_payment_excel import import_dibao_payment_excel
 from .import_tekun_payment_excel import import_tekun_payment_excel
+from .import_disability_care_payment_excel import import_disability_care_payment_excel
+from .import_elderly_allowance_excel import import_elderly_allowance_excel
 
 __all__ = [
     '_read_excel_robust',
@@ -57,4 +59,6 @@ __all__ = [
     'import_pension_insurance_excel',
     'import_dibao_payment_excel',
     'import_tekun_payment_excel',
+    'import_disability_care_payment_excel',
+    'import_elderly_allowance_excel',
 ]

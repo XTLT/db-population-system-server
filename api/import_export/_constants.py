@@ -19,4 +19,6 @@ PAYMENT_TEMPLATE_MAP = {
     'pension_insurance': ('excel_payment_templates', 'generate_pension_insurance_template', '养老保险导入模板.xlsx'),
     'dibao_payment': ('excel_payment_templates', 'generate_dibao_payment_template', '低保发放导入模板.xlsx'),
     'tekun_payment': ('excel_payment_templates', 'generate_tekun_payment_template', '特困发放导入模板.xlsx'),
+    'disability_care_payment': ('excel_payment_templates', 'generate_disability_care_payment_template', '残疾人护理补贴导入模板.xlsx'),
+    'elderly_allowance': ('excel_payment_templates', 'generate_elderly_allowance_template', '高龄补贴导入模板.xlsx'),
 }

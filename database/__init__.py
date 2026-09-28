@@ -31,6 +31,8 @@ from .models.treatment_payment import TreatmentPayment
 from .models.pension_insurance import PensionInsurance
 from .models.dibao_payment import DibaoPayment
 from .models.tekun_payment import TekunPayment
+from .models.disability_care_payment import DisabilityCarePayment
+from .models.elderly_allowance import ElderlyAllowance
 from .models.education_history import EducationHistory
 from .models.user import User
 from .models.operation_log import OperationLog
@@ -122,6 +124,8 @@ __all__ = [
     "PensionInsurance",
     "DibaoPayment",
     "TekunPayment",
+    "DisabilityCarePayment",
+    "ElderlyAllowance",
     "EducationHistory",
     "User",
     "OperationLog",
