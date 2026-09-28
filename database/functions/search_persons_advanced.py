@@ -65,7 +65,9 @@ def search_persons_advanced(
             query = query.filter(Person.dis_level == dis_level)
 
         if dibao:
-            query = query.filter(Person.dibao == dibao)
+            # 支持逗号分隔多值（如 是,低保边缘家庭,特困家庭）
+            dibao_values = [v.strip() for v in dibao.split(',') if v.strip()]
+            query = query.filter(Person.dibao.in_(dibao_values))
         
         if tekun:
             query = query.filter(Person.tekun == tekun)

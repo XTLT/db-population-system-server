@@ -14,9 +14,10 @@ def api_statistics():
         total = session.query(Person).count()
         dead = session.query(Person).filter(Person.is_dead == '是').count()
         migrated = session.query(Person).filter(Person.is_migrated == '是').count()
-        # 低保人员统计：匹配数据库中的实际值
+        # 低保人员统计：编辑页选项为 是/低保边缘家庭/特困家庭，另兼容历史旧值
         dibao = session.query(Person).filter(
-            Person.dibao.in_(['最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'])
+            Person.dibao.in_(['是', '低保边缘家庭', '特困家庭',
+                              '最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'])
         ).count()
         disability = session.query(Person).filter(Person.disability != '无', Person.disability != '').count()
         # 特困供养人员统计
