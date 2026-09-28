@@ -81,8 +81,10 @@
             <button onclick="showLandSubsidyModal()" class="toolbar-btn" id="btnLandSubsidy">地力补贴</button>
             <button onclick="showTreatmentPaymentModal()" class="toolbar-btn" id="btnTreatmentPayment">待遇发放</button>
             <button onclick="showPensionInsuranceModal()" class="toolbar-btn" id="btnPensionInsurance">养老保险</button>
+            <button onclick="showElderlyAllowanceModal()" class="toolbar-btn" id="btnElderlyAllowance">高龄补贴</button>
             <button onclick="showDibaoPaymentModal()" class="toolbar-btn" id="btnDibaoPayment">低保发放</button>
             <button onclick="showTekunPaymentModal()" class="toolbar-btn" id="btnTekunPayment">特困发放</button>
+            <button onclick="showDisabilityCarePaymentModal()" class="toolbar-btn" id="btnDisabilityCarePayment">残疾人护理补贴</button>
             <button onclick="showDeletedModal()" class="toolbar-btn" id="btnDeleted" style="display:none;">找回人员</button>
             <button onclick="doBackup()" class="toolbar-btn" id="btnBackup" style="display:none;">备份</button>
             <button onclick="showLogsModal()" class="toolbar-btn" id="btnLogs" style="display:none;">操作日志</button>
@@ -1100,7 +1102,125 @@
         </div>
     </div>
 
-    <script src="js/common.js"></script>
+    
+        <div id="elderlyAllowanceModal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:1100px;">
+                <h2>高龄补贴数据管理</h2>
+                <div class="student-toolbar">
+                    <input type="text" id="eaPeriodSearch" placeholder="费款所属期(如202606)" style="padding:6px 12px;font-size:13px;width:140px;">
+                    <input type="text" id="eaIdCardSearch" placeholder="身份证号" style="padding:6px 12px;font-size:13px;width:150px;">
+                    <input type="text" id="eaNameSearch" placeholder="姓名" style="padding:6px 12px;font-size:13px;width:120px;">
+                    <button onclick="loadElderlyAllowances()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">查询</button>
+                    <button onclick="showElderlyAllowanceImportModal()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnElderlyAllowanceImport">导入</button>
+                    <button onclick="exportElderlyAllowances()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">导出</button>
+                </div>
+                <div class="table-container" style="max-height:400px;overflow-y:auto;">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>费款所属期</th>
+                                <th>姓名</th>
+                                <th>身份证号</th>
+                                <th>所属村</th>
+                                <th>银行账号</th>
+                                <th>金额</th>
+                                <th>支付标志</th>
+                                <th>和申请人关系</th>
+                                <th>导入来源</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="elderlyAllowanceBody"></tbody>
+                    </table>
+                </div>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="closeElderlyAllowanceModal()" class="btn-cancel">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="elderlyAllowanceImportModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>导入高龄补贴数据</h2>
+                <div class="form-group">
+                    <label>费款所属期（如202606）：</label>
+                    <input type="text" id="eaImportPeriod" placeholder="如202606" style="padding:6px 12px;font-size:13px;width:140px;">
+                </div>
+                <div class="form-group">
+                    <label>选择文件：</label>
+                    <input type="file" id="eaImportFile" accept=".xlsx,.xls">
+                </div>
+                <div id="eaImportProgress" style="display:none;">
+                    <p id="eaImportStatus"></p>
+                </div>
+                <div class="form-buttons">
+                    <button onclick="doDownloadPaymentTemplate('elderly_allowance', '高龄补贴导入模板.xlsx')" class="toolbar-btn">下载模板</button>
+                    <button onclick="doElderlyAllowanceImport()" class="btn-save">开始导入</button>
+                    <button onclick="closeElderlyAllowanceImportModal()" class="btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="disabilityCarePaymentModal" class="modal" style="display:none;">
+            <div class="modal-content" style="max-width:1100px;">
+                <h2>残疾人护理补贴数据管理</h2>
+                <div class="student-toolbar">
+                    <input type="text" id="dcpPeriodSearch" placeholder="费款所属期(如202606)" style="padding:6px 12px;font-size:13px;width:140px;">
+                    <input type="text" id="dcpIdCardSearch" placeholder="身份证号" style="padding:6px 12px;font-size:13px;width:150px;">
+                    <input type="text" id="dcpNameSearch" placeholder="姓名" style="padding:6px 12px;font-size:13px;width:120px;">
+                    <button onclick="loadDisabilityCarePayments()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">查询</button>
+                    <button onclick="showDisabilityCareImportModal()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnDisabilityCareImport">导入</button>
+                    <button onclick="exportDisabilityCarePayments()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">导出</button>
+                </div>
+                <div class="table-container" style="max-height:400px;overflow-y:auto;">
+                    <table class="user-table">
+                        <thead>
+                            <tr>
+                                <th>费款所属期</th>
+                                <th>姓名</th>
+                                <th>身份证号</th>
+                                <th>所属村</th>
+                                <th>银行账号</th>
+                                <th>金额</th>
+                                <th>支付标志</th>
+                                <th>和申请人关系</th>
+                                <th>导入来源</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="disabilityCarePaymentBody"></tbody>
+                    </table>
+                </div>
+                <div class="form-buttons" style="margin-top:15px;">
+                    <button onclick="closeDisabilityCarePaymentModal()" class="btn-cancel">关闭</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="disabilityCareImportModal" class="modal" style="display:none;">
+            <div class="modal-content">
+                <h2>导入残疾人护理补贴数据</h2>
+                <div class="form-group">
+                    <label>费款所属期（如202606）：</label>
+                    <input type="text" id="dcpImportPeriod" placeholder="如202606" style="padding:6px 12px;font-size:13px;width:140px;">
+                </div>
+                <div class="form-group">
+                    <label>选择文件：</label>
+                    <input type="file" id="dcpImportFile" accept=".xlsx,.xls">
+                </div>
+                <div id="dcpImportProgress" style="display:none;">
+                    <p id="dcpImportStatus"></p>
+                </div>
+                <div class="form-buttons">
+                    <button onclick="doDownloadPaymentTemplate('disability_care_payment', '残疾人护理补贴导入模板.xlsx')" class="toolbar-btn">下载模板</button>
+                    <button onclick="doDisabilityCareImport()" class="btn-save">开始导入</button>
+                    <button onclick="closeDisabilityCareImportModal()" class="btn-cancel">取消</button>
+                </div>
+            </div>
+        </div>
+
+<script src="js/common.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/persons.js"></script>
     <script src="js/household.js"></script>
@@ -1113,5 +1233,7 @@
     <script src="js/pension.js"></script>
     <script src="js/dibao.js"></script>
     <script src="js/tekun.js"></script>
+<script src="js/disability_care.js"></script>
+<script src="js/elderly_allowance.js"></script>
 </body>
 </html>
