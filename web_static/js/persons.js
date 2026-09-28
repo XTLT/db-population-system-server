@@ -81,8 +81,8 @@ function showPerson(personId) {
                 <div class="detail-item"><label>状态</label><span>${data.is_dead === '是' ? '已故' : (data.is_migrated === '是' ? '已迁出' : '正常')}</span></div>
                 <div class="detail-item"><label>地址</label><span>${data.address || ''}</span></div>
                 <div class="detail-item"><label>社保卡号1</label><span>${data.social_card1 === '无' ? '' : data.social_card1}</span></div>
-                <div class="detail-item"><label>社保卡号2</label><span>${data.social_card2 === '无' ? '' : data.social_card2}</span></div>
-                <div class="detail-item"><label>社保卡号3</label><span>${data.social_card3 === '无' ? '' : data.social_card3}</span></div>
+                <div class="detail-item"><label>社保卡号2</label><span>${(data.social_card2 && data.social_card2 !== '无') ? data.social_card2 + (data.social_card2_source ? `（${data.social_card2_source}）` : '') : ''}</span></div>
+                <div class="detail-item"><label>社保卡号3</label><span>${(data.social_card3 && data.social_card3 !== '无') ? data.social_card3 + (data.social_card3_source ? `（${data.social_card3_source}）` : '') : ''}</span></div>
                 <div class="detail-item"><label>脱贫户</label><span>${data.poor_type === '无' ? '' : data.poor_type}</span></div>
                 <div class="detail-item"><label>备注</label><span>${data.remark === '无' ? '' : data.remark}</span></div>
                 <div class="detail-item"><label>残疾</label><span>${data.disability === '无' ? '' : data.disability}</span></div>
@@ -141,8 +141,11 @@ function editPerson() {
             document.getElementById('editCommercialForest').value = data.commercial_forest_area || '';
             currentPersonCommercialForest = data.commercial_forest_area || '';
             document.getElementById('editSocial1').value = (data.social_card1 && data.social_card1 !== '无') ? data.social_card1 : '';
-            document.getElementById('editSocial2').value = (data.social_card2 && data.social_card2 !== '无') ? data.social_card2 : '';
-            document.getElementById('editSocial3').value = (data.social_card3 && data.social_card3 !== '无') ? data.social_card3 : '';
+            document.getElementById('editSocial2').value = (data.social_card2 && data.social_card2 !== '无') ? data.social_card2 + (data.social_card2_source ? `（${data.social_card2_source}）` : '') : '';
+            document.getElementById('editSocial3').value = (data.social_card3 && data.social_card3 !== '无') ? data.social_card3 + (data.social_card3_source ? `（${data.social_card3_source}）` : '') : '';
+            // 社保卡号2/3 仅由补贴导入自动回填，编辑框只读展示卡号+来源
+            document.getElementById('editSocial2').readOnly = true;
+            document.getElementById('editSocial3').readOnly = true;
             document.getElementById('editRemark').value = (data.remark && data.remark !== '无') ? data.remark : '';
 
             // 社会保障
@@ -328,8 +331,6 @@ document.getElementById('editForm').onsubmit = function(e) {
         tekun: tekunVal,
         tekun_type: tekunVal === '是' ? document.getElementById('editTekunType').value : '',
         social_card1: document.getElementById('editSocial1').value,
-        social_card2: document.getElementById('editSocial2').value,
-        social_card3: document.getElementById('editSocial3').value,
         land_area: newLandArea,
         land_area_change_reason: window._landAreaChangeReason,
         local_welfare_forest_area: newLocalWelfareForest,
