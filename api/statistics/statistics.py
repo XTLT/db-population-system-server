@@ -20,9 +20,9 @@ def api_statistics():
                               '最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'])
         ).count()
         disability = session.query(Person).filter(Person.disability != '无', Person.disability != '').count()
-        # 特困供养人员统计
+        # 特困供养人员统计：与编辑页选项/移动端下钻统一为 =='是'
         tekun = session.query(Person).filter(
-            Person.tekun != '', Person.tekun != '否', Person.tekun.isnot(None)
+            Person.tekun == '是'
         ).count()
 
         poor_type_distribution = {}
