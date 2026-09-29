@@ -25,10 +25,11 @@ function showFamily(huHao, name) {
 
     apiRequest('GET', `/api/family/${huHao}`)
         .then(data => {
-            const sameNameCount = data.filter(m => m.name === name).length;
+            const members = data.members || data;
+            const sameNameCount = members.filter(m => m.name === name).length;
             document.getElementById('familyTitle').textContent =
                 `您选择查看：${name}（共找到 ${sameNameCount} 个同名人员）`;
-            displayFamily(data);
+            displayFamily(members);
         });
 }
 
