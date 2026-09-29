@@ -97,6 +97,10 @@ def create_app():
     @app.route('/app.js')
     def script():
         return send_from_directory(STATIC_DIR, 'app.js')
+
+    @app.route('/js/<path:filename>')
+    def js_files(filename):
+        return send_from_directory(os.path.join(STATIC_DIR, 'js'), filename)
     
     @app.after_request
     def add_security_headers(response):
