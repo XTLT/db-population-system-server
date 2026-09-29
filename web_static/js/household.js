@@ -49,7 +49,8 @@ document.getElementById('addHouseholdForm').onsubmit = function(e) {
 let splitPersons = [];
 function showSplitHouseholdModal() {
     if (!currentHuHao) { alert('请先选择一个家庭'); return; }
-    apiRequest('GET', `/api/family/${currentHuHao}`).then(members => {
+    apiRequest('GET', `/api/family/${currentHuHao}`).then(data => {
+        const members = data.members || data;
         splitPersons = members;
         const list = document.getElementById('splitPersonList');
         list.innerHTML = members.map(m =>
@@ -84,7 +85,8 @@ function doSplitHousehold() {
 
 function showMergeHouseholdModal() {
     document.getElementById('mergeTargetHuHao').value = currentHuHao || '';
-    apiRequest('GET', `/api/family/${currentHuHao || ''}`).then(members => {
+    apiRequest('GET', `/api/family/${currentHuHao || ''}`).then(data => {
+        const members = data.members || data;
         const list = document.getElementById('mergePersonList');
         list.innerHTML = members.map(m =>
             `<label style="display:block;padding:5px;"><input type="checkbox" value="${m.id}" class="merge-check"> ${m.name} (${m.id_card}) - 户号:${currentHuHao}</label>`
@@ -132,7 +134,8 @@ function showAddPersonModal() {
     document.getElementById('addPersonLocalWelfareForest').value = '';
     document.getElementById('addPersonNationalWelfareForest').value = '';
     document.getElementById('addPersonCommercialForest').value = '';
-    apiRequest('GET', `/api/family/${currentHuHao}`).then(members => {
+    apiRequest('GET', `/api/family/${currentHuHao}`).then(data => {
+        const members = data.members || data;
         if (members.length > 0) {
             document.getElementById('addPersonAddress').value = members[0].address || '';
         }

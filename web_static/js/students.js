@@ -32,7 +32,8 @@ function searchStudents() {
     if (school) params.set('school', school);
     if (grade) params.set('grade', grade);
 
-    apiRequest('GET', `/api/students/search?${params}`).then(students => {
+    apiRequest('GET', `/api/students/search?${params}`).then(data => {
+        const students = data.results || data;
         const tbody = document.getElementById('studentBody');
         tbody.innerHTML = '';
         if (students.length === 0) {

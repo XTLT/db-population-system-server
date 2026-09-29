@@ -71,47 +71,48 @@ function showPerson(personId) {
 
     apiRequest('GET', `/api/person/${personId}`)
         .then(data => {
-            currentPersonUpdatedAt = data.updated_at || '';
+            const p = data.person || data;
+            currentPersonUpdatedAt = p.updated_at || '';
             let html = `
-                <div class="detail-item"><label>姓名</label><span>${data.name}</span></div>
-                <div class="detail-item"><label>身份证号</label><span>${data.id_card}</span></div>
-                <div class="detail-item"><label>户号</label><span>${data.hu_hao}</span></div>
-                <div class="detail-item"><label>与户主关系</label><span>${data.relation}</span></div>
-                <div class="detail-item"><label>年龄</label><span>${data.age}</span></div>
-                <div class="detail-item"><label>电话</label><span>${data.phone === '无' ? '' : data.phone}</span></div>
-                <div class="detail-item"><label>状态</label><span>${data.is_dead === '是' ? '已故' : (data.is_migrated === '是' ? '已迁出' : '正常')}</span></div>
-                <div class="detail-item"><label>地址</label><span>${data.address || ''}</span></div>
-                <div class="detail-item"><label>社保卡号1</label><span>${data.social_card1 === '无' ? '' : data.social_card1}</span></div>
-                <div class="detail-item"><label>社保卡号2</label><span>${(data.social_card2 && data.social_card2 !== '无') ? data.social_card2 + (data.social_card2_source ? `（${data.social_card2_source}）` : '') : ''}</span></div>
-                <div class="detail-item"><label>社保卡号3</label><span>${(data.social_card3 && data.social_card3 !== '无') ? data.social_card3 + (data.social_card3_source ? `（${data.social_card3_source}）` : '') : ''}</span></div>
-                <div class="detail-item"><label>脱贫户</label><span>${data.poor_type === '无' ? '' : data.poor_type}</span></div>
-                <div class="detail-item"><label>备注</label><span>${data.remark === '无' ? '' : data.remark}</span></div>
-                <div class="detail-item"><label>残疾</label><span>${data.disability === '无' ? '' : data.disability}</span></div>
-                ${data.disability === '是' ? `<div class="detail-item"><label>残疾类型</label><span>${data.disability_type === '无' ? '' : (data.disability_type || '')}</span></div><div class="detail-item"><label>残疾等级</label><span>${data.dis_level === '无' ? '' : (data.dis_level || '')}</span></div>` : ''}
-                <div class="detail-item"><label>低保</label><span>${data.dibao === '无' ? '' : data.dibao}</span></div>
-                <div class="detail-item"><label>计生家庭</label><span>${data.jisheng === '无' ? '' : data.jisheng}</span></div>
-                <div class="detail-item"><label>特困供养</label><span>${data.tekun === '无' ? '' : (data.tekun || '')}</span></div>
-                ${data.tekun === '是' ? `<div class="detail-item"><label>供养类型</label><span>${data.tekun_type === '无' ? '' : (data.tekun_type || '')}</span></div>` : ''}
-                <div class="detail-item"><label>土地面积</label><span>${data.land_area || ''}</span></div>
-                ${data.land_area_change_reason ? `<div class="detail-item"><label>土地变更原因</label><span>${data.land_area_change_reason}</span></div><div class="detail-item"><label>土地变更时间</label><span>${data.land_area_change_time}</span></div>` : ''}
-                <div class="detail-item"><label>地方公益林</label><span>${data.local_welfare_forest_area || ''}</span></div>
-                ${data.local_welfare_forest_change_reason ? `<div class="detail-item"><label>地方公益林变更原因</label><span>${data.local_welfare_forest_change_reason}</span></div><div class="detail-item"><label>地方公益林变更时间</label><span>${data.local_welfare_forest_change_time}</span></div>` : ''}
-                <div class="detail-item"><label>国家公益林</label><span>${data.national_welfare_forest_area || ''}</span></div>
-                ${data.national_welfare_forest_change_reason ? `<div class="detail-item"><label>国家公益林变更原因</label><span>${data.national_welfare_forest_change_reason}</span></div><div class="detail-item"><label>国家公益林变更时间</label><span>${data.national_welfare_forest_change_time}</span></div>` : ''}
-                <div class="detail-item"><label>非国有天然商品林</label><span>${data.commercial_forest_area || ''}</span></div>
-                ${data.commercial_forest_change_reason ? `<div class="detail-item"><label>非国有天然商品林变更原因</label><span>${data.commercial_forest_change_reason}</span></div><div class="detail-item"><label>非国有天然商品林变更时间</label><span>${data.commercial_forest_change_time}</span></div>` : ''}
+                <div class="detail-item"><label>姓名</label><span>${p.name}</span></div>
+                <div class="detail-item"><label>身份证号</label><span>${p.id_card}</span></div>
+                <div class="detail-item"><label>户号</label><span>${p.hu_hao}</span></div>
+                <div class="detail-item"><label>与户主关系</label><span>${p.relation}</span></div>
+                <div class="detail-item"><label>年龄</label><span>${p.age}</span></div>
+                <div class="detail-item"><label>电话</label><span>${p.phone === '无' ? '' : p.phone}</span></div>
+                <div class="detail-item"><label>状态</label><span>${p.is_dead === '是' ? '已故' : (p.is_migrated === '是' ? '已迁出' : '正常')}</span></div>
+                <div class="detail-item"><label>地址</label><span>${p.address || ''}</span></div>
+                <div class="detail-item"><label>社保卡号1</label><span>${p.social_card1 === '无' ? '' : p.social_card1}</span></div>
+                <div class="detail-item"><label>社保卡号2</label><span>${(p.social_card2 && p.social_card2 !== '无') ? p.social_card2 + (p.social_card2_source ? `（${p.social_card2_source}）` : '') : ''}</span></div>
+                <div class="detail-item"><label>社保卡号3</label><span>${(p.social_card3 && p.social_card3 !== '无') ? p.social_card3 + (p.social_card3_source ? `（${p.social_card3_source}）` : '') : ''}</span></div>
+                <div class="detail-item"><label>脱贫户</label><span>${p.poor_type === '无' ? '' : p.poor_type}</span></div>
+                <div class="detail-item"><label>备注</label><span>${p.remark === '无' ? '' : p.remark}</span></div>
+                <div class="detail-item"><label>残疾</label><span>${p.disability === '无' ? '' : p.disability}</span></div>
+                ${p.disability === '是' ? `<div class="detail-item"><label>残疾类型</label><span>${p.disability_type === '无' ? '' : (p.disability_type || '')}</span></div><div class="detail-item"><label>残疾等级</label><span>${p.dis_level === '无' ? '' : (p.dis_level || '')}</span></div>` : ''}
+                <div class="detail-item"><label>低保</label><span>${p.dibao === '无' ? '' : p.dibao}</span></div>
+                <div class="detail-item"><label>计生家庭</label><span>${p.jisheng === '无' ? '' : p.jisheng}</span></div>
+                <div class="detail-item"><label>特困供养</label><span>${p.tekun === '无' ? '' : (p.tekun || '')}</span></div>
+                ${p.tekun === '是' ? `<div class="detail-item"><label>供养类型</label><span>${p.tekun_type === '无' ? '' : (p.tekun_type || '')}</span></div>` : ''}
+                <div class="detail-item"><label>土地面积</label><span>${p.land_area || ''}</span></div>
+                ${p.land_area_change_reason ? `<div class="detail-item"><label>土地变更原因</label><span>${p.land_area_change_reason}</span></div><div class="detail-item"><label>土地变更时间</label><span>${p.land_area_change_time}</span></div>` : ''}
+                <div class="detail-item"><label>地方公益林</label><span>${p.local_welfare_forest_area || ''}</span></div>
+                ${p.local_welfare_forest_change_reason ? `<div class="detail-item"><label>地方公益林变更原因</label><span>${p.local_welfare_forest_change_reason}</span></div><div class="detail-item"><label>地方公益林变更时间</label><span>${p.local_welfare_forest_change_time}</span></div>` : ''}
+                <div class="detail-item"><label>国家公益林</label><span>${p.national_welfare_forest_area || ''}</span></div>
+                ${p.national_welfare_forest_change_reason ? `<div class="detail-item"><label>国家公益林变更原因</label><span>${p.national_welfare_forest_change_reason}</span></div><div class="detail-item"><label>国家公益林变更时间</label><span>${p.national_welfare_forest_change_time}</span></div>` : ''}
+                <div class="detail-item"><label>非国有天然商品林</label><span>${p.commercial_forest_area || ''}</span></div>
+                ${p.commercial_forest_change_reason ? `<div class="detail-item"><label>非国有天然商品林变更原因</label><span>${p.commercial_forest_change_reason}</span></div><div class="detail-item"><label>非国有天然商品林变更时间</label><span>${p.commercial_forest_change_time}</span></div>` : ''}
             `;
 
-            if (data.education) {
+            if (p.education) {
                 html += `
                     <div class="detail-item" style="grid-column: span 2;"><label>就读信息</label></div>
-                    <div class="detail-item"><label>学校</label><span>${data.education.school_name}</span></div>
-                    <div class="detail-item"><label>年级</label><span>${data.education.grade}</span></div>
-                    <div class="detail-item"><label>班级</label><span>${data.education.class_name}</span></div>
-                    <div class="detail-item"><label>监护人</label><span>${data.education.guardian}</span></div>
-                    <div class="detail-item"><label>监护人电话</label><span>${data.education.guardian_phone}</span></div>
-                    <div class="detail-item"><label>留守儿童</label><span>${data.education.is_left_behind}</span></div>
-                    <div class="detail-item"><label>学生状态</label><span>${data.education.student_status}</span></div>
+                    <div class="detail-item"><label>学校</label><span>${p.education.school_name}</span></div>
+                    <div class="detail-item"><label>年级</label><span>${p.education.grade}</span></div>
+                    <div class="detail-item"><label>班级</label><span>${p.education.class_name}</span></div>
+                    <div class="detail-item"><label>监护人</label><span>${p.education.guardian}</span></div>
+                    <div class="detail-item"><label>监护人电话</label><span>${p.education.guardian_phone}</span></div>
+                    <div class="detail-item"><label>留守儿童</label><span>${p.education.is_left_behind}</span></div>
+                    <div class="detail-item"><label>学生状态</label><span>${p.education.student_status}</span></div>
                 `;
             }
 
@@ -124,62 +125,63 @@ function editPerson() {
 
     apiRequest('GET', `/api/person/${currentPersonId}`)
         .then(data => {
-            currentPersonUpdatedAt = data.updated_at || '';
-            document.getElementById('editId').value = data.id;
-            document.getElementById('editIdCard').value = data.id_card;
-            document.getElementById('editName').value = data.name;
-            document.getElementById('editHuHao').value = data.hu_hao || '';
-            document.getElementById('editRelation').value = data.relation || '';
-            document.getElementById('editIsDead').value = data.is_dead || '';
-            document.getElementById('editPhone').value = (data.phone && data.phone !== '无') ? data.phone : '';
-            document.getElementById('editAddress').value = (data.address && data.address !== '无') ? data.address : '';
-            document.getElementById('editLandArea').value = data.land_area || '';
-            currentPersonLandArea = data.land_area || '';
-            document.getElementById('editLocalWelfareForest').value = data.local_welfare_forest_area || '';
-            currentPersonLocalWelfareForest = data.local_welfare_forest_area || '';
-            document.getElementById('editNationalWelfareForest').value = data.national_welfare_forest_area || '';
-            currentPersonNationalWelfareForest = data.national_welfare_forest_area || '';
-            document.getElementById('editCommercialForest').value = data.commercial_forest_area || '';
-            currentPersonCommercialForest = data.commercial_forest_area || '';
-            document.getElementById('editSocial1').value = (data.social_card1 && data.social_card1 !== '无') ? data.social_card1 : '';
-            document.getElementById('editSocial2').value = (data.social_card2 && data.social_card2 !== '无') ? data.social_card2 + (data.social_card2_source ? `（${data.social_card2_source}）` : '') : '';
-            document.getElementById('editSocial3').value = (data.social_card3 && data.social_card3 !== '无') ? data.social_card3 + (data.social_card3_source ? `（${data.social_card3_source}）` : '') : '';
+            const p = data.person || data;
+            currentPersonUpdatedAt = p.updated_at || '';
+            document.getElementById('editId').value = p.id;
+            document.getElementById('editIdCard').value = p.id_card;
+            document.getElementById('editName').value = p.name;
+            document.getElementById('editHuHao').value = p.hu_hao || '';
+            document.getElementById('editRelation').value = p.relation || '';
+            document.getElementById('editIsDead').value = p.is_dead || '';
+            document.getElementById('editPhone').value = (p.phone && p.phone !== '无') ? p.phone : '';
+            document.getElementById('editAddress').value = (p.address && p.address !== '无') ? p.address : '';
+            document.getElementById('editLandArea').value = p.land_area || '';
+            currentPersonLandArea = p.land_area || '';
+            document.getElementById('editLocalWelfareForest').value = p.local_welfare_forest_area || '';
+            currentPersonLocalWelfareForest = p.local_welfare_forest_area || '';
+            document.getElementById('editNationalWelfareForest').value = p.national_welfare_forest_area || '';
+            currentPersonNationalWelfareForest = p.national_welfare_forest_area || '';
+            document.getElementById('editCommercialForest').value = p.commercial_forest_area || '';
+            currentPersonCommercialForest = p.commercial_forest_area || '';
+            document.getElementById('editSocial1').value = (p.social_card1 && p.social_card1 !== '无') ? p.social_card1 : '';
+            document.getElementById('editSocial2').value = (p.social_card2 && p.social_card2 !== '无') ? p.social_card2 + (p.social_card2_source ? `（${p.social_card2_source}）` : '') : '';
+            document.getElementById('editSocial3').value = (p.social_card3 && p.social_card3 !== '无') ? p.social_card3 + (p.social_card3_source ? `（${p.social_card3_source}）` : '') : '';
             // 社保卡号2/3 仅由补贴导入自动回填，编辑框只读展示卡号+来源
             document.getElementById('editSocial2').readOnly = true;
             document.getElementById('editSocial3').readOnly = true;
-            document.getElementById('editRemark').value = (data.remark && data.remark !== '无') ? data.remark : '';
+            document.getElementById('editRemark').value = (p.remark && p.remark !== '无') ? p.remark : '';
 
             // 社会保障
-            document.getElementById('editPoorType').value = (data.poor_type && data.poor_type !== '无') ? data.poor_type : '';
+            document.getElementById('editPoorType').value = (p.poor_type && p.poor_type !== '无') ? p.poor_type : '';
 
-            const disValue = (data.disability && data.disability !== '无') ? data.disability : '';
+            const disValue = (p.disability && p.disability !== '无') ? p.disability : '';
             document.getElementById('editDisability').value = disValue;
             toggleDisabilityDetail();
             if (disValue === '是') {
-                document.getElementById('editDisabilityType').value = (data.disability_type && data.disability_type !== '无') ? data.disability_type : '';
-                document.getElementById('editDisLevel').value = (data.dis_level && data.dis_level !== '无') ? data.dis_level : '';
+                document.getElementById('editDisabilityType').value = (p.disability_type && p.disability_type !== '无') ? p.disability_type : '';
+                document.getElementById('editDisLevel').value = (p.dis_level && p.dis_level !== '无') ? p.dis_level : '';
             }
 
-            document.getElementById('editDibao').value = (data.dibao && data.dibao !== '无') ? data.dibao : '';
-            document.getElementById('editJisheng').value = (data.jisheng && data.jisheng !== '无') ? data.jisheng : '';
+            document.getElementById('editDibao').value = (p.dibao && p.dibao !== '无') ? p.dibao : '';
+            document.getElementById('editJisheng').value = (p.jisheng && p.jisheng !== '无') ? p.jisheng : '';
 
-            const tekunValue = (data.tekun && data.tekun !== '无') ? data.tekun : '';
+            const tekunValue = (p.tekun && p.tekun !== '无') ? p.tekun : '';
             document.getElementById('editTekun').value = tekunValue;
             toggleTekunDetail();
             if (tekunValue === '是') {
-                document.getElementById('editTekunType').value = (data.tekun_type && data.tekun_type !== '无') ? data.tekun_type : '';
+                document.getElementById('editTekunType').value = (p.tekun_type && p.tekun_type !== '无') ? p.tekun_type : '';
             }
 
             // 就读信息
-            document.getElementById('editEduSchool').value = data.education?.school_name || '';
-            document.getElementById('editEduClass').value = data.education?.class_name || '';
-            document.getElementById('editEduGuardian').value = data.education?.guardian || '';
-            document.getElementById('editEduGuardianPhone').value = data.education?.guardian_phone || '';
-            document.getElementById('editEduLeftBehind').value = data.education?.is_left_behind || '';
-            document.getElementById('editEduStatus').value = data.education?.student_status || '';
-            document.getElementById('editEduEnrollDate').value = data.education?.enrollment_date || '';
-            document.getElementById('editEduGradDate').value = data.education?.graduation_date || '';
-            document.getElementById('editEduGrade').value = data.education?.grade || '';
+            document.getElementById('editEduSchool').value = p.education?.school_name || '';
+            document.getElementById('editEduClass').value = p.education?.class_name || '';
+            document.getElementById('editEduGuardian').value = p.education?.guardian || '';
+            document.getElementById('editEduGuardianPhone').value = p.education?.guardian_phone || '';
+            document.getElementById('editEduLeftBehind').value = p.education?.is_left_behind || '';
+            document.getElementById('editEduStatus').value = p.education?.student_status || '';
+            document.getElementById('editEduEnrollDate').value = p.education?.enrollment_date || '';
+            document.getElementById('editEduGradDate').value = p.education?.graduation_date || '';
+            document.getElementById('editEduGrade').value = p.education?.grade || '';
 
             // 添加年级变化监听，自动计算入学和毕业日期
             const gradeSelect = document.getElementById('editEduGrade');
