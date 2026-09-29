@@ -101,6 +101,10 @@ def create_app():
     @app.route('/js/<path:filename>')
     def js_files(filename):
         return send_from_directory(os.path.join(STATIC_DIR, 'js'), filename)
+
+    @app.route('/favicon.ico')
+    def favicon():
+        return ('', 204)
     
     @app.after_request
     def add_security_headers(response):
@@ -166,6 +170,7 @@ if __name__ == '__main__':
     app.run(
         host='::',
         port=port,
+        threaded=True,
         debug=os.environ.get('FLASK_DEBUG', '0') == '1',
         ssl_context=ssl_context
     )
