@@ -22,6 +22,14 @@ function apiRequest(method, path, data = null) {
             showLogin();
             throw new Error('登录已过期');
         }
-        return res.json().catch(() => ({error: '请求失败'}));
+        return res.json().catch(() => null).then(data => {
+            if (!res.ok) {
+                throw new Error((data && data.error) || ('请求失败(' + res.status + ')'));
+            }
+            if (data === null) {
+                return {error: '请求失败'};
+            }
+            return data;
+        });
     });
 }

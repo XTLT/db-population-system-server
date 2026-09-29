@@ -122,9 +122,14 @@ function closeDeletedModal() {
 }
 
 function loadDeleted() {
+    const tbody = document.getElementById('deletedBody');
+    tbody.innerHTML = '<tr><td colspan="5" style="color:#999;">加载中...</td></tr>';
     apiRequest('GET', '/api/deleted').then(persons => {
-        const tbody = document.getElementById('deletedBody');
         tbody.innerHTML = '';
+        if (!Array.isArray(persons)) {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:#e74c3c;">无法获取已删除人员列表</td></tr>';
+            return;
+        }
         if (persons.length === 0) {
             tbody.innerHTML = '<tr><td colspan="5" style="color:#999;">没有已删除的人员</td></tr>';
             return;
@@ -140,6 +145,8 @@ function loadDeleted() {
             `;
             tbody.appendChild(tr);
         });
+    }).catch(err => {
+        tbody.innerHTML = '<tr><td colspan="5" style="color:#e74c3c;">无法获取已删除人员列表' + (err && err.message ? '：' + err.message : '') + '</td></tr>';
     });
 }
 
@@ -152,5 +159,7 @@ function recoverPerson(deletedId, name) {
         } else {
             alert('找回失败：' + (result.error || '未知错误'));
         }
+    }).catch(err => {
+        alert('找回失败：' + ((err && err.message) || '网络错误'));
     });
 }

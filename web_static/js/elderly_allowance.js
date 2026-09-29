@@ -98,7 +98,7 @@ function doElderlyAllowanceImport() {
 
 function deleteElderlyAllowance(id) {
     if (!confirm('确定要删除这条记录吗？')) return;
-    fetch(`/api/dibao_payment/${id}`, {
+    fetch(`/api/elderly_allowance/${id}`, {
         method: 'DELETE',
         headers: {'Authorization': `Bearer ${authToken}`}
     }).then(r => r.json()).then(result => {
