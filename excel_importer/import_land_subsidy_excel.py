@@ -6,6 +6,49 @@ from ._read_excel_robust import _read_excel_robust
 from ._backfill_social_card import _backfill_social_card
 
 
+# 地力补贴列名别名兼容表：逻辑字段 -> 可能出现的列名（按优先级从高到低）
+# 同时兼容模板长名（excel_payment_templates/_constants.py）与历史短名。
+LAND_SUBSIDY_COLUMN_ALIASES = {
+    "name": ["姓名", "承包人姓名"],
+    "id_card": ["身份证号", "身份证号码", "公民身份证号码"],
+    # 确权颁证面积（模板）/ 确权面积 / 耕地面积 / 土地面积（历史短名）
+    "certified_area": ["确权颁证面积", "确权面积", "耕地面积", "土地面积"],
+    # 补贴面积（亩）（模板）/ 补贴面积（历史短名）
+    "subsidy_area": ["补贴面积（亩）", "补贴面积"],
+    # 基础补贴标准（元/亩）（模板）/ 补贴标准 / 基础标准（历史短名）
+    "base_standard": ["基础补贴标准（元/亩）", "基础补贴标准", "补贴标准", "基础标准"],
+    # 其中种植油菜面积（模板）/ 油菜面积（历史短名）
+    "rape_area": ["其中种植油菜面积", "油菜面积"],
+    # 其中种植油菜金额（模板）/ 油菜金额（历史短名）
+    "rape_amount": ["其中种植油菜金额", "油菜金额"],
+    # 补贴总金额（元）（模板）/ 补贴总金额 / 总金额 / 补贴金额 / 合计金额（历史短名）
+    "total_amount": ["补贴总金额（元）", "补贴总金额", "总金额", "补贴金额", "合计金额"],
+}
+
+
+def _resolve_columns(columns, aliases=LAND_SUBSIDY_COLUMN_ALIASES):
+    """根据别名表在实际列名中定位每个逻辑字段对应的列名。
+
+    返回 dict: 逻辑字段 -> 实际列名（未命中为 None）。
+    同名别名只解析一次，避免不同逻辑字段争抢同一列。
+    """
+    resolved = {}
+    used = set()
+    for field, names in aliases.items():
+        for n in names:
+            if n in columns and n not in used:
+                resolved[field] = n
+                used.add(n)
+                break
+        else:
+            resolved[field] = None
+    return resolved
+
+
+def _row_value(row, col):
+    return safe_str(row.get(col, "")) if col else ""
+
+
 def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_callback=None) -> dict:
     """导入地力补贴数据
 
@@ -25,37 +68,17 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
 
     columns = list(df.columns)
 
-    # 确定列名映射
-    name_col = None
-    id_card_col = None
-    area_col = None
-    amount_col = None
+    # 统一通过别名表解析列名（模板长名 + 历史短名都认）
+    col = _resolve_columns(columns)
 
-    if "姓名" in columns:
-        name_col = "姓名"
-    elif "承包人姓名" in columns:
-        name_col = "承包人姓名"
-
-    if "身份证号" in columns:
-        id_card_col = "身份证号"
-    elif "身份证号码" in columns:
-        id_card_col = "身份证号码"
-    elif "公民身份证号码" in columns:
-        id_card_col = "公民身份证号码"
-
-    if "确权面积" in columns:
-        area_col = "确权面积"
-    elif "耕地面积" in columns:
-        area_col = "耕地面积"
-    elif "土地面积" in columns:
-        area_col = "土地面积"
-
-    if "补贴金额" in columns:
-        amount_col = "补贴金额"
-    elif "总金额" in columns:
-        amount_col = "总金额"
-    elif "合计金额" in columns:
-        amount_col = "合计金额"
+    name_col = col["name"]
+    id_card_col = col["id_card"]
+    certified_area_col = col["certified_area"]
+    subsidy_area_col = col["subsidy_area"]
+    base_standard_col = col["base_standard"]
+    rape_area_col = col["rape_area"]
+    rape_amount_col = col["rape_amount"]
+    total_amount_col = col["total_amount"]
 
     if not name_col:
         return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列"], "total": 0, "not_found": []}
@@ -80,12 +103,12 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
     try:
         for idx, row in df.iterrows():
             try:
-                name = safe_str(row.get(name_col, ""))
+                name = _row_value(row, name_col)
                 if not name:
                     skipped += 1
                     continue
 
-                id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
+                id_card = _row_value(row, id_card_col)
 
                 # 检查身份证号是否在数据库中存在
                 if id_card and id_card not in existing_id_cards:
@@ -99,16 +122,16 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                 if person and card and subsidy_year:
                     _backfill_social_card(person, f"地力补贴{subsidy_year}", card)
 
-                land_area = safe_str(row.get(area_col, "")) if area_col else ""
-                subsidy_amount = safe_str(row.get(amount_col, "")) if amount_col else ""
+                certified_area = _row_value(row, certified_area_col)
+                subsidy_area = _row_value(row, subsidy_area_col)
+                base_standard = _row_value(row, base_standard_col)
+                rape_area = _row_value(row, rape_area_col)
+                rape_amount = _row_value(row, rape_amount_col)
+                total_amount = _row_value(row, total_amount_col)
 
-                # 其他可能的字段
-                certified_area = safe_str(row.get("确权面积", ""))
-                subsidy_area = safe_str(row.get("补贴面积", ""))
-                base_standard = safe_str(row.get("补贴标准", ""))
-                rape_area = safe_str(row.get("油菜面积", ""))
-                rape_amount = safe_str(row.get("油菜金额", ""))
-                total_amount = safe_str(row.get("总金额", ""))
+                # 兼容历史：土地面积/补贴金额兜底
+                land_area = certified_area
+                subsidy_amount = total_amount
 
                 subsidy = LandSubsidy(
                     id=f"ls_{secrets.token_hex(8)}",
@@ -116,7 +139,7 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                     id_card=id_card,
                     year=subsidy_year,
                     land_area=land_area,
-                    subsidy_amount=subsidy_amount or total_amount,
+                    subsidy_amount=subsidy_amount,
                     certified_area=certified_area,
                     subsidy_area=subsidy_area,
                     base_standard=base_standard,

@@ -20,3 +20,4 @@ from . import add_household
 from . import new_hu_hao
 from . import batch_delete
 from . import batch_update
+from . import deleted

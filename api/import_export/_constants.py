@@ -22,3 +22,14 @@ PAYMENT_TEMPLATE_MAP = {
     'disability_care_payment': ('excel_payment_templates', 'generate_disability_care_payment_template', '残疾人护理补贴导入模板.xlsx'),
     'elderly_allowance': ('excel_payment_templates', 'generate_elderly_allowance_template', '高龄补贴导入模板.xlsx'),
 }
+
+# 短名别名：前端/旧链接使用短名时映射到完整类型
+PAYMENT_TEMPLATE_MAP.update({
+    'dibao': PAYMENT_TEMPLATE_MAP['dibao_payment'],
+    'tekun': PAYMENT_TEMPLATE_MAP['tekun_payment'],
+    'pension': PAYMENT_TEMPLATE_MAP['pension_insurance'],
+    'treatment': PAYMENT_TEMPLATE_MAP['treatment_payment'],
+    'elderly': PAYMENT_TEMPLATE_MAP['elderly_allowance'],
+    'disability': PAYMENT_TEMPLATE_MAP['disability_care_payment'],
+    'land': PAYMENT_TEMPLATE_MAP['land_subsidy'],
+})

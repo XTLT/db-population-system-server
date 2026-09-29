@@ -1,5 +1,5 @@
 from database import get_session, Person
-from utils import safe_str
+from utils import safe_str, validate_id_card
 from .backup_database import backup_database
 from ._read_excel_robust import _read_excel_robust
 from ._row_to_person import _row_to_person
@@ -22,6 +22,12 @@ def import_excel_incremental(file_path: str, progress_callback=None) -> dict:
                 id_card = safe_str(row.get("身份证号", ""))
                 if not id_card:
                     skipped += 1
+                    continue
+                # 身份证合法性校验：非法行计入 errors 且不入库
+                valid, msg = validate_id_card(id_card)
+                if not valid:
+                    skipped += 1
+                    errors.append(f"行{idx + 2}: 身份证号 {id_card} 无效（{msg}）")
                     continue
                 existing = session.query(Person).filter(Person.id_card == id_card).first()
                 if existing:

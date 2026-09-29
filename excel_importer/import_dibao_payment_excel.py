@@ -7,7 +7,7 @@ from ._read_excel_robust import _read_excel_robust
 from ._backfill_social_card import _backfill_social_card
 
 
-def import_dibao_payment_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
+def import_dibao_payment_excel(file_path: str, progress_callback=None, period: str = "", import_source: str = "") -> dict:
     """导入低保发放数据
 
     支持两种Excel格式：
@@ -16,13 +16,14 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None, period: s
 
     只导入身份证号在数据库中存在的人员
     period: 用户指定的费款所属期，Excel中无费款所属期列时使用
+    import_source: 原始上传文件名（否则回退为临时文件名 basename(file_path)）
     """
 
     df = _read_excel_robust(file_path, header=0)
     df = df.fillna("")
 
     columns = list(df.columns)
-    file_name = os.path.basename(file_path)
+    file_name = import_source or os.path.basename(file_path)
 
     has_subsidy_type = "救助类型" in columns and "人员身份证号" in columns
 

@@ -60,6 +60,7 @@ def create_app():
         backup_bp, logs_bp, notifications_bp, reports_bp,
         land_subsidy_bp, treatment_payment_bp, pension_insurance_bp,
         dibao_payment_bp, tekun_payment_bp,
+        disability_care_payment_bp, elderly_allowance_bp,
         update_bp, report_files_bp
     )
     
@@ -80,6 +81,8 @@ def create_app():
     app.register_blueprint(pension_insurance_bp, url_prefix='/api')
     app.register_blueprint(dibao_payment_bp, url_prefix='/api')
     app.register_blueprint(tekun_payment_bp, url_prefix='/api')
+    app.register_blueprint(disability_care_payment_bp, url_prefix='/api')
+    app.register_blueprint(elderly_allowance_bp, url_prefix='/api')
     app.register_blueprint(update_bp, url_prefix='/api/update')
 
     @app.route('/api/health')

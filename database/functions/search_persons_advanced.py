@@ -67,7 +67,17 @@ def search_persons_advanced(
         if dibao:
             # 支持逗号分隔多值（如 是,低保边缘家庭,特困家庭）
             dibao_values = [v.strip() for v in dibao.split(',') if v.strip()]
-            query = query.filter(Person.dibao.in_(dibao_values))
+            # 与 statistics.py 的低保统计口径对齐：统计把以下 6 个值都计为“低保”。
+            # 下钻传“是”时，展开为全部低保口径值（含 3 个历史值），保证统计数 == 下钻数。
+            DIBAO_ALL = {'是', '低保边缘家庭', '特困家庭',
+                         '最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'}
+            expanded = set()
+            for v in dibao_values:
+                if v == '是':
+                    expanded |= DIBAO_ALL
+                else:
+                    expanded.add(v)
+            query = query.filter(Person.dibao.in_(expanded))
         
         if tekun:
             query = query.filter(Person.tekun == tekun)
