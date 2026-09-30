@@ -7,7 +7,7 @@ from ._read_excel_robust import _read_excel_robust
 from ._backfill_social_card import _backfill_social_card
 
 
-def import_disability_care_payment_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
+def import_disability_care_payment_excel(file_path: str, progress_callback=None, period: str = "", import_source: str = "") -> dict:
     """导入残疾人护理补贴数据
 
     支持两种Excel格式：
@@ -22,7 +22,7 @@ def import_disability_care_payment_excel(file_path: str, progress_callback=None,
     df = df.fillna("")
 
     columns = list(df.columns)
-    file_name = os.path.basename(file_path)
+    file_name = import_source or os.path.basename(file_path)
 
     has_subsidy_type = "救助类型" in columns and "人员身份证号" in columns
 

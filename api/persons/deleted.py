@@ -1,6 +1,6 @@
 from flask import request, jsonify
 
-from database import get_session, get_deleted_persons, recover_person, DeletedPerson, add_operation_log
+from database import get_session, get_deleted_persons, recover_person, purge_deleted_persons, DeletedPerson, add_operation_log
 from utils.security import require_auth
 from . import bp
 
@@ -61,3 +61,32 @@ def api_recover_person(deleted_id):
         "是"
     )
     return jsonify({'success': True})
+
+
+@bp.route('/deleted/purge', methods=['POST'])
+@require_auth
+def api_purge_deleted():
+    """物理清理超过指定天数的已删除记录（默认 90 天，管理员）。"""
+    if request.current_user.get('role') != 'admin':
+        return jsonify({'success': False, 'error': '权限不足'}), 403
+    body = request.get_json(silent=True) or {}
+    try:
+        days = int(body.get('days', 90) or 90)
+    except (TypeError, ValueError):
+        return jsonify({'success': False, 'error': 'days 必须为正整数'}), 400
+    if days < 1:
+        return jsonify({'success': False, 'error': 'days 必须为正整数'}), 400
+    try:
+        count = purge_deleted_persons(days=days)
+    except Exception as e:
+        return jsonify({'success': False, 'error': f'清理失败: {e}'}), 500
+    add_operation_log(
+        request.current_user['id'],
+        request.current_user['username'],
+        "清理删除记录",
+        f"物理清理{count}条（保留{days}天内）",
+        request.remote_addr,
+        "Web",
+        "是"
+    )
+    return jsonify({'success': True, 'purged': count})

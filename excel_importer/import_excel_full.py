@@ -1,4 +1,5 @@
 from database import get_session, Person
+from utils import validate_id_card
 from .backup_database import backup_database
 from ._read_excel_robust import _read_excel_robust
 from ._row_to_person import _row_to_person
@@ -19,6 +20,13 @@ def import_excel_full(file_path: str, progress_callback=None) -> dict:
         for idx, row in df.iterrows():
             try:
                 person = _row_to_person(row, idx)
+                id_card = person.id_card or ""
+                if id_card:
+                    valid, msg = validate_id_card(id_card)
+                    if not valid:
+                        skipped += 1
+                        errors.append(f"行{idx + 2}: 身份证号 {id_card} 无效（{msg}）")
+                        continue
                 session.add(person)
                 imported += 1
                 if progress_callback:

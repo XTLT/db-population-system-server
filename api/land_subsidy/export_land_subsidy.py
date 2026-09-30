@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import request, jsonify, send_file
 
 from utils.security import require_auth
-from database import get_session, LandSubsidy, add_operation_log
+from database import get_session, LandSubsidy, Person, add_operation_log
 from config import BASE_DIR
 from . import bp
 
@@ -28,6 +28,20 @@ def export_land_subsidy():
         if not subsidies:
             return jsonify({'error': '没有数据可导出'}), 404
 
+        person_map = {}
+        for p in session.query(Person).all():
+            if p.id_card:
+                person_map[p.id_card] = p
+
+        def _card_of(id_card):
+            p = person_map.get(id_card)
+            if not p:
+                return ''
+            for c in (p.social_card1, p.social_card2, p.social_card3):
+                if c and c != '无':
+                    return c
+            return ''
+
         import pandas as pd
         # 列名与模板（excel_payment_templates/_constants.py LAND_SUBSIDY_COLUMNS）保持一致，
         # 导出文件可被导入器直接回环导入（导入器同时兼容长名与历史短名）。
@@ -41,7 +55,7 @@ def export_land_subsidy():
             '其中种植油菜金额': s.rape_amount,
             '补贴总金额（元）': s.total_amount,
             '年份': s.year,
-            '卡号': '',
+            '卡号': _card_of(s.id_card),
             '导入时间': s.import_time or s.created_at
         } for s in subsidies]
 

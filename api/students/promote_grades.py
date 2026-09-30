@@ -13,12 +13,14 @@ def promote_grades():
     
     from database import promote_all_grades
     try:
-        count = promote_all_grades()
+        body = request.get_json(silent=True) or {}
+        id_cards = body.get('id_cards') or None
+        count = promote_all_grades(id_cards=id_cards)
         add_operation_log(
             request.current_user['id'],
             request.current_user['username'],
             "年级升级",
-            f"升级{count}名学生",
+            (f"升级{count}名学生（指定{len(id_cards)}人）" if id_cards else f"升级{count}名学生"),
             request.remote_addr,
             request.headers.get('X-Client-Type', 'Web')
         )

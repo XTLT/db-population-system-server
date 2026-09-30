@@ -71,6 +71,7 @@ from .functions.migrate_person import migrate_person
 from .functions.delete_person import delete_person
 from .functions.recover_person import recover_person
 from .functions.get_deleted_persons import get_deleted_persons
+from .functions.purge_deleted_persons import purge_deleted_persons
 from .functions.get_report_logs import get_report_logs
 from .functions.create_report_file import create_report_file
 from .functions.get_report_files import get_report_files
@@ -163,6 +164,7 @@ __all__ = [
     "delete_person",
     "recover_person",
     "get_deleted_persons",
+    "purge_deleted_persons",
     "get_report_logs",
     "create_report_file",
     "get_report_files",
