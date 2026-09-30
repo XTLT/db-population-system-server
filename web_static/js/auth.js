@@ -80,6 +80,10 @@ document.getElementById('loginForm').onsubmit = function(e) {
             localStorage.setItem('user', JSON.stringify(result.user));
             localStorage.setItem('isDefaultUser', isDefaultUser);
 
+            if (result.warning) {
+                alert(result.warning);
+            }
+
             if (isDefaultUser) {
                 showCreateAdmin();
             } else {

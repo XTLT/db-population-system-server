@@ -106,6 +106,10 @@ def api_login():
         user_obj.last_login = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         session.commit()
 
+        # 统计登录前该用户在线会话数，用于提示"已有其他设备在线"
+        from database import Token
+        online_count = session.query(Token).filter(Token.user_id == user_obj.id).count()
+
         token = create_token({
             'id': user_obj.id,
             'username': user_obj.username,
@@ -125,7 +129,9 @@ def api_login():
                 'role': user_obj.role
             },
             'is_default_user': is_default,
-            'require_password_change': is_default
+            'require_password_change': is_default,
+            'other_devices_online': online_count > 0,
+            'warning': '已有其他设备在线' if online_count > 0 else ''
         })
     except Exception as e:
         session.rollback()
