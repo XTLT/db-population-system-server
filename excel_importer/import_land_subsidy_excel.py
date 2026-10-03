@@ -11,6 +11,8 @@ from ._backfill_social_card import _backfill_social_card
 LAND_SUBSIDY_COLUMN_ALIASES = {
     "name": ["姓名", "户主姓名", "承包人姓名"],
     "id_card": ["身份证号", "身份证号码", "公民身份证号码"],
+    "phone": ["电话号码", "电话"],
+    "bank_name": ["金融机构", "开户行", "银行机构"],
     # 确权颁证面积（模板）/ 确权面积 / 耕地面积 / 土地面积（历史短名）
     "certified_area": ["确权颁证面积", "确权面积", "耕地面积", "土地面积"],
     # 补贴面积（亩）（模板）/ 补贴面积（历史短名）
@@ -23,6 +25,7 @@ LAND_SUBSIDY_COLUMN_ALIASES = {
     "rape_amount": ["其中种植油菜金额", "油菜金额"],
     # 补贴总金额（元）（模板）/ 补贴总金额 / 总金额 / 补贴金额 / 合计金额 / 发放金额（新模板）
     "total_amount": ["补贴总金额（元）", "补贴总金额", "总金额", "补贴金额", "合计金额", "发放金额"],
+    "land_time": ["上账时间", "到账时间", "发放时间"],
 }
 
 
@@ -130,6 +133,9 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                 rape_area = _row_value(row, rape_area_col)
                 rape_amount = _row_value(row, rape_amount_col)
                 total_amount = _row_value(row, total_amount_col)
+                phone = _row_value(row, col.get("phone"))
+                bank_name = _row_value(row, col.get("bank_name"))
+                land_time = _row_value(row, col.get("land_time"))
 
                 # 兼容历史：土地面积/补贴金额兜底
                 land_area = certified_area
@@ -148,6 +154,9 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                     rape_area=rape_area,
                     rape_amount=rape_amount,
                     total_amount=total_amount,
+                    phone=phone,
+                    bank_name=bank_name,
+                    land_time=land_time,
                     created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 )
                 session.add(subsidy)

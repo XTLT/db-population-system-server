@@ -32,21 +32,26 @@ function loadLandSubsidies() {
         const tbody = document.getElementById('landSubsidyBody');
         tbody.innerHTML = '';
         if (data.subsidies) {
-            data.subsidies.forEach(s => {
+            data.subsidies.forEach((s, i) => {
                 const row = document.createElement('tr');
                 const deleteBtn = userRole === 'admin'
                     ? `<button onclick="deleteLandSubsidy('${s.id}')" class="btn-delete" style="padding:4px 8px;font-size:12px;">删除</button>`
                     : '';
                 row.innerHTML = `
+                    <td>${i + 1}</td>
+                    <td>${s.year || ''}</td>
                     <td>${s.name || ''}</td>
                     <td>${s.id_card || ''}</td>
+                    <td>${s.phone || ''}</td>
+                    <td></td>
+                    <td>${s.bank_name || ''}</td>
+                    <td>${s.total_amount || ''}</td>
+                    <td>${s.land_time || ''}</td>
                     <td>${s.certified_area || ''}</td>
-                    <td>${s.subsidy_area || ''}</td>
                     <td>${s.base_standard || ''}</td>
                     <td>${s.rape_area || ''}</td>
+                    <td></td>
                     <td>${s.rape_amount || ''}</td>
-                    <td>${s.total_amount || ''}</td>
-                    <td>${s.import_time || ''}</td>
                     <td>${deleteBtn}</td>
                 `;
                 tbody.appendChild(row);

@@ -46,6 +46,9 @@ def list_land_subsidies():
                 'rape_area': s.rape_area,
                 'rape_amount': s.rape_amount,
                 'total_amount': s.total_amount,
+                'phone': s.phone or '',
+                'bank_name': s.bank_name or '',
+                'land_time': s.land_time or '',
                 'import_time': s.import_time or s.created_at
             } for s in subsidies]
         })

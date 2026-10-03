@@ -46,15 +46,19 @@ def export_land_subsidy():
         # 列名与模板（excel_payment_templates/_constants.py LAND_SUBSIDY_COLUMNS）保持一致，
         # 导出文件可被导入器直接回环导入（导入器同时兼容长名与历史短名）。
         data = [{
-            '姓名': s.name,
+            '补贴年度': s.year,
+            '户主姓名': s.name,
             '身份证号': s.id_card,
-            '确权颁证面积': s.certified_area,
-            '补贴面积（亩）': s.subsidy_area,
-            '基础补贴标准（元/亩）': s.base_standard,
-            '其中种植油菜面积': s.rape_area,
-            '其中种植油菜金额': s.rape_amount,
-            '补贴总金额（元）': s.total_amount,
-            '年份': s.year,
+            '电话号码': s.phone,
+            '银行账号': '',
+            '金融机构': s.bank_name,
+            '发放金额': s.total_amount,
+            '上账时间': s.land_time,
+            '耕地面积': s.certified_area,
+            '耕地标准': s.base_standard,
+            '油菜面积': s.rape_area,
+            '油菜标准': '',
+            '油菜金额': s.rape_amount,
             '卡号': _card_of(s.id_card),
             '导入时间': s.import_time or s.created_at
         } for s in subsidies]
