@@ -70,6 +70,7 @@ def import_tekun_payment_excel(file_path: str, progress_callback=None, period: s
                 name = safe_str(row.get(name_col, ""))
                 if not name:
                     skipped += 1
+                    errors.append(f"行{idx + 2}: 姓名为空，已跳过")
                     continue
 
                 # 低保特困台账格式：过滤只导入特困记录
@@ -77,12 +78,14 @@ def import_tekun_payment_excel(file_path: str, progress_callback=None, period: s
                     subsidy_type = safe_str(row.get("救助类型", ""))
                     if "特困" not in subsidy_type:
                         skipped += 1
+                        errors.append(f"行{idx + 2}: 救助类型不含特困（{subsidy_type}），已跳过")
                         continue
 
                 id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
 
                 if id_card and id_card not in existing_id_cards:
                     not_found.append(f"{name}({id_card})")
+                    errors.append(f"行{idx + 2}: {name}({id_card}) 未在人员库中找到，已跳过")
                     skipped += 1
                     continue
 

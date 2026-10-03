@@ -22,6 +22,7 @@ def import_excel_incremental(file_path: str, progress_callback=None) -> dict:
                 id_card = safe_str(row.get("身份证号", ""))
                 if not id_card:
                     skipped += 1
+                    errors.append(f"行{idx + 2}: 身份证号为空，已跳过")
                     continue
                 # 身份证合法性校验：非法行计入 errors 且不入库
                 valid, msg = validate_id_card(id_card)

@@ -26,9 +26,19 @@ function doImport() {
     }).then(res => res.json().catch(() => ({error: '请求失败'}))).then(result => {
         if (result.error) {
             document.getElementById('importStatus').textContent = '导入失败：' + result.error;
+            document.getElementById('importDetail').style.display = 'none';
         } else {
-            const msg = `导入完成！成功：${result.imported}条，跳过：${result.skipped}条`;
+            let msg = `导入完成！成功：${result.imported}条`;
+            if (result.updated) msg += `，更新：${result.updated}条`;
+            msg += `，跳过：${result.skipped}条`;
             document.getElementById('importStatus').textContent = msg;
+            const detailEl = document.getElementById('importDetail');
+            if (result.errors && result.errors.length > 0) {
+                detailEl.textContent = '跳过明细：\n' + result.errors.join('\n');
+                detailEl.style.display = 'block';
+            } else {
+                detailEl.style.display = 'none';
+            }
         }
     }).catch(err => {
         document.getElementById('importStatus').textContent = '导入失败：' + err.message;

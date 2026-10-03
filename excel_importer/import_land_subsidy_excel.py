@@ -106,6 +106,7 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                 name = _row_value(row, name_col)
                 if not name:
                     skipped += 1
+                    errors.append(f"行{idx + 2}: 姓名为空，已跳过")
                     continue
 
                 id_card = _row_value(row, id_card_col)
@@ -113,6 +114,7 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                 # 检查身份证号是否在数据库中存在
                 if id_card and id_card not in existing_id_cards:
                     not_found.append(f"{name}({id_card})")
+                    errors.append(f"行{idx + 2}: {name}({id_card}) 未在人员库中找到，已跳过")
                     skipped += 1
                     continue
 

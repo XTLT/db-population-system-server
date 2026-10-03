@@ -69,12 +69,14 @@ def import_disability_care_payment_excel(file_path: str, progress_callback=None,
                 name = safe_str(row.get(name_col, ""))
                 if not name:
                     skipped += 1
+                    errors.append(f"行{idx + 2}: 姓名为空，已跳过")
                     continue
 
                 id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
 
                 if id_card and id_card not in existing_id_cards:
                     not_found.append(f"{name}({id_card})")
+                    errors.append(f"行{idx + 2}: {name}({id_card}) 未在人员库中找到，已跳过")
                     skipped += 1
                     continue
 
