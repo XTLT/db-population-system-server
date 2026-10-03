@@ -20,8 +20,10 @@ class LandSubsidy(Base):
     rape_amount = Column(String, default="")  # 油菜金额
     total_amount = Column(String, default="")  # 总金额
     phone = Column(String, default="")  # 电话号码
+    bank_account = Column(String, default="")  # 银行账号
     bank_name = Column(String, default="")  # 金融机构
     land_time = Column(String, default="")  # 上账时间
+    rape_standard = Column(String, default="")  # 油菜标准
     created_at = Column(String, default="")  # 创建时间
     import_time = Column(String, default="")
 

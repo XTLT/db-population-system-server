@@ -43,14 +43,14 @@ function loadLandSubsidies() {
                     <td>${s.name || ''}</td>
                     <td>${s.id_card || ''}</td>
                     <td>${s.phone || ''}</td>
-                    <td></td>
+                    <td>${s.bank_account || ''}</td>
                     <td>${s.bank_name || ''}</td>
                     <td>${s.total_amount || ''}</td>
                     <td>${s.land_time || ''}</td>
                     <td>${s.certified_area || ''}</td>
                     <td>${s.base_standard || ''}</td>
                     <td>${s.rape_area || ''}</td>
-                    <td></td>
+                    <td>${s.rape_standard || ''}</td>
                     <td>${s.rape_amount || ''}</td>
                     <td>${deleteBtn}</td>
                 `;

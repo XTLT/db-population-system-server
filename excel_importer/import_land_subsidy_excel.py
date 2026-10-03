@@ -12,6 +12,7 @@ LAND_SUBSIDY_COLUMN_ALIASES = {
     "name": ["姓名", "户主姓名", "承包人姓名"],
     "id_card": ["身份证号", "身份证号码", "公民身份证号码"],
     "phone": ["电话号码", "电话"],
+    "bank_account": ["银行账号", "银行卡号", "打款账号"],
     "bank_name": ["金融机构", "开户行", "银行机构"],
     # 确权颁证面积（模板）/ 确权面积 / 耕地面积 / 土地面积（历史短名）
     "certified_area": ["确权颁证面积", "确权面积", "耕地面积", "土地面积"],
@@ -21,6 +22,8 @@ LAND_SUBSIDY_COLUMN_ALIASES = {
     "base_standard": ["基础补贴标准（元/亩）", "基础补贴标准", "补贴标准", "基础标准", "耕地标准"],
     # 其中种植油菜面积（模板）/ 油菜面积（历史短名）
     "rape_area": ["其中种植油菜面积", "油菜面积"],
+    # 油菜标准
+    "rape_standard": ["油菜标准"],
     # 其中种植油菜金额（模板）/ 油菜金额（历史短名）
     "rape_amount": ["其中种植油菜金额", "油菜金额"],
     # 补贴总金额（元）（模板）/ 补贴总金额 / 总金额 / 补贴金额 / 合计金额 / 发放金额（新模板）
@@ -134,8 +137,10 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                 rape_amount = _row_value(row, rape_amount_col)
                 total_amount = _row_value(row, total_amount_col)
                 phone = _row_value(row, col.get("phone"))
+                bank_account = _row_value(row, col.get("bank_account"))
                 bank_name = _row_value(row, col.get("bank_name"))
                 land_time = _row_value(row, col.get("land_time"))
+                rape_standard = _row_value(row, col.get("rape_standard"))
 
                 # 兼容历史：土地面积/补贴金额兜底
                 land_area = certified_area
@@ -155,8 +160,10 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                     rape_amount=rape_amount,
                     total_amount=total_amount,
                     phone=phone,
+                    bank_account=bank_account,
                     bank_name=bank_name,
                     land_time=land_time,
+                    rape_standard=rape_standard,
                     created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 )
                 session.add(subsidy)
