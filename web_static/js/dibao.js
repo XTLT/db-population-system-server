@@ -31,10 +31,18 @@ function loadDibaoPayments() {
                     <td>${p.name || ''}</td>
                     <td>${p.id_card || ''}</td>
                     <td>${p.village || ''}</td>
-                    <td style="font-size:11px;">${p.bank_account || ''}</td>
-                    <td>${p.amount || ''}</td>
-                    <td>${p.payment_status || ''}</td>
+                    <td>${p.gender || ''}</td>
                     <td>${p.relation || ''}</td>
+                    <td>${p.family_members || ''}</td>
+                    <td>${p.family_count || ''}</td>
+                    <td>${p.amount || ''}</td>
+                    <td>${p.base_amount || ''}</td>
+                    <td>${p.special_amount || ''}</td>
+                    <td>${p.adjust_amount || ''}</td>
+                    <td>${p.special_situation || ''}</td>
+                    <td>${p.special_subsidy || ''}</td>
+                    <td>${p.start_time || ''}</td>
+                    <td>${p.issue_month || ''}</td>
                     <td style="font-size:11px;max-width:120px;overflow:hidden;text-overflow:ellipsis;" title="${p.import_source || ''}">${p.import_source || ''}</td>
                     <td>${deleteBtn}</td>
                 `;

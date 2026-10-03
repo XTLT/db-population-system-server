@@ -30,16 +30,23 @@ def export_dibao_payment():
 
         import pandas as pd
         data = [{
-            '所属乡镇': p.town,
-            '所属村': p.village,
-            '费款所属期': p.period,
-            '姓名': p.name,
-            '身份证号': p.id_card,
-            '银行账号': p.bank_account,
-            '金额': p.amount,
-            '支付标志': p.payment_status,
+            '村名称': p.village,
+            '救助类型': '低保',
+            '人员姓名': p.name,
+            '人员身份证号': p.id_card,
+            '性别': p.gender,
             '和申请人关系': p.relation,
-            '失败原因': p.fail_reason,
+            '共同生活家庭成员': p.family_members,
+            '享受保障人口数': p.family_count,
+            '家庭保障总金额': p.amount,
+            '家庭最低生活基本保障金': p.base_amount,
+            '家庭特殊困难补助金': p.special_amount,
+            '家庭调剂金额': p.adjust_amount,
+            '特殊困难情形（分类施保）': p.special_situation,
+            '特殊困难补助金': p.special_subsidy,
+            '初始享受时间': p.start_time,
+            '始发年月': p.issue_month or p.period,
+            '费款所属期': p.period,
             '导入来源': p.import_source,
             '导入时间': p.import_time
         } for p in records]

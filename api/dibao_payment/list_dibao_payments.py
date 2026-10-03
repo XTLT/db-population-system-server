@@ -46,6 +46,16 @@ def list_dibao_payments():
                 'amount': p.amount,
                 'relation': p.relation,
                 'fail_reason': p.fail_reason,
+                'gender': p.gender,
+                'family_members': p.family_members,
+                'family_count': p.family_count,
+                'base_amount': p.base_amount,
+                'special_amount': p.special_amount,
+                'adjust_amount': p.adjust_amount,
+                'special_situation': p.special_situation,
+                'special_subsidy': p.special_subsidy,
+                'start_time': p.start_time,
+                'issue_month': p.issue_month,
                 'import_source': p.import_source,
                 'import_time': p.import_time
             } for p in records]

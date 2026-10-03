@@ -292,4 +292,54 @@ def _migrate_db(engine):
             conn.commit()
         except Exception:
             pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN gender VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN family_members VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN family_count VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN base_amount VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN special_amount VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN adjust_amount VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN special_situation VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN special_subsidy VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN start_time VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN issue_month VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
 

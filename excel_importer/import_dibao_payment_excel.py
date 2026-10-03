@@ -91,26 +91,39 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None, period: s
 
                 # 方案C：社保卡2/3 自动回填（期数为空则跳过回填）
                 card = safe_str(row.get("卡号", "")).strip()
-                period_value = safe_str(row.get("费款所属期", "")) or period
+                period_value = safe_str(row.get("费款所属期", "")) or period or safe_str(row.get("始发年月", ""))
                 person = person_map.get(id_card)
                 if person and card and period_value:
                     _backfill_social_card(person, f"低保{period_value}", card)
 
                 amount = safe_str(row.get(amount_col, "")) if amount_col else ""
 
+                # 费款所属期：优先模板"费款所属期"列，其次导入参数，最后兜底"始发年月"
+                period_value = safe_str(row.get("费款所属期", "")) or period or safe_str(row.get("始发年月", ""))
+
                 record = DibaoPayment(
                     id=f"db_{secrets.token_hex(8)}",
                     name=name,
                     id_card=id_card,
                     town=safe_str(row.get("所属乡镇", "")),
-                    village=safe_str(row.get("所属村", "")),
-                    period=safe_str(row.get("费款所属期", "")) or period,
+                    village=safe_str(row.get("村名称", "")) or safe_str(row.get("所属村", "")),
+                    period=period_value,
                     payment_status=safe_str(row.get("支付标志", "")),
                     personal_code=safe_str(row.get("个人编号", "")),
                     bank_account=safe_str(row.get("银行账号", "")),
                     amount=amount,
                     relation=safe_str(row.get("和申请人关系", "")),
                     fail_reason=safe_str(row.get("失败原因", "")),
+                    gender=safe_str(row.get("性别", "")),
+                    family_members=safe_str(row.get("共同生活家庭成员", "")),
+                    family_count=safe_str(row.get("享受保障人口数", "")),
+                    base_amount=safe_str(row.get("家庭最低生活基本保障金", "")),
+                    special_amount=safe_str(row.get("家庭特殊困难补助金", "")),
+                    adjust_amount=safe_str(row.get("家庭调剂金额", "")),
+                    special_situation=safe_str(row.get("特殊困难情形（分类施保）", "")),
+                    special_subsidy=safe_str(row.get("特殊困难补助金", "")),
+                    start_time=safe_str(row.get("初始享受时间", "")),
+                    issue_month=safe_str(row.get("始发年月", "")),
                     import_time=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     import_source=file_name,
                 )
