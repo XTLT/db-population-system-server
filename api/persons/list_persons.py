@@ -18,8 +18,8 @@ def api_persons():
         # 分页参数验证
         if page < 1:
             page = 1
-        if per_page < 1 or per_page > 100:
-            per_page = min(max(per_page, 1), 100)  # 限制最大100条
+        if per_page < 1 or per_page > 10000:
+            per_page = min(max(per_page, 1), 10000)  # 最大10000条（林地管理需全量）
         
         search = request.args.get('search', '')
         
@@ -46,7 +46,11 @@ def api_persons():
                 'tekun': p.tekun or '',
                 'tekun_type': p.tekun_type or '',
                 'is_migrated': p.is_migrated or '否',
-                'relation': p.relation or ''
+                'relation': p.relation or '',
+                'land_area': p.land_area or '',
+                'local_welfare_forest_area': p.local_welfare_forest_area or '',
+                'national_welfare_forest_area': p.national_welfare_forest_area or '',
+                'commercial_forest_area': p.commercial_forest_area or ''
             } for p in persons],
             'total': total,
             'page': page,
