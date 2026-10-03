@@ -14,7 +14,7 @@ def download_payment_template(payment_type):
     """下载支付类导入模板
 
     Args:
-        payment_type: land_subsidy | treatment_payment | pension_insurance | dibao_payment | tekun_payment
+        payment_type: land_subsidy | pension_insurance | dibao_payment | tekun_payment
 
     Returns:
         Excel 模板文件

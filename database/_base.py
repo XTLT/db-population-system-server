@@ -231,57 +231,6 @@ def _migrate_db(engine):
             conn.commit()
         except Exception:
             pass
-        # treatment_payment 表新增字段
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN id_card VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN town VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN village VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN period VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN payment_status VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN personal_code VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN subsidy_type VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN relation VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN fail_reason VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
-        try:
-            conn.execute(text("ALTER TABLE treatment_payment ADD COLUMN import_source VARCHAR DEFAULT ''"))
-            conn.commit()
-        except Exception:
-            pass
         # land_subsidy 表迁移：subsidy_year -> year，添加新字段
         try:
             conn.execute(text("ALTER TABLE land_subsidy RENAME COLUMN subsidy_year TO year"))

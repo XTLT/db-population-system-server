@@ -541,7 +541,6 @@ tr:hover {
             <button onclick="doExportExcel()" class="toolbar-btn" id="btnExport">导出Excel</button>
             <button onclick="showStudentModal()" class="toolbar-btn">学生管理</button>
             <button onclick="showLandSubsidyModal()" class="toolbar-btn" id="btnLandSubsidy">地力补贴</button>
-            <button onclick="showTreatmentPaymentModal()" class="toolbar-btn" id="btnTreatmentPayment">待遇发放</button>
             <button onclick="showPensionInsuranceModal()" class="toolbar-btn" id="btnPensionInsurance">养老保险</button>
             <button onclick="showElderlyAllowanceModal()" class="toolbar-btn" id="btnElderlyAllowance">高龄补贴</button>
             <button onclick="showDibaoPaymentModal()" class="toolbar-btn" id="btnDibaoPayment">低保发放</button>
@@ -1307,70 +1306,6 @@ tr:hover {
             </div>
         </div>
 
-        <div id="treatmentPaymentModal" class="modal" style="display:none;">
-            <div class="modal-content" style="max-width:1100px;">
-                <h2>待遇发放数据管理</h2>
-                <div class="student-toolbar">
-                    <input type="text" id="treatmentPeriodSearch" placeholder="费款所属期(如202606)" style="padding:6px 12px;font-size:13px;width:140px;">
-                    <input type="text" id="treatmentIdCardSearch" placeholder="身份证号" style="padding:6px 12px;font-size:13px;width:150px;">
-                    <select id="treatmentSubsidyTypeFilter" style="padding:6px 12px;font-size:13px;">
-                        <option value="">全部类型</option>
-                        <option value="最低生活保障家庭">最低生活保障家庭</option>
-                        <option value="特困家庭">特困家庭</option>
-                        <option value="单人保家庭">单人保家庭</option>
-                        <option value="最低生活保障边缘家庭">最低生活保障边缘家庭</option>
-                    </select>
-                    <button onclick="loadTreatmentPayments()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">查询</button>
-                    <button onclick="showTreatmentImportModal()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;" id="btnTreatmentImport">导入</button>
-                    <button onclick="exportTreatmentPayments()" class="toolbar-btn" style="padding:6px 12px;font-size:13px;">导出</button>
-                </div>
-                <div class="table-container" style="max-height:400px;overflow-y:auto;">
-                    <table class="user-table">
-                        <thead>
-                            <tr>
-                                <th>费款所属期</th>
-                                <th>姓名</th>
-                                <th>身份证号</th>
-                                <th>所属村</th>
-                                <th>银行账号</th>
-                                <th>金额</th>
-                                <th>支付标志</th>
-                                <th>救助类型</th>
-                                <th>导入来源</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="treatmentPaymentBody"></tbody>
-                    </table>
-                </div>
-                <div class="form-buttons" style="margin-top:15px;">
-                    <button onclick="closeTreatmentPaymentModal()" class="btn-cancel">关闭</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="treatmentImportModal" class="modal" style="display:none;">
-            <div class="modal-content">
-                <h2>导入待遇发放数据</h2>
-                <div class="form-group">
-                    <label>费款所属期（如202606）：</label>
-                    <input type="text" id="treatmentImportPeriod" placeholder="如202606" style="padding:6px 12px;font-size:13px;width:140px;" required>
-                </div>
-                <div class="form-group">
-                    <label>选择文件：</label>
-                    <input type="file" id="treatmentImportFile" accept=".xlsx,.xls">
-                </div>
-                <div id="treatmentImportProgress" style="display:none;">
-                    <p id="treatmentImportStatus"></p>
-                </div>
-                <div class="form-buttons">
-                    <button onclick="doDownloadPaymentTemplate('treatment_payment', '待遇发放导入模板.xlsx')" class="toolbar-btn">下载模板</button>
-                    <button onclick="doTreatmentImport()" class="btn-save">开始导入</button>
-                    <button onclick="closeTreatmentImportModal()" class="btn-cancel">取消</button>
-                </div>
-            </div>
-        </div>
-
         <div id="pensionInsuranceModal" class="modal" style="display:none;">
             <div class="modal-content" style="max-width:1100px;">
                 <h2>养老保险数据管理</h2>
@@ -1697,7 +1632,6 @@ tr:hover {
     <script src="js/students.js?v=20261003"></script>
     <script src="js/logs.js?v=20261003"></script>
     <script src="js/land_subsidy.js?v=20261003"></script>
-    <script src="js/treatment.js?v=20261003"></script>
     <script src="js/pension.js?v=20261003"></script>
     <script src="js/dibao.js?v=20261003"></script>
     <script src="js/tekun.js?v=20261003"></script>

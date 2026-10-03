@@ -19,10 +19,6 @@ from .import_land_subsidy import import_land_subsidy
 from .get_all_land_subsidies import get_all_land_subsidies
 from .delete_land_subsidy import delete_land_subsidy
 from .get_person_subsidy_total import get_person_subsidy_total
-from .import_treatment_payment import import_treatment_payment
-from .get_all_treatment_payments import get_all_treatment_payments
-from .delete_treatment_payment import delete_treatment_payment
-from .import_treatment_payment_excel import import_treatment_payment_excel
 from .import_land_subsidy_excel import import_land_subsidy_excel
 from .import_pension_insurance_excel import import_pension_insurance_excel
 from .import_dibao_payment_excel import import_dibao_payment_excel
@@ -51,10 +47,6 @@ __all__ = [
     'get_all_land_subsidies',
     'delete_land_subsidy',
     'get_person_subsidy_total',
-    'import_treatment_payment',
-    'get_all_treatment_payments',
-    'delete_treatment_payment',
-    'import_treatment_payment_excel',
     'import_land_subsidy_excel',
     'import_pension_insurance_excel',
     'import_dibao_payment_excel',

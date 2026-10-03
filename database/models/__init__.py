@@ -3,7 +3,6 @@
 from .person import Person
 from .student_education import StudentEducation
 from .land_subsidy import LandSubsidy
-from .treatment_payment import TreatmentPayment
 from .pension_insurance import PensionInsurance
 from .dibao_payment import DibaoPayment
 from .tekun_payment import TekunPayment

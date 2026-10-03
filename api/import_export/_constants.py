@@ -15,7 +15,6 @@ EXCEL_MAGIC_BYTES = {
 
 PAYMENT_TEMPLATE_MAP = {
     'land_subsidy': ('excel_payment_templates', 'generate_land_subsidy_template', '地力补贴导入模板.xlsx'),
-    'treatment_payment': ('excel_payment_templates', 'generate_treatment_payment_template', '待遇发放导入模板.xlsx'),
     'pension_insurance': ('excel_payment_templates', 'generate_pension_insurance_template', '养老保险导入模板.xlsx'),
     'dibao_payment': ('excel_payment_templates', 'generate_dibao_payment_template', '低保发放导入模板.xlsx'),
     'tekun_payment': ('excel_payment_templates', 'generate_tekun_payment_template', '特困发放导入模板.xlsx'),
@@ -28,7 +27,6 @@ PAYMENT_TEMPLATE_MAP.update({
     'dibao': PAYMENT_TEMPLATE_MAP['dibao_payment'],
     'tekun': PAYMENT_TEMPLATE_MAP['tekun_payment'],
     'pension': PAYMENT_TEMPLATE_MAP['pension_insurance'],
-    'treatment': PAYMENT_TEMPLATE_MAP['treatment_payment'],
     'elderly': PAYMENT_TEMPLATE_MAP['elderly_allowance'],
     'disability': PAYMENT_TEMPLATE_MAP['disability_care_payment'],
     'land': PAYMENT_TEMPLATE_MAP['land_subsidy'],

@@ -58,7 +58,7 @@ def create_app():
         auth_bp, users_bp, persons_bp, students_bp,
         photos_bp, statistics_bp, import_export_bp,
         backup_bp, logs_bp, notifications_bp, reports_bp,
-        land_subsidy_bp, treatment_payment_bp, pension_insurance_bp,
+        land_subsidy_bp, pension_insurance_bp,
         dibao_payment_bp, tekun_payment_bp,
         disability_care_payment_bp, elderly_allowance_bp,
         update_bp, report_files_bp
@@ -77,7 +77,6 @@ def create_app():
     app.register_blueprint(reports_bp, url_prefix='/api/reports')
     app.register_blueprint(report_files_bp, url_prefix='/api/reports')
     app.register_blueprint(land_subsidy_bp, url_prefix='/api')
-    app.register_blueprint(treatment_payment_bp, url_prefix='/api')
     app.register_blueprint(pension_insurance_bp, url_prefix='/api')
     app.register_blueprint(dibao_payment_bp, url_prefix='/api')
     app.register_blueprint(tekun_payment_bp, url_prefix='/api')

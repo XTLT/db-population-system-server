@@ -12,7 +12,6 @@ from .notifications import bp as notifications_bp
 from .reports import bp as reports_bp
 from .report_files import bp as report_files_bp
 from .land_subsidy import bp as land_subsidy_bp
-from .treatment_payment import bp as treatment_payment_bp
 from .pension_insurance import bp as pension_insurance_bp
 from .dibao_payment import bp as dibao_payment_bp
 from .tekun_payment import bp as tekun_payment_bp
@@ -34,7 +33,6 @@ __all__ = [
     'reports_bp',
     'report_files_bp',
     'land_subsidy_bp',
-    'treatment_payment_bp',
     'pension_insurance_bp',
     'dibao_payment_bp',
     'tekun_payment_bp',

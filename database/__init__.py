@@ -27,7 +27,6 @@ from ._base import (
 from .models.person import Person
 from .models.student_education import StudentEducation
 from .models.land_subsidy import LandSubsidy
-from .models.treatment_payment import TreatmentPayment
 from .models.pension_insurance import PensionInsurance
 from .models.dibao_payment import DibaoPayment
 from .models.tekun_payment import TekunPayment
@@ -121,7 +120,6 @@ __all__ = [
     "Person",
     "StudentEducation",
     "LandSubsidy",
-    "TreatmentPayment",
     "PensionInsurance",
     "DibaoPayment",
     "TekunPayment",
