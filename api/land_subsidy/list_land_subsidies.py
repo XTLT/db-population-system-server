@@ -14,6 +14,7 @@ def list_land_subsidies():
 
     year = request.args.get('year', '')
     id_card = request.args.get('id_card', '')
+    search = request.args.get('search', '')
 
     if year:
         valid, msg = validate_year(year)
@@ -29,6 +30,9 @@ def list_land_subsidies():
         if id_card:
             safe_id_card = escape_like(id_card)
             query = query.filter(LandSubsidy.id_card.like(f'%{safe_id_card}%', escape='\\'))
+        if search:
+            safe_search = escape_like(search)
+            query = query.filter(LandSubsidy.name.like(f'%{safe_search}%', escape='\\'))
 
         subsidies = query.order_by(LandSubsidy.year.desc()).limit(500).all()
 
