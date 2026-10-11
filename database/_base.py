@@ -144,8 +144,17 @@ def init_db():
     # 确保所有模型类已注册到 Base.metadata 后再建表
     from . import models  # noqa: F401
     engine = get_engine()
-    Base.metadata.create_all(engine)
-    _migrate_db(engine)
+    # 多进程并发启动（gunicorn 多 worker）时串行化建表/迁移，避免建表竞态
+    lock_path = os.path.join(os.path.dirname(os.path.abspath(DB_PATH)), '.init_db.lock')
+    try:
+        import fcntl
+        with open(lock_path, 'w') as _lock_file:
+            fcntl.flock(_lock_file, fcntl.LOCK_EX)
+            Base.metadata.create_all(engine)
+            _migrate_db(engine)
+    except ImportError:
+        Base.metadata.create_all(engine)
+        _migrate_db(engine)
 
 
 def _migrate_db(engine):
