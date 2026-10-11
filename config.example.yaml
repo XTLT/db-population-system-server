@@ -1,0 +1,138 @@
+# ========================================
+# 人口通配置文件
+# ========================================
+
+# 应用配置
+app:
+  name: "人口通"
+  version: "1.0.0"
+  debug: false
+  env: "production"  # development, testing, production
+
+# ========================================
+# 域名配置（核心功能：可动态修改）
+# ========================================
+domains:
+  # API 服务域名
+  api:
+    url: "https://api.yourdomain.com"
+    enabled: true
+    
+  # 文件下载域名
+  files:
+    url: "https://files.yourdomain.com"
+    enabled: true
+    
+  # Web 管理端域名
+  web:
+    url: "https://www.yourdomain.com"
+    enabled: true
+
+  # 备用域名（域名失效时自动切换）
+  backup_urls:
+    - "https://api-backup.yourdomain.com"
+    - "https://123.45.67.89:5000"  # IP 直连（应急）
+
+  # 允许的客户端域名（CORS 配置）
+  allowed_origins:
+    - "https://www.yourdomain.com"
+    - "https://app.yourdomain.com"
+    - "capacitor://localhost"  # 移动端
+    - "http://localhost:3000"  # 开发环境
+
+# ========================================
+# 数据库配置（支持切换）
+# ========================================
+database:
+  type: "sqlite"  # sqlite 或 postgresql
+  
+  # SQLite 配置（小规模，<50 用户）
+  sqlite:
+    path: "data/population.db"
+  
+  # PostgreSQL 配置（中等规模，50-500 用户）
+  postgresql:
+    host: "localhost"
+    port: 5432
+    database: "population"
+    user: "postgres"
+    password: "${DB_PASSWORD}"  # 从环境变量读取
+    pool_size: 10
+    max_overflow: 20
+
+# ========================================
+# Redis 配置（可选，大规模时启用）
+# ========================================
+redis:
+  enabled: false
+  host: "localhost"
+  port: 6379
+  db: 0
+  password: "${REDIS_PASSWORD}"
+  default_timeout: 300
+
+# ========================================
+# 安全配置
+# ========================================
+security:
+  secret_key: "${SECRET_KEY}"  # 从环境变量读取
+  token_expiry: 7200  # Token 有效期（秒），默认 2 小时
+  password_min_length: 6
+  login_max_attempts: 5  # 最大登录失败次数
+  login_lock_minutes: 15  # 锁定时长（分钟）
+
+# ========================================
+# 文件存储配置
+# ========================================
+storage:
+  type: "local"  # local 或 oss
+  
+  # 本地存储
+  local:
+    path: "uploads/"
+    max_size: 10485760  # 10MB
+  
+  # 阿里云 OSS（大规模时使用）
+  oss:
+    enabled: false
+    endpoint: "oss-cn-hangzhou.aliyuncs.com"
+    bucket: "your-bucket"
+    access_key: "${OSS_ACCESS_KEY}"
+    secret_key: "${OSS_SECRET_KEY}"
+
+# ========================================
+# 推送服务（可选）
+# ========================================
+push:
+  enabled: false
+  provider: "jpush"  # jpush 或 getui
+  app_key: "${JPUSH_APP_KEY}"
+  master_secret: "${JPUSH_MASTER_SECRET}"
+
+# ========================================
+# 日志配置
+# ========================================
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  file: "logs/app.log"
+  max_bytes: 10485760  # 10MB
+  backup_count: 5
+
+# ========================================
+# 备份配置
+# ========================================
+backup:
+  enabled: true
+  path: "backups/"
+  retention_days: 60  # 保留天数
+  schedule:
+    hour: 2  # 每天凌晨 2 点备份
+    minute: 0
+
+# ========================================
+# 性能配置
+# ========================================
+performance:
+  api_rate_limit: 100  # API 限流：每分钟请求数
+  cache_timeout: 300  # 缓存超时（秒）
+  max_upload_size: 10485760  # 最大上传文件大小（字节）

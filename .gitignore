@@ -1,0 +1,73 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Flutter
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+*.lock
+build/
+.fvm/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Data files
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+/data/
+!desktop/data/
+!desktop/data/**
+desktop/data/**/__pycache__/
+desktop/data/**/*.pyc
+uploads/
+/data/Photos/
+/data/backups/
+*.xlsx
+*.xls
+
+# Config with secrets
+config.yaml
+.env
+*.pem
+*.key
+.token_salt
+
+# Certificates (but keep README)
+server/certs/*.crt
+server/certs/*.key
+desktop/certs/*.crt
+desktop/certs/*.cer
+mobile/assets/certs/*.crt
+mobile/assets/certs/*.cer
+
+# Logs
+*.log
+/data/logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.apk
+*.aab
+*.exe
+*.msi

@@ -1,0 +1,34 @@
+[Unit]
+Description=人口通 - 服务端
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/population-system/server
+Environment="PATH=/opt/population-system/server/venv/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="FLASK_ENV=production"
+Environment="PYTHONUNBUFFERED=1"
+
+# 使用 gunicorn 运行（生产模式）
+ExecStart=/opt/population-system/server/venv/bin/gunicorn \
+    --workers 3 \
+    --bind ":::5000" \
+    --certfile /opt/population-system/data/certs/server.crt \
+    --keyfile /opt/population-system/data/certs/server.key \
+    --access-logfile /opt/population-system/data/logs/access.log \
+    --error-logfile /opt/population-system/data/logs/error.log \
+    --log-level info \
+    app_modular:app
+
+# 重启策略
+Restart=on-failure
+RestartSec=5s
+
+# 安全限制
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

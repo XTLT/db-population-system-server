@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  python-check:
+    name: Python 语法检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: 全量 py_compile 检查
+        run: |
+          python - <<'EOF'
+          import os, py_compile
+          fail = 0
+          total = 0
+          for dirpath, dirnames, filenames in os.walk('.'):
+              dirnames[:] = [d for d in dirnames if d not in ('venv', '__pycache__', 'build', 'dist', 'node_modules', '.git')]
+              for f in filenames:
+                  if f.endswith('.py'):
+                      p = os.path.join(dirpath, f)
+                      total += 1
+                      try:
+                          py_compile.compile(p, doraise=True)
+                      except Exception as e:
+                          fail += 1
+                          print('FAIL:', p, e)
+          print(f'Python 语法检查 total={total} fail={fail}')
+          if fail:
+              raise SystemExit(1)
+          EOF
+
+  web-check:
+    name: Web JS 语法检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: node --check 全部前端 JS
+        run: |
+          set -e
+          for f in web_static/js/*.js web_static/app.js; do
+            node --check "$f"
+            echo "OK: $f"
+          done
+          echo "JS 语法检查全部通过"
