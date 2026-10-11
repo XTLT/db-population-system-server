@@ -15,7 +15,7 @@ def update_server():
         return jsonify({'error': '需要管理员权限'}), 403
 
     server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    project_dir = os.path.dirname(server_dir)
+    project_dir = server_dir  # git 仓库即代码部署目录（拆分后仓库根=代码根）
 
     try:
         result = subprocess.run(
@@ -35,8 +35,8 @@ echo "=== $(date) 开始更新 ===" > {_DEPLOY_LOG}
 cd {project_dir}
 git pull origin master >> {_DEPLOY_LOG} 2>&1
 git rev-parse --short HEAD >> {_DEPLOY_LOG} 2>&1
-find server -name "*.pyc" -delete >> {_DEPLOY_LOG} 2>&1
-find server -name "__pycache__" -type d -exec rm -rf {{}} + 2>/dev/null
+find . -name "*.pyc" -delete >> {_DEPLOY_LOG} 2>&1
+find . -name "__pycache__" -type d -exec rm -rf {{}} + 2>/dev/null
 systemctl restart population-server >> {_DEPLOY_LOG} 2>&1
 echo "=== $(date) 更新完成 ===" >> {_DEPLOY_LOG}
 '''

@@ -15,7 +15,7 @@ def server_update_status():
         return jsonify({'error': '需要管理员权限'}), 403
 
     server_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    project_dir = os.path.dirname(server_dir)
+    project_dir = server_dir  # git 仓库即代码部署目录（拆分后仓库根=代码根）
 
     try:
         result = subprocess.run(
