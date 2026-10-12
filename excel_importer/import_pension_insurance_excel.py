@@ -3,25 +3,22 @@ import secrets
 from datetime import datetime
 from database import get_session, Person, PensionInsurance
 from utils import safe_str
-from ._read_excel_robust import _read_excel_robust
+from ._read_excel_robust import _read_excel_with_header
 from ._backfill_social_card import _backfill_social_card
+from excel_payment_templates import PENSION_INSURANCE_COLUMNS
 
 
 def import_pension_insurance_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
     """导入养老保险数据
 
+    新模板单表头行：所属乡镇/所属村/费款所属期/支付标志/个人编号/公民身份证号码/
+    享受定期待遇人员ID/姓名/银行账号/金额/失败原因（公民身份证号码在姓名之前）。
+
     只导入身份证号在数据库中存在的人员
-
-    Args:
-        file_path: Excel 文件路径
-        progress_callback: 进度回调函数
-        period: 费款所属期（如Excel中无此列则使用此值）
-
-    Returns:
-        导入结果字典
+    period: 费款所属期（如Excel中无此列则使用此值）
     """
 
-    df = _read_excel_robust(file_path, header=0)
+    df = _read_excel_with_header(file_path, PENSION_INSURANCE_COLUMNS)
     df = df.fillna("")
 
     columns = list(df.columns)
@@ -29,9 +26,9 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None, perio
 
     # 验证必需列
     if "姓名" not in columns:
-        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列"], "total": 0, "not_found": []}
+        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列（请使用最新模板）"], "total": 0, "not_found": []}
 
-    # 确定身份证列名
+    # 确定身份证列名：公民身份证号码 优先，回退 身份证号/身份证号码
     id_card_col = None
     if "公民身份证号码" in columns:
         id_card_col = "公民身份证号码"
@@ -39,6 +36,8 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None, perio
         id_card_col = "身份证号"
     elif "身份证号码" in columns:
         id_card_col = "身份证号码"
+    if not id_card_col:
+        return {"imported": 0, "skipped": 0, "errors": ["未找到身份证号列（请使用最新模板）"], "total": 0, "not_found": []}
 
     total = len(df)
     imported = 0
@@ -66,7 +65,7 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None, perio
                     errors.append(f"行{idx + 2}: 姓名为空，已跳过")
                     continue
 
-                id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
+                id_card = safe_str(row.get(id_card_col, ""))
 
                 # 检查身份证号是否在数据库中存在
                 if id_card and id_card not in existing_id_cards:
@@ -75,9 +74,12 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None, perio
                     skipped += 1
                     continue
 
-                # 方案C：社保卡2/3 自动回填（期数为空则跳过回填）
-                card = safe_str(row.get("卡号", "")).strip()
+                # 期数：费款所属期 列优先，否则用导入参数（record.period 用同一值）
                 period_value = safe_str(row.get("费款所属期", "")) or period
+
+                # 方案C：社保卡2/3 自动回填（期数为空则跳过回填）
+                # 新模板无卡号列：卡号优先，否则用银行账号回填
+                card = safe_str(row.get("卡号", "")).strip() or safe_str(row.get("银行账号", "")).strip()
                 person = person_map.get(id_card)
                 if person and card and period_value:
                     _backfill_social_card(person, f"养老保险{period_value}", card)
@@ -88,7 +90,7 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None, perio
                     id_card=id_card,
                     town=safe_str(row.get("所属乡镇", "")),
                     village=safe_str(row.get("所属村", "")),
-                    period=safe_str(row.get("费款所属期", "")) or period,
+                    period=period_value,
                     payment_status=safe_str(row.get("支付标志", "")),
                     personal_code=safe_str(row.get("个人编号", "")),
                     person_id=safe_str(row.get("享受定期待遇人员ID", "")),

@@ -351,4 +351,28 @@ def _migrate_db(engine):
             conn.commit()
         except Exception:
             pass
+        # 残疾人护理补贴表新增列
+        for _col in ("phone", "fold_no", "bank_name", "area_address", "agent_manage",
+                     "householder_name", "householder_id_card", "remark"):
+            try:
+                conn.execute(text(f"ALTER TABLE disability_care_payment ADD COLUMN {_col} VARCHAR DEFAULT ''"))
+                conn.commit()
+            except Exception:
+                pass
+        # 高龄补贴表新增列
+        for _col in ("phone", "fold_no", "bank_name", "area_address", "agent_manage",
+                     "householder_name", "householder_id_card", "remark"):
+            try:
+                conn.execute(text(f"ALTER TABLE elderly_allowance ADD COLUMN {_col} VARCHAR DEFAULT ''"))
+                conn.commit()
+            except Exception:
+                pass
+        # 特困表新增列（与低保相同）
+        for _col in ("gender", "family_members", "family_count", "base_amount", "special_amount",
+                     "adjust_amount", "special_situation", "special_subsidy", "start_time", "issue_month"):
+            try:
+                conn.execute(text(f"ALTER TABLE tekun_payment ADD COLUMN {_col} VARCHAR DEFAULT ''"))
+                conn.commit()
+            except Exception:
+                pass
 

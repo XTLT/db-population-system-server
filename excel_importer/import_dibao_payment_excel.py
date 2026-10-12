@@ -3,50 +3,44 @@ import secrets
 from datetime import datetime
 from database import get_session, Person, DibaoPayment
 from utils import safe_str
-from ._read_excel_robust import _read_excel_robust
+from ._read_excel_robust import _read_excel_with_header
 from ._backfill_social_card import _backfill_social_card
+from excel_payment_templates import DIBAO_PAYMENT_COLUMNS
 
 
 def import_dibao_payment_excel(file_path: str, progress_callback=None, period: str = "", import_source: str = "") -> dict:
     """导入低保发放数据
 
-    支持两种Excel格式：
-    1. 低保特困发放台账：包含救助类型列，只导入救助类型包含'低保'的记录
-    2. 通用格式：包含姓名/人员姓名、身份证号、金额/家庭保障总金额
-
-    只导入身份证号在数据库中存在的人员
+    新模板单表头行（76列）：序号/人员编码/家庭编码/.../人员姓名/人员身份证号/性别/.../村名称/救助类型/...。
+    保留台账过滤：救助类型不含低保则跳过；保留旧通用格式兼容。
+    只导入身份证号在数据库中存在的人员。
     period: 用户指定的费款所属期，Excel中无费款所属期列时使用
     import_source: 原始上传文件名（否则回退为临时文件名 basename(file_path)）
     """
 
-    df = _read_excel_robust(file_path, header=0)
+    df = _read_excel_with_header(file_path, DIBAO_PAYMENT_COLUMNS)
     df = df.fillna("")
 
     columns = list(df.columns)
     file_name = import_source or os.path.basename(file_path)
 
+    def pick(*cands):
+        for c in cands:
+            if c in columns:
+                return c
+        return None
+
+    # 台账：救助类型 + 人员身份证号（新76列模板同样含此二列）
     has_subsidy_type = "救助类型" in columns and "人员身份证号" in columns
 
-    name_col = None
-    id_card_col = None
-    amount_col = None
-
-    if has_subsidy_type:
-        name_col = "人员姓名" if "人员姓名" in columns else "姓名"
-        id_card_col = "人员身份证号"
-        amount_col = "家庭保障总金额"
-    elif "姓名" in columns:
-        name_col = "姓名"
-        if "公民身份证号码" in columns:
-            id_card_col = "公民身份证号码"
-        elif "身份证号" in columns:
-            id_card_col = "身份证号"
-        elif "身份证号码" in columns:
-            id_card_col = "身份证号码"
-        amount_col = "金额" if "金额" in columns else None
+    name_col = pick("人员姓名", "姓名")
+    id_card_col = pick("人员身份证号", "身份证号", "公民身份证号码", "身份证号码")
+    amount_col = pick("家庭保障总金额", "金额")
 
     if not name_col:
-        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列"], "total": 0, "not_found": []}
+        return {"imported": 0, "skipped": 0, "errors": ["未找到姓名列（请使用最新模板）"], "total": 0, "not_found": []}
+    if not id_card_col:
+        return {"imported": 0, "skipped": 0, "errors": ["未找到身份证号列（请使用最新模板）"], "total": 0, "not_found": []}
 
     total = len(df)
     imported = 0
@@ -81,7 +75,7 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None, period: s
                         errors.append(f"行{idx + 2}: 救助类型不含低保（{subsidy_type}），已跳过")
                         continue
 
-                id_card = safe_str(row.get(id_card_col, "")) if id_card_col else ""
+                id_card = safe_str(row.get(id_card_col, ""))
 
                 if id_card and id_card not in existing_id_cards:
                     not_found.append(f"{name}({id_card})")
@@ -89,27 +83,27 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None, period: s
                     skipped += 1
                     continue
 
-                # 方案C：社保卡2/3 自动回填（期数为空则跳过回填）
+                # 期数兜底链：费款所属期 → period 参数 → 始发年月 → 本次开始发放年月
+                period_value = (safe_str(row.get("费款所属期", "")) or period
+                                or safe_str(row.get("始发年月", "")) or safe_str(row.get("本次开始发放年月", "")))
+
+                # 方案C：社保卡2/3 自动回填（期数为空则跳过回填）；卡号列若存在
                 card = safe_str(row.get("卡号", "")).strip()
-                period_value = safe_str(row.get("费款所属期", "")) or period or safe_str(row.get("始发年月", ""))
                 person = person_map.get(id_card)
                 if person and card and period_value:
                     _backfill_social_card(person, f"低保{period_value}", card)
 
                 amount = safe_str(row.get(amount_col, "")) if amount_col else ""
 
-                # 费款所属期：优先模板"费款所属期"列，其次导入参数，最后兜底"始发年月"
-                period_value = safe_str(row.get("费款所属期", "")) or period or safe_str(row.get("始发年月", ""))
-
                 record = DibaoPayment(
                     id=f"db_{secrets.token_hex(8)}",
                     name=name,
                     id_card=id_card,
-                    town=safe_str(row.get("所属乡镇", "")),
+                    town=safe_str(row.get("镇名称", "")) or safe_str(row.get("所属乡镇", "")),
                     village=safe_str(row.get("村名称", "")) or safe_str(row.get("所属村", "")),
                     period=period_value,
                     payment_status=safe_str(row.get("支付标志", "")),
-                    personal_code=safe_str(row.get("个人编号", "")),
+                    personal_code=safe_str(row.get("人员编码", "")) or safe_str(row.get("个人编号", "")),
                     bank_account=safe_str(row.get("银行账号", "")),
                     amount=amount,
                     relation=safe_str(row.get("和申请人关系", "")),

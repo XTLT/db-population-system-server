@@ -18,5 +18,13 @@ class ElderlyAllowance(Base):
     amount = Column(String, default="")
     relation = Column(String, default="")  # 和申请人关系
     fail_reason = Column(String, default="")  # 失败原因
+    phone = Column(String, default="")  # 手机号
+    fold_no = Column(String, default="")  # 折号
+    bank_name = Column(String, default="")  # 开户行
+    area_address = Column(String, default="")  # 区划地址
+    agent_manage = Column(String, default="")  # 代持代管
+    householder_name = Column(String, default="")  # 户主姓名
+    householder_id_card = Column(String, default="")  # 户主身份证号
+    remark = Column(String, default="")  # 备注
     import_time = Column(String, default="")
     import_source = Column(String, default="")  # 导入来源文件名
