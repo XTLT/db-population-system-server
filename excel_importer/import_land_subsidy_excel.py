@@ -91,6 +91,7 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
 
     total = len(df)
     imported = 0
+    updated = 0
     skipped = 0
     errors = []
     not_found = []
@@ -103,6 +104,16 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
         persons = session.query(Person).all()
         existing_id_cards = {p.id_card for p in persons if p.id_card}
         person_map = {p.id_card: p for p in persons if p.id_card}
+    except Exception:
+        pass
+
+    # 同年同人去重：已存在该年度记录则覆盖更新（地力补贴一年一导入，不应重复）
+    existing_by_key = {}
+    try:
+        if subsidy_year:
+            for r in session.query(LandSubsidy).filter(LandSubsidy.year == subsidy_year).all():
+                if r.id_card:
+                    existing_by_key[(r.id_card, r.year)] = r
     except Exception:
         pass
 
@@ -146,27 +157,48 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                 land_area = certified_area
                 subsidy_amount = total_amount
 
-                subsidy = LandSubsidy(
-                    id=f"ls_{secrets.token_hex(8)}",
-                    name=name,
-                    id_card=id_card,
-                    year=subsidy_year,
-                    land_area=land_area,
-                    subsidy_amount=subsidy_amount,
-                    certified_area=certified_area,
-                    subsidy_area=subsidy_area,
-                    base_standard=base_standard,
-                    rape_area=rape_area,
-                    rape_amount=rape_amount,
-                    total_amount=total_amount,
-                    phone=phone,
-                    bank_account=bank_account,
-                    bank_name=bank_name,
-                    land_time=land_time,
-                    rape_standard=rape_standard,
-                    created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                )
-                session.add(subsidy)
+                existing = existing_by_key.get((id_card, subsidy_year))
+                if existing is not None:
+                    # 同年同人已存在：覆盖更新，避免重复记录
+                    existing.name = name
+                    existing.id_card = id_card
+                    existing.year = subsidy_year
+                    existing.land_area = land_area
+                    existing.subsidy_amount = subsidy_amount
+                    existing.certified_area = certified_area
+                    existing.subsidy_area = subsidy_area
+                    existing.base_standard = base_standard
+                    existing.rape_area = rape_area
+                    existing.rape_amount = rape_amount
+                    existing.total_amount = total_amount
+                    existing.phone = phone
+                    existing.bank_account = bank_account
+                    existing.bank_name = bank_name
+                    existing.land_time = land_time
+                    existing.rape_standard = rape_standard
+                    updated += 1
+                else:
+                    subsidy = LandSubsidy(
+                        id=f"ls_{secrets.token_hex(8)}",
+                        name=name,
+                        id_card=id_card,
+                        year=subsidy_year,
+                        land_area=land_area,
+                        subsidy_amount=subsidy_amount,
+                        certified_area=certified_area,
+                        subsidy_area=subsidy_area,
+                        base_standard=base_standard,
+                        rape_area=rape_area,
+                        rape_amount=rape_amount,
+                        total_amount=total_amount,
+                        phone=phone,
+                        bank_account=bank_account,
+                        bank_name=bank_name,
+                        land_time=land_time,
+                        rape_standard=rape_standard,
+                        created_at=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    )
+                    session.add(subsidy)
                 imported += 1
 
                 if progress_callback:
@@ -182,4 +214,4 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
     finally:
         session.close()
 
-    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
+    return {"imported": imported, "updated": updated, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
