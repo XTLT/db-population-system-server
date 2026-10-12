@@ -33,7 +33,17 @@ export TZ=Asia/Shanghai
 sleep 2
 echo "=== $(date) 开始更新 ===" > {_DEPLOY_LOG}
 cd {project_dir}
-git pull origin master >> {_DEPLOY_LOG} 2>&1
+# 拉取重试：官方直连不稳时自动切 ghproxy 镜像兜底（镜像域名如失效可更换）
+pull_with_retry() {{
+  for i in 1 2; do
+    git pull origin master && return 0
+    sleep 3
+    git pull https://gh-proxy.com/https://github.com/XTLT/db-population-system-server.git master && return 0
+    sleep 3
+  done
+  return 1
+}}
+pull_with_retry >> {_DEPLOY_LOG} 2>&1
 git rev-parse --short HEAD >> {_DEPLOY_LOG} 2>&1
 find . -name "*.pyc" -delete >> {_DEPLOY_LOG} 2>&1
 find . -name "__pycache__" -type d -exec rm -rf {{}} + 2>/dev/null
