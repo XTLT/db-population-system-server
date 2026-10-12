@@ -8,6 +8,11 @@ def _find_asset(release, app_type):
             if name.endswith('.apk'):
                 return asset
     elif app_type == 'desktop':
+        # 优先 .exe 安装包（可静默安装覆盖更新），找不到再回退 .zip
+        for asset in assets:
+            name = asset.get('name', '')
+            if name.endswith('.exe') and ('人口通' in name or name.startswith('population_')):
+                return asset
         for asset in assets:
             name = asset.get('name', '')
             if name.endswith('.zip') and ('人口通' in name or name.startswith('population_')):
