@@ -10,12 +10,12 @@ def _find_asset(release, app_type):
     elif app_type == 'desktop':
         for asset in assets:
             name = asset.get('name', '')
-            if name.endswith('.zip') and '人口通' in name:
+            if name.endswith('.zip') and ('人口通' in name or name.startswith('population_')):
                 return asset
     else:
         for asset in assets:
             name = asset.get('name', '')
-            if name.endswith('.zip') and ('服务器' in name or '服务' in name):
+            if name.endswith('.zip') and ('服务器' in name or '服务' in name or name.startswith('population_server')):
                 return asset
 
     return None
