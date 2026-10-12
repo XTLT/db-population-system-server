@@ -2,24 +2,24 @@ import json
 import time
 import urllib.request
 
-from . import GITHUB_API_URL, _cache, CACHE_TTL
+from . import release_api_url, _cache, CACHE_TTL
 
 
-def _fetch_releases():
-    """从GitHub获取发行版信息（带缓存）"""
+def _fetch_releases(repo):
+    """从GitHub获取指定仓库的发行版信息（按仓库分别带缓存）"""
     now = time.time()
-    if _cache['data'] and (now - _cache['timestamp']) < CACHE_TTL:
-        return _cache['data']
+    entry = _cache.get(repo)
+    if entry and (now - entry['timestamp']) < CACHE_TTL:
+        return entry['data']
     try:
         req = urllib.request.Request(
-            GITHUB_API_URL,
+            release_api_url(repo),
             headers={'User-Agent': 'PopulationSystem/1.0'}
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode('utf-8'))
-            _cache['data'] = data
-            _cache['timestamp'] = now
+            _cache[repo] = {'data': data, 'timestamp': now}
             return data
     except Exception as e:
-        print(f'获取GitHub发行版失败: {e}')
-        return _cache['data'] or []
+        print(f'获取GitHub发行版失败({repo}): {e}')
+        return (_cache.get(repo) or {}).get('data') or []

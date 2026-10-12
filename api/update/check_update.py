@@ -1,6 +1,6 @@
 from flask import request, jsonify
 
-from . import bp
+from . import bp, RELEASE_REPOS, DEFAULT_RELEASE_TYPE
 from ._fetch_releases import _fetch_releases
 from ._find_asset import _find_asset
 from ._parse_version import _parse_version
@@ -11,7 +11,9 @@ def check_update():
     app_type = request.args.get('type', 'mobile')
     current_code = request.args.get('version_code', 0, type=int)
 
-    releases = _fetch_releases()
+    # 按端选择对应的 release 仓库（mobile/desktop/server 各自独立仓库）
+    repo = RELEASE_REPOS.get(app_type, RELEASE_REPOS[DEFAULT_RELEASE_TYPE])
+    releases = _fetch_releases(repo)
     if not releases:
         return jsonify({'error': '无法获取版本信息'}), 500
 

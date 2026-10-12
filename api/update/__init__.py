@@ -5,13 +5,28 @@ from config import LOG_DIR
 
 bp = Blueprint('update', __name__)
 
-# GitHub仓库配置
+# GitHub仓库配置（拆分后三端各自发布到对应仓库）
 GITHUB_OWNER = 'XTLT'
-GITHUB_REPO = 'db-population-system'
-GITHUB_API_URL = f'https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases'
+# /api/update/check?type=xxx 按端取对应仓库的 releases：
+#   mobile  -> 移动端 APK（db-population-system-mobile）
+#   desktop -> 桌面端安装包（db-population-system-desktop）
+#   server  -> 服务端（自更新走 git pull，release 仅作镜像）
+RELEASE_REPOS = {
+    'mobile': 'db-population-system-mobile',
+    'desktop': 'db-population-system-desktop',
+    'server': 'db-population-system-server',
+}
+# 未知/缺省 type 时的兜底仓库（移动端是最常用的检查方）
+DEFAULT_RELEASE_TYPE = 'mobile'
 
-# 缓存
-_cache = {'data': None, 'timestamp': 0}
+
+def release_api_url(repo):
+    """拼接指定仓库的 GitHub releases API 地址"""
+    return f'https://api.github.com/repos/{GITHUB_OWNER}/{repo}/releases'
+
+
+# 缓存（按仓库分别缓存，避免三端 release 互相覆盖）
+_cache = {}
 CACHE_TTL = 300
 
 _DEPLOY_LOG = os.path.join(LOG_DIR, 'server_update.log')

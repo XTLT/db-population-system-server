@@ -1,6 +1,7 @@
 # 版本检测 URL（仅支持HTTPS）
+# 拆分后 updates/version.json 统一存放在 desktop 仓库根目录
 VERSION_URLS = [
-    "https://raw.githubusercontent.com/XTLT/db-population-system/master/updates/version.json",
+    "https://raw.githubusercontent.com/XTLT/db-population-system-desktop/master/updates/version.json",
 ]
 
 # 更新源白名单域名
