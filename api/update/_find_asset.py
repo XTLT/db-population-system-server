@@ -1,5 +1,9 @@
-def _find_asset(release, app_type):
-    """从发行版中查找对应的下载文件"""
+def _find_asset(release, app_type, legacy_desktop=False):
+    """从发行版中查找对应的下载文件
+
+    legacy_desktop=True 时（旧版桌面客户端，仅支持 zip 解压更新）只找 .zip；
+    新版桌面客户端优先 .exe 安装包，找不到再回退 .zip。
+    """
     assets = release.get('assets', [])
 
     if app_type == 'mobile':
@@ -8,6 +12,12 @@ def _find_asset(release, app_type):
             if name.endswith('.apk'):
                 return asset
     elif app_type == 'desktop':
+        if legacy_desktop:
+            for asset in assets:
+                name = asset.get('name', '')
+                if name.endswith('.zip') and ('人口通' in name or name.startswith('population_')):
+                    return asset
+            return None
         # 优先 .exe 安装包（可静默安装覆盖更新），找不到再回退 .zip
         for asset in assets:
             name = asset.get('name', '')

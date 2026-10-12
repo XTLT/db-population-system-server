@@ -51,7 +51,9 @@ def check_update():
         return jsonify({'has_update': False})
 
     has_update = best_code > current_code
-    asset = _find_asset(best_release, app_type)
+    # 旧版桌面客户端（<13）仅支持 zip 解压更新；新版优先 .exe 安装包静默安装
+    legacy_desktop = app_type == 'desktop' and current_code < 13
+    asset = _find_asset(best_release, app_type, legacy_desktop=legacy_desktop)
 
     result = {
         'has_update': has_update,
