@@ -302,6 +302,16 @@ def _migrate_db(engine):
         except Exception:
             pass
         try:
+            conn.execute(text("ALTER TABLE deleted_persons ADD COLUMN social_card2_source VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE deleted_persons ADD COLUMN social_card3_source VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
             conn.execute(text("ALTER TABLE dibao_payment ADD COLUMN gender VARCHAR DEFAULT ''"))
             conn.commit()
         except Exception:

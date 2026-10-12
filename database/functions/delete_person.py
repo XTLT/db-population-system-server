@@ -40,6 +40,8 @@ def delete_person(person_id: str):
                 social_card1=person.social_card1,
                 social_card2=person.social_card2,
                 social_card3=person.social_card3,
+                social_card2_source=person.social_card2_source,
+                social_card3_source=person.social_card3_source,
                 is_migrated=person.is_migrated,
                 migration_date=person.migration_date,
                 migration_place=person.migration_place,
