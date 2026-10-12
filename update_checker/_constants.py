@@ -1,13 +1,12 @@
 # 版本检测 URL（仅支持HTTPS）
-# 拆分后 updates/version.json 统一存放在 desktop 仓库根目录
+# 拆分后 updates/version.json 统一存放在 desktop 仓库根目录（更新渠道已切换为 Gitee）
 VERSION_URLS = [
-    "https://raw.githubusercontent.com/XTLT/db-population-system-desktop/master/updates/version.json",
+    "https://gitee.com/tension0712/db-population-system-desktop/raw/master/updates/version.json",
 ]
 
 # 更新源白名单域名
 ALLOWED_DOMAINS = [
-    "github.com",
-    "githubusercontent.com",
+    "gitee.com",
 ]
 
 # 是否启用自动更新（默认禁用，需手动确认）

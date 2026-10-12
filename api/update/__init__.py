@@ -5,8 +5,8 @@ from config import LOG_DIR
 
 bp = Blueprint('update', __name__)
 
-# GitHub仓库配置（拆分后三端各自发布到对应仓库）
-GITHUB_OWNER = 'XTLT'
+# Gitee仓库配置（拆分后三端各自发布到对应仓库；更新渠道已从GitHub切换为Gitee）
+GITEE_OWNER = 'tension0712'
 # /api/update/check?type=xxx 按端取对应仓库的 releases：
 #   mobile  -> 移动端 APK（db-population-system-mobile）
 #   desktop -> 桌面端安装包（db-population-system-desktop）
@@ -21,8 +21,8 @@ DEFAULT_RELEASE_TYPE = 'mobile'
 
 
 def release_api_url(repo):
-    """拼接指定仓库的 GitHub releases API 地址"""
-    return f'https://api.github.com/repos/{GITHUB_OWNER}/{repo}/releases'
+    """拼接指定仓库的 Gitee releases API 地址（公开仓库匿名可读）"""
+    return f'https://gitee.com/api/v5/repos/{GITEE_OWNER}/{repo}/releases'
 
 
 # 缓存（按仓库分别缓存，避免三端 release 互相覆盖）

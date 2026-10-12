@@ -21,5 +21,5 @@ def _fetch_releases(repo):
             _cache[repo] = {'data': data, 'timestamp': now}
             return data
     except Exception as e:
-        print(f'获取GitHub发行版失败({repo}): {e}')
+        print(f'获取发行版信息失败({repo}): {e}')
         return (_cache.get(repo) or {}).get('data') or []

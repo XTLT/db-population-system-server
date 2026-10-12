@@ -33,12 +33,10 @@ export TZ=Asia/Shanghai
 sleep 2
 echo "=== $(date) 开始更新 ===" > {_DEPLOY_LOG}
 cd {project_dir}
-# 拉取重试：官方直连不稳时自动切 ghproxy 镜像兜底（镜像域名如失效可更换）
+# 拉取重试：更新渠道已切换为 Gitee（国内直连稳定），remote 名为 gitee
 pull_with_retry() {{
   for i in 1 2; do
-    git pull origin master && return 0
-    sleep 3
-    git pull https://gh-proxy.com/https://github.com/XTLT/db-population-system-server.git master && return 0
+    git pull gitee master && return 0
     sleep 3
   done
   return 1
