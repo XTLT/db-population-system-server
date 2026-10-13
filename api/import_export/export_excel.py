@@ -49,8 +49,9 @@ def export_excel():
     try:
         from excel_importer import export_excel as do_export
         tmp_path = os.path.join(BASE_DIR, f'_tmp_export_{secrets.token_hex(4)}.xlsx')
+        filters = data.get('filters') or {}
         
-        if do_export(tmp_path):
+        if do_export(tmp_path, filters=filters):
             add_operation_log(
                 request.current_user['id'],
                 request.current_user['username'],
