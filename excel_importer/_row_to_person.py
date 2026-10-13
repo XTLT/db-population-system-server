@@ -24,6 +24,7 @@ def _row_to_person(row, idx) -> Person:
         poor_type=safe_str(row.get("脱贫户或监测户", "")),
         disability=safe_str(row.get("残疾", "")),
         dis_level=safe_str(row.get("残疾等级", "")),
+        disability_type=safe_str(row.get("残疾类型", "")),
         dibao=safe_str(row.get("低保", "")),
         tekun=safe_str(row.get("特困供养", "")),
         tekun_type=safe_str(row.get("供养类型", "")),

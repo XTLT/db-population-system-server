@@ -20,6 +20,7 @@ def _update_person_from_row(person: Person, row):
     person.poor_type = safe_str(row.get("脱贫户或监测户", person.poor_type))
     person.disability = safe_str(row.get("残疾", person.disability))
     person.dis_level = safe_str(row.get("残疾等级", person.dis_level))
+    person.disability_type = safe_str(row.get("残疾类型", person.disability_type))
     person.dibao = safe_str(row.get("低保", person.dibao))
     person.tekun = safe_str(row.get("特困供养", person.tekun))
     person.tekun_type = safe_str(row.get("供养类型", person.tekun_type))
