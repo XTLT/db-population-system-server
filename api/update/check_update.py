@@ -2,7 +2,7 @@ from flask import request, jsonify
 
 from . import bp, RELEASE_REPOS, DEFAULT_RELEASE_TYPE
 from ._fetch_releases import _fetch_releases
-from ._find_asset import _find_asset
+from ._find_asset import _find_asset, _asset_size
 from ._parse_version import _parse_version
 
 
@@ -65,6 +65,9 @@ def check_update():
     if has_update and asset:
         result['download_url'] = asset.get('browser_download_url', '')
         result['is_external_url'] = True
-        result['file_size'] = asset.get('size', 0)
+        size = asset.get('size', 0) or 0
+        if not size:
+            size = _asset_size(asset.get('browser_download_url', ''))
+        result['file_size'] = size
 
     return jsonify(result)

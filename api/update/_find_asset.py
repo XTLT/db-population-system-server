@@ -1,3 +1,18 @@
+import urllib.request
+
+
+def _asset_size(url):
+    """通过 HEAD 请求获取下载文件的真实大小（Gitee 的 releases API 不返回 size 字段）"""
+    if not url:
+        return 0
+    try:
+        req = urllib.request.Request(url, method='HEAD', headers={'User-Agent': 'PopulationSystem/1.0'})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return int(resp.headers.get('Content-Length', 0) or 0)
+    except Exception:
+        return 0
+
+
 def _find_asset(release, app_type, legacy_desktop=False):
     """从发行版中查找对应的下载文件
 
