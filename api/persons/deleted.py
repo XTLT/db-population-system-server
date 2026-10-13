@@ -15,6 +15,7 @@ def _deleted_to_dict(d):
         'name': d.name,
         'age': d.age or '',
         'address': d.address or '',
+        'group_name': getattr(d, 'group_name', '') or '',
         'relation': d.relation or '',
         'deleted_at': d.deleted_at or '',
     }

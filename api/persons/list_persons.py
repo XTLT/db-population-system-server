@@ -39,6 +39,7 @@ def api_persons():
                 'hu_hao': p.hu_hao,
                 'age': p.age or '',
                 'address': p.address or '',
+                'group_name': p.group_name or '',
                 'phone': p.phone or '',
                 'is_dead': p.is_dead or '否',
                 'disability': p.disability or '',

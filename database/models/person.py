@@ -12,6 +12,7 @@ class Person(Base):
     name = Column(String, nullable=False, index=True)
     age = Column(String, default="")
     address = Column(String, default="")
+    group_name = Column(String, default="")
     relation = Column(String, default="")
     is_dead = Column(String, default="否")
     phone = Column(String, default="")

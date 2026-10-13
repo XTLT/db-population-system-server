@@ -17,6 +17,7 @@ def _row_to_person(row, idx) -> Person:
         name=safe_str(row.get("姓名", "")),
         age=calculate_age(id_card),
         address=safe_str(row.get("地址", "")),
+        group_name=safe_str(row.get("小组", "")),
         relation=safe_str(row.get("与户主关系", "")),
         is_dead=safe_str(row.get("是否死亡", "否")),
         phone=safe_str(row.get("电话", "")),

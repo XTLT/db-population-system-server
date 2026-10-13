@@ -39,6 +39,7 @@ def api_update_person(person_id):
         p.phone = data.get('phone', p.phone)
         p.is_dead = data.get('is_dead', p.is_dead)
         p.address = data.get('address', p.address)
+        p.group_name = data.get('group_name', p.group_name)
         p.poor_type = data.get('poor_type', p.poor_type)
         p.remark = data.get('remark', p.remark)
         p.disability = data.get('disability', p.disability)

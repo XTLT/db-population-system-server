@@ -22,6 +22,7 @@ def api_add_household():
             id_card=data.get('id_card', ''),
             relation=data.get('relation', '户主'),
             address=data.get('address', ''),
+            group_name=data.get('group_name', ''),
             phone=data.get('phone', ''),
             land_area=data.get('land_area', ''),
             local_welfare_forest_area=data.get('local_welfare_forest_area', ''),

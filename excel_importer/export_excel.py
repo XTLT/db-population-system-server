@@ -30,6 +30,7 @@ def export_excel(file_path: str, progress_callback=None, filters: dict = None) -
             "身份证号": p.id_card,
             "姓名": p.name,
             "地址": p.address,
+            "小组": p.group_name or "",
             "与户主关系": p.relation,
             "是否死亡": p.is_dead,
             "电话": p.phone,

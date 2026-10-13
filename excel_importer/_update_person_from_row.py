@@ -22,6 +22,7 @@ def _update_person_from_row(person: Person, row):
     person.name = _cell(row, "姓名", person.name)
     person.age = calculate_age(person.id_card)
     person.address = _cell(row, "地址", person.address)
+    person.group_name = _cell(row, "小组", person.group_name)
     person.relation = _cell(row, "与户主关系", person.relation)
     person.is_dead = _cell(row, "是否死亡", person.is_dead)
     person.phone = _cell(row, "电话", person.phone)

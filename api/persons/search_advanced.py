@@ -63,6 +63,7 @@ def api_search_advanced():
         'hu_hao': p.hu_hao,
         'age': p.age,
         'address': p.address,
+        'group_name': p.group_name or '',
         'relation': p.relation,
         'disability': p.disability,
         'dis_level': p.dis_level or '',

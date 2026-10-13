@@ -32,6 +32,7 @@ def add_new_household(hu_hao: str, name: str, id_card: str, relation: str = "户
             age=calculate_age(id_card),
             relation=relation,
             address=kwargs.get("address", ""),
+            group_name=kwargs.get("group_name", ""),
             phone=phone,
             land_area=kwargs.get("land_area", ""),
             local_welfare_forest_area=kwargs.get("local_welfare_forest_area", ""),

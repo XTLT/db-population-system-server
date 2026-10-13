@@ -28,6 +28,7 @@ def api_family(hu_hao):
             'id_card': m.id_card,
             'relation': m.relation,
             'address': m.address,
+            'group_name': m.group_name or '',
             'age': m.age,
             'phone': m.phone,
             'is_dead': m.is_dead,

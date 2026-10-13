@@ -36,6 +36,7 @@ def api_person(person_id):
                 'hu_hao': p.hu_hao,
                 'relation': p.relation,
                 'address': p.address,
+                'group_name': p.group_name or '',
                 'age': p.age,
                 'phone': p.phone,
                 'is_dead': p.is_dead,

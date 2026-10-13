@@ -56,6 +56,7 @@ def api_add_person():
         name=data['name'],
         age=calculate_age(id_card),
         address=data.get('address', ''),
+        group_name=data.get('group_name', ''),
         relation=data.get('relation', ''),
         phone=data.get('phone', ''),
         is_dead=data.get('is_dead', '否'),
