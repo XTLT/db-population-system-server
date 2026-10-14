@@ -66,6 +66,7 @@ def api_search_advanced():
         'group_name': p.group_name or '',
         'relation': p.relation,
         'disability': p.disability,
+        'disability_type': p.disability_type or '',
         'dis_level': p.dis_level or '',
         'dibao': p.dibao,
         'tekun': p.tekun or '',

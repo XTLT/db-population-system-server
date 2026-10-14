@@ -40,6 +40,7 @@ def api_family(hu_hao):
             'poor_type': m.poor_type,
             'remark': m.remark,
             'disability': m.disability,
+            'disability_type': m.disability_type or '',
             'dis_level': m.dis_level,
             'dibao': m.dibao,
             'tekun': m.tekun or '',

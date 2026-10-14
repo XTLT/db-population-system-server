@@ -43,6 +43,7 @@ def api_persons():
                 'phone': p.phone or '',
                 'is_dead': p.is_dead or '否',
                 'disability': p.disability or '',
+                'disability_type': p.disability_type or '',
                 'dibao': p.dibao or '',
                 'tekun': p.tekun or '',
                 'tekun_type': p.tekun_type or '',

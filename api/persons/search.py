@@ -39,6 +39,7 @@ def api_search():
         'remark': p.remark or '',
         'poor_type': p.poor_type or '',
         'disability': p.disability or '',
+        'disability_type': p.disability_type or '',
         'dis_level': p.dis_level or '',
         'dibao': p.dibao or '',
         'tekun': p.tekun or '',
