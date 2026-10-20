@@ -8,6 +8,7 @@ from .dibao_payment import DibaoPayment
 from .tekun_payment import TekunPayment
 from .education_history import EducationHistory
 from .user import User
+from .login_ip_lock import LoginIpLock
 from .operation_log import OperationLog
 from .token import Token
 from .deleted_person import DeletedPerson

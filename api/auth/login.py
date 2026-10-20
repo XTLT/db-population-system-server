@@ -3,7 +3,15 @@ from datetime import datetime, timedelta
 from flask import request, jsonify
 
 from database import get_session, User, add_operation_log
-from utils.security import create_token, verify_password, hash_password
+from utils.security import (
+    create_token,
+    verify_password,
+    hash_password,
+    is_login_ip_locked,
+    record_login_ip_fail,
+    clear_login_ip_fail,
+    logger,
+)
 from utils.response import safe_exception
 from config import TOKEN_EXPIRY_HOURS, LOGIN_LOCK_MINUTES
 from . import bp
@@ -24,7 +32,18 @@ def api_login():
     username = data.get('username', '')
     password = data.get('password', '')
     password_hashed = data.get('password_hashed', False)
-    ip_address = request.remote_addr
+    ip_address = request.remote_addr or ''
+
+    # ---- IP 级限流：防止换账号批量爆破 ----
+    ip_locked, ip_remaining = is_login_ip_locked(ip_address)
+    if ip_locked:
+        logger.warning(
+            "[登录失败][IP封锁] ip=%s 剩余%d分钟", ip_address, ip_remaining
+        )
+        return jsonify({
+            'success': False,
+            'error': f'该IP登录失败次数过多，已临时封锁，请{ip_remaining}分钟后重试'
+        }), 429
 
     session = get_session()
     try:
@@ -33,6 +52,10 @@ def api_login():
             User.is_active == "是"
         ).first()
         if not user_obj:
+            record_login_ip_fail(ip_address)
+            logger.warning(
+                "[登录失败][用户名不存在] user=%s ip=%s", username, ip_address
+            )
             return jsonify({'success': False, 'error': '用户名或密码错误'}), 401
 
         # 检查账户锁定
@@ -41,6 +64,10 @@ def api_login():
                 lock_time = datetime.strptime(user_obj.locked_until, "%Y-%m-%d %H:%M:%S")
                 if datetime.now() < lock_time:
                     remaining = int((lock_time - datetime.now()).total_seconds() / 60) + 1
+                    logger.warning(
+                        "[登录失败][账户锁定] user=%s ip=%s 剩余%d分钟",
+                        username, ip_address, remaining,
+                    )
                     return jsonify({
                         'success': False, 
                         'error': f'密码错误次数过多，账户已锁定，请{remaining}分钟后重试'
@@ -92,6 +119,11 @@ def api_login():
             user_obj.login_attempts = str(attempts)
             if attempts >= 5:
                 user_obj.locked_until = (datetime.now() + timedelta(minutes=LOGIN_LOCK_MINUTES)).strftime("%Y-%m-%d %H:%M:%S")
+            record_login_ip_fail(ip_address)
+            logger.warning(
+                "[登录失败][密码错误] user=%s ip=%s 账号失败次数=%d",
+                username, ip_address, attempts,
+            )
             session.commit()
             return jsonify({'success': False, 'error': '用户名或密码错误'}), 401
 
@@ -104,6 +136,7 @@ def api_login():
         user_obj.login_attempts = "0"
         user_obj.locked_until = ""
         user_obj.last_login = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        clear_login_ip_fail(ip_address)
         session.commit()
 
         # 统计登录前该用户在线会话数，用于提示"已有其他设备在线"

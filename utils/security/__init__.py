@@ -22,6 +22,13 @@ from .remove_all_user_tokens import remove_all_user_tokens
 from .cleanup_expired_tokens import cleanup_expired_tokens
 from .require_auth import require_auth
 from .check_id_card_rate_limit import check_id_card_rate_limit
+from .check_login_ip_rate import (
+    is_login_ip_locked,
+    record_login_ip_fail,
+    clear_login_ip_fail,
+    IP_LOCK_ATTEMPTS,
+    IP_LOCK_MINUTES,
+)
 
 __all__ = [
     'ARGON2_AVAILABLE',
@@ -45,4 +52,9 @@ __all__ = [
     'ID_CARD_QUERY_LIMIT',
     'ID_CARD_QUERY_WINDOW',
     'check_id_card_rate_limit',
+    'is_login_ip_locked',
+    'record_login_ip_fail',
+    'clear_login_ip_fail',
+    'IP_LOCK_ATTEMPTS',
+    'IP_LOCK_MINUTES',
 ]

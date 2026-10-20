@@ -10,6 +10,15 @@ if not logger.handlers:
     handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
+    # 文件落地：gunicorn 默认不捕获 worker stderr，独立写 app.log 保证审计日志可查
+    try:
+        from config import LOG_DIR
+        os.makedirs(LOG_DIR, exist_ok=True)
+        _fh = logging.FileHandler(os.path.join(LOG_DIR, 'app.log'), encoding='utf-8')
+        _fh.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+        logger.addHandler(_fh)
+    except Exception:
+        pass
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
