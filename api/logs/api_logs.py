@@ -6,7 +6,7 @@ from . import bp
 from .validate_date import validate_date
 
 
-@bp.route('/')
+@bp.route('/', strict_slashes=False)
 @require_auth
 def api_logs():
     """
