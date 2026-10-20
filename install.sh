@@ -1,105 +1,213 @@
 #!/bin/bash
-# ========================================
-# 人口通 - 服务端一键安装
-# ========================================
-# 仅安装服务端（Flask + SQLite + Web 前端 + systemd 开机启动）
-# 桌面端/移动端请分别使用 db-population-system-desktop / -mobile 仓库的脚本
+# ============================================================
+# 人口通 - 服务端 一键傻瓜安装脚本
+# ------------------------------------------------------------
+# 只需要运行这一条命令，脚本会自动检测并安装全部所需环境、
+# 依赖、证书、开机自启服务，并自动验证安装是否成功。
+# 无需任何其它操作，不懂技术也能装成功。
+#
+# 用法（在 server 代码目录内执行）:
+#     sudo bash install.sh -y
+#
+# 可选参数:
+#     -p <端口>    对外 HTTPS 端口（默认 5000）
+#     -d <域名>    客户端访问域名，多个用英文逗号分隔（自动加入证书）
+#     -w <数量>    gunicorn 进程数（默认 2，一般不用改）
+#     -n <名称>    服务名前缀（默认 population，一般不用改）
+#     -y           全自动，不询问任何确认
+#
+# 示例:
+#     sudo bash install.sh -y
+#     sudo bash install.sh -p 5000 -d tension02.ren -y
+# ============================================================
+set -euo pipefail
 
-set -e
+PORT="${PORT:-5000}"
+WORKERS="${WORKERS:-2}"
+DOMAINS=""
+NAME="population"
+SKIP_CONFIRM=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -p) PORT="$2"; shift 2 ;;
+        -d) DOMAINS="$2"; shift 2 ;;
+        -w) WORKERS="$2"; shift 2 ;;
+        -n) NAME="$2"; shift 2 ;;
+        -y) SKIP_CONFIRM=1; shift ;;
+        *) echo "未知参数: $1（用法见脚本头部注释）" >&2; exit 1 ;;
+    esac
+done
 
-echo "========================================"
-echo "   人口通 - 服务端一键安装"
-echo "========================================"
+INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
+INNER_PORT=$((PORT + 1))
+CERT_DIR="$INSTALL_DIR/certs"
 
-# 检测系统
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    echo "[INFO] 检测到系统: $PRETTY_NAME"
+# ---- 输出函数 ----
+red()    { printf "\033[31m%s\033[0m\n" "$*"; }
+green()  { printf "\033[32m%s\033[0m\n" "$*"; }
+yellow() { printf "\033[33m%s\033[0m\n" "$*"; }
+log()    { printf "\033[36m[%s] %s\033[0m\n" "$(date +%H:%M:%S)" "$*"; }
+step()   { echo ""; echo "===== $* ====="; }
+
+trap 'echo ""; red "安装失败！请把上面的错误信息发给维护者。"; exit 1' ERR
+
+# ---- 横幅 ----
+echo "======================================================"
+echo "         人口通 - 服务端 一键安装"
+echo "======================================================"
+echo "  安装目录: $INSTALL_DIR"
+echo "  对外端口: $PORT（HTTPS，IPv4+IPv6 双栈）"
+[ -n "$DOMAINS" ] && echo "  域名: $DOMAINS"
+echo ""
+
+# ---- 0. root 权限（自动 sudo 重跑）----
+if [ "$(id -u)" -ne 0 ]; then
+    echo "需要 root 权限，自动使用 sudo 重新执行..."
+    exec sudo bash "$0" "$@"
 fi
 
-# 1. 检查网络
-echo "[STEP] 检查网络连接..."
-if curl -s --connect-timeout 5 -o /dev/null https://pypi.org; then
-    echo "[INFO] 网络连接正常"
-else
-    echo "[WARN] 无法访问 pypi.org，可能网络受限，继续尝试..."
-fi
-
-# 2. 系统依赖
-echo "[STEP] 检查并安装系统依赖..."
-if command -v apt-get >/dev/null 2>&1; then
-    echo "[INFO] 更新软件源..."
-    apt-get update -qq || true
-    echo "[INFO] 安装系统依赖..."
-    apt-get install -y -qq python3-dev libffi-dev libargon2-0 sqlite3 net-tools openssl >/dev/null 2>&1 || true
-fi
-echo "[INFO] 系统依赖安装完成"
-
-# 3. Python 环境
-echo "[STEP] 检查 Python 环境..."
-python3 --version
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "[ERROR] 未找到 Python3"
+# ---- 1. 系统检测 ----
+step "检测系统环境"
+if ! command -v apt-get >/dev/null 2>&1; then
+    red "仅支持 Debian / Ubuntu / Armbian 等 apt 系统，当前系统无法自动安装。"
     exit 1
 fi
-
-# 4. 目录结构
-echo "[STEP] 创建目录结构..."
-mkdir -p data/certs data/logs data/backups data/Photos data/uploads
-chmod +x start_server.sh 2>/dev/null || true
-
-# 5. 服务端依赖
-echo "[STEP] 安装服务端依赖..."
-if [ ! -d venv ]; then
-    python3 -m venv venv
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    log "系统: ${PRETTY_NAME:-未知}"
 fi
-source venv/bin/activate
-pip install --upgrade pip -q
-pip install -r requirements.txt -q
-echo "[INFO] 服务端依赖安装完成"
+[ "$SKIP_CONFIRM" -ne 1 ] || log "全自动模式（-y），跳过确认"
 
-# 6. SSL 证书
-echo "[STEP] 生成 SSL 自签名证书（10年有效期）..."
-if [ ! -f data/certs/server.crt ]; then
-    python3 cert_manager.py || true
-    # 兜底：直接用 openssl 生成
-    if [ ! -f data/certs/server.crt ]; then
-        mkdir -p data/certs
-        openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
-            -keyout data/certs/server.key -out data/certs/server.crt \
-            -subj "/CN=population-server" 2>/dev/null
-    fi
-fi
-echo "[INFO] SSL 证书已生成"
-
-# 7. 端口检查
-echo "[STEP] 检查端口 5000..."
-if ss -tlnp 2>/dev/null | grep -q ':5000'; then
-    echo "[WARN] 端口 5000 已被占用，请先停止占用端口的服务"
+# ---- 2. 确认 ----
+if [ "$SKIP_CONFIRM" -ne 1 ]; then
+    echo ""
+    echo "即将在以下目录安装人口通服务端：$INSTALL_DIR"
+    read -r -p "确认继续? (y/N) " ans
+    case "$ans" in y|Y) ;; *) echo "已取消"; exit 0 ;; esac
 fi
 
-# 8. systemd 开机启动
-echo "[STEP] 配置开机启动服务..."
-if command -v systemctl >/dev/null 2>&1; then
-    mkdir -p /etc/systemd/system
-    cp deploy/population-server.service /etc/systemd/system/population-server.service
-    # 修正工作目录
-    sed -i "s|WorkingDirectory=.*|WorkingDirectory=$(pwd)|g" /etc/systemd/system/population-server.service
-    sed -i "s|ExecStart=.*|ExecStart=$(pwd)/venv/bin/gunicorn -w 3 -b [::]:5000 --certfile=$(pwd)/data/certs/server.crt --keyfile=$(pwd)/data/certs/server.key app_modular:app|g" /etc/systemd/system/population-server.service
-    systemctl daemon-reload
-    systemctl enable population-server
-    systemctl start population-server
-    echo "[INFO] 服务已启动: population-server"
+# ---- 3. 系统依赖 ----
+step "安装系统依赖（首次约 1-3 分钟）"
+apt-get update -qq >/dev/null 2>&1 || log "软件源更新失败（网络问题？），继续尝试安装"
+apt-get install -y -qq \
+    python3 python3-venv python3-pip openssl sqlite3 curl net-tools \
+    libargon2-0 libargon2-dev libffi-dev >/dev/null 2>&1 \
+  || apt-get install -y \
+    python3 python3-venv python3-pip openssl sqlite3 curl net-tools \
+    libargon2-0 libargon2-dev libffi-dev >/dev/null
+if ! command -v stunnel >/dev/null 2>&1; then
+    log "安装 stunnel..."
+    apt-get install -y stunnel >/dev/null 2>&1 \
+        || apt-get install -y stunnel4 >/dev/null \
+        || { red "stunnel 安装失败，请检查网络后重试"; exit 1; }
+fi
+STUNNEL_BIN="$(command -v stunnel)"
+log "系统依赖安装完成（stunnel: $STUNNEL_BIN）"
+
+# ---- 4. 目录结构 ----
+step "创建数据目录"
+mkdir -p "$CERT_DIR" logs backups Photos reports uploads
+log "数据目录创建完成"
+
+# ---- 5. Python 虚拟环境与依赖 ----
+step "安装服务端 Python 依赖（首次约 3-8 分钟）"
+[ -d venv ] || python3 -m venv venv
+venv/bin/pip install --upgrade pip -q
+if ! venv/bin/pip install -r requirements.txt -q 2>/dev/null; then
+    log "官方源安装失败，自动切换清华镜像重试..."
+    venv/bin/pip install -r requirements.txt -q -i https://pypi.tuna.tsinghua.edu.cn/simple
+fi
+log "Python 依赖安装完成"
+
+# ---- 6. 证书（CA + 服务器 + 客户端，mTLS）----
+step "生成安全证书（10 年有效期，含本机 IP / 域名）"
+bash scripts/gen_certs.sh "$CERT_DIR" "$DOMAINS"
+[ -f "$CERT_DIR/server.crt" ] && [ -f "$CERT_DIR/client.key" ] \
+    || { red "证书生成失败"; exit 1; }
+
+# ---- 7. systemd 服务 ----
+step "配置开机自启服务"
+systemctl daemon-reload >/dev/null 2>&1 || true
+SRV_SERVER="/etc/systemd/system/${NAME}-server.service"
+SRV_STUNNEL="/etc/systemd/system/${NAME}-stunnel.service"
+STUNNEL_CONF="/etc/stunnel/${NAME}.conf"
+
+sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" \
+    -e "s|__INNER_PORT__|$INNER_PORT|g" \
+    -e "s|__WORKERS__|$WORKERS|g" \
+    deploy/population-server.service > "$SRV_SERVER"
+
+mkdir -p /etc/stunnel
+sed -e "s|__CERT_DIR__|$CERT_DIR|g" \
+    -e "s|__PORT__|$PORT|g" \
+    -e "s|__INNER_PORT__|$INNER_PORT|g" \
+    -e "s|__NAME__|$NAME|g" \
+    deploy/stunnel/population.conf > "$STUNNEL_CONF"
+
+sed -e "s|__STUNNEL_BIN__|$STUNNEL_BIN|g" \
+    -e "s|__CONF__|$STUNNEL_CONF|g" \
+    -e "s|__NAME__|$NAME|g" \
+    deploy/stunnel/population-stunnel.service > "$SRV_STUNNEL"
+
+systemctl daemon-reload
+systemctl enable "${NAME}-server" >/dev/null 2>&1
+systemctl restart "${NAME}-server"
+sleep 6
+systemctl enable "${NAME}-stunnel" >/dev/null 2>&1
+systemctl restart "${NAME}-stunnel"
+sleep 2
+log "服务已配置并启动"
+
+# ---- 8. 验证 ----
+step "验证安装结果"
+ACTIVE=$(systemctl is-active "${NAME}-server" || true)
+if [ "$ACTIVE" != "active" ]; then
+    red "服务端未启动，查看日志: journalctl -u ${NAME}-server -n 50"
+    exit 1
+fi
+ACTIVE_S=$(systemctl is-active "${NAME}-stunnel" || true)
+[ "$ACTIVE_S" = "active" ] || yellow "stunnel 状态异常: $ACTIVE_S（请检查 journalctl -u ${NAME}-stunnel）"
+
+H="$(curl -sk --cert "$CERT_DIR/client.crt" --key "$CERT_DIR/client.key" -m 10 \
+     "https://127.0.0.1:$PORT/api/health" 2>/dev/null || true)"
+case "$H" in
+    *healthy*) green "健康检查通过（带客户端证书）: $H" ;;
+    *) red "健康检查失败: $H"; exit 1 ;;
+esac
+if curl -sk -m 5 "https://127.0.0.1:$PORT/api/health" >/dev/null 2>&1; then
+    yellow "警告：无客户端证书也能访问，mTLS 未生效，请检查 $STUNNEL_CONF"
 else
-    echo "[WARN] 未检测到 systemd，请手动启动: ./start_server.sh"
+    green "mTLS 双向校验生效：无客户端证书的访问已被拒绝"
 fi
 
-echo "========================================"
-echo "   安装完成！"
-echo "========================================"
-echo "服务管理命令："
-echo "   sudo systemctl start|stop|status population-server"
-echo "Web 访问："
-echo "   https://服务器IP:5000"
-echo "默认管理员：admin / admin123（首次登录后必须创建正式管理员）"
-echo "⚠️  生产环境请立即修改默认密码！"
+# ---- 9. 汇总 ----
+step "安装完成"
+echo ""
+echo "======================================================"
+echo "  人口通服务端已安装成功！"
+echo "======================================================"
+echo ""
+echo "服务器地址（手机/电脑登录时填写任意一个）："
+for ip in $(hostname -I 2>/dev/null); do
+    echo "    https://$ip:$PORT"
+done
+IPS6="$(ip -o -6 addr show scope global 2>/dev/null | awk '{print $4}' | cut -d/ -f1 || true)"
+for ip6 in $IPS6; do
+    echo "    https://[$ip6]:$PORT  （公网 IPv6）"
+done
+[ -n "$DOMAINS" ] && echo "    域名: https://$(echo "$DOMAINS" | cut -d, -f1):$PORT"
+echo ""
+echo "默认管理员账号: admin    密码: admin123"
+echo "  （首次登录后请创建正式管理员，默认账号会自动禁用）"
+echo ""
+echo "客户端打包需要以下 3 个证书文件（已包含本机地址，务必使用本机生成的文件）："
+echo "    $CERT_DIR/server.crt"
+echo "    $CERT_DIR/client.crt"
+echo "    $CERT_DIR/client.key"
+echo "  一键导出: bash scripts/export_client_certs.sh"
+echo ""
+echo "常用管理命令："
+echo "    查看状态: systemctl status ${NAME}-server ${NAME}-stunnel"
+echo "    重启服务: systemctl restart ${NAME}-server ${NAME}-stunnel"
+echo "    查看日志: journalctl -u ${NAME}-server -n 100"
+echo "======================================================"
