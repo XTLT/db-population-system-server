@@ -1,0 +1,12 @@
+[Unit]
+Description=人口通 stunnel mTLS 终止
+After=network.target population-server.service
+Requires=population-server.service
+
+[Service]
+ExecStart=/usr/bin/stunnel /etc/stunnel/population.conf
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
