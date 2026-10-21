@@ -25,14 +25,14 @@ set -euo pipefail
 PORT="${PORT:-5000}"
 WORKERS="${WORKERS:-2}"
 DOMAINS=""
-NAME="population"
+SVC_PREFIX="population"
 SKIP_CONFIRM=0
 while [ $# -gt 0 ]; do
     case "$1" in
         -p) PORT="$2"; shift 2 ;;
         -d) DOMAINS="$2"; shift 2 ;;
         -w) WORKERS="$2"; shift 2 ;;
-        -n) NAME="$2"; shift 2 ;;
+        -n) SVC_PREFIX="$2"; shift 2 ;;
         -y) SKIP_CONFIRM=1; shift ;;
         *) echo "未知参数: $1（用法见脚本头部注释）" >&2; exit 1 ;;
     esac
@@ -73,7 +73,7 @@ if ! command -v apt-get >/dev/null 2>&1; then
     exit 1
 fi
 if [ -f /etc/os-release ]; then
-    . /etc/os-release
+    PRETTY_NAME="$(sed -n 's/^PRETTY_NAME=//p' /etc/os-release | tr -d '"')"
     log "系统: ${PRETTY_NAME:-未知}"
 fi
 [ "$SKIP_CONFIRM" -ne 1 ] || log "全自动模式（-y），跳过确认"
@@ -147,9 +147,9 @@ bash scripts/gen_certs.sh "$CERT_DIR" "$DOMAINS"
 # ---- 7. systemd 服务 ----
 step "配置开机自启服务"
 systemctl daemon-reload >/dev/null 2>&1 || true
-SRV_SERVER="/etc/systemd/system/${NAME}-server.service"
-SRV_STUNNEL="/etc/systemd/system/${NAME}-stunnel.service"
-STUNNEL_CONF="/etc/stunnel/${NAME}.conf"
+SRV_SERVER="/etc/systemd/system/${SVC_PREFIX}-server.service"
+SRV_STUNNEL="/etc/systemd/system/${SVC_PREFIX}-stunnel.service"
+STUNNEL_CONF="/etc/stunnel/${SVC_PREFIX}.conf"
 
 sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" \
     -e "s|__INNER_PORT__|$INNER_PORT|g" \
@@ -160,32 +160,32 @@ mkdir -p /etc/stunnel
 sed -e "s|__CERT_DIR__|$CERT_DIR|g" \
     -e "s|__PORT__|$PORT|g" \
     -e "s|__INNER_PORT__|$INNER_PORT|g" \
-    -e "s|__NAME__|$NAME|g" \
+    -e "s|__NAME__|$SVC_PREFIX|g" \
     deploy/stunnel/population.conf > "$STUNNEL_CONF"
 
 sed -e "s|__STUNNEL_BIN__|$STUNNEL_BIN|g" \
     -e "s|__CONF__|$STUNNEL_CONF|g" \
-    -e "s|__NAME__|$NAME|g" \
+    -e "s|__NAME__|$SVC_PREFIX|g" \
     deploy/stunnel/population-stunnel.service > "$SRV_STUNNEL"
 
 systemctl daemon-reload
-systemctl enable "${NAME}-server" >/dev/null 2>&1
-systemctl restart "${NAME}-server"
+systemctl enable "${SVC_PREFIX}-server" >/dev/null 2>&1
+systemctl restart "${SVC_PREFIX}-server"
 sleep 6
-systemctl enable "${NAME}-stunnel" >/dev/null 2>&1
-systemctl restart "${NAME}-stunnel"
+systemctl enable "${SVC_PREFIX}-stunnel" >/dev/null 2>&1
+systemctl restart "${SVC_PREFIX}-stunnel"
 sleep 2
 log "服务已配置并启动"
 
 # ---- 8. 验证 ----
 step "验证安装结果"
-ACTIVE=$(systemctl is-active "${NAME}-server" || true)
+ACTIVE=$(systemctl is-active "${SVC_PREFIX}-server" || true)
 if [ "$ACTIVE" != "active" ]; then
-    red "服务端未启动，查看日志: journalctl -u ${NAME}-server -n 50"
+    red "服务端未启动，查看日志: journalctl -u ${SVC_PREFIX}-server -n 50"
     exit 1
 fi
-ACTIVE_S=$(systemctl is-active "${NAME}-stunnel" || true)
-[ "$ACTIVE_S" = "active" ] || yellow "stunnel 状态异常: $ACTIVE_S（请检查 journalctl -u ${NAME}-stunnel）"
+ACTIVE_S=$(systemctl is-active "${SVC_PREFIX}-stunnel" || true)
+[ "$ACTIVE_S" = "active" ] || yellow "stunnel 状态异常: $ACTIVE_S（请检查 journalctl -u ${SVC_PREFIX}-stunnel）"
 
 H="$(curl -sk --cert "$CERT_DIR/client.crt" --key "$CERT_DIR/client.key" -m 10 \
      "https://127.0.0.1:$PORT/api/health" 2>/dev/null || true)"
@@ -226,7 +226,7 @@ echo "    $CERT_DIR/client.key"
 echo "  一键导出: bash scripts/export_client_certs.sh"
 echo ""
 echo "常用管理命令："
-echo "    查看状态: systemctl status ${NAME}-server ${NAME}-stunnel"
-echo "    重启服务: systemctl restart ${NAME}-server ${NAME}-stunnel"
-echo "    查看日志: journalctl -u ${NAME}-server -n 100"
+echo "    查看状态: systemctl status ${SVC_PREFIX}-server ${SVC_PREFIX}-stunnel"
+echo "    重启服务: systemctl restart ${SVC_PREFIX}-server ${SVC_PREFIX}-stunnel"
+echo "    查看日志: journalctl -u ${SVC_PREFIX}-server -n 100"
 echo "======================================================"
