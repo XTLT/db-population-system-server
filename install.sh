@@ -91,10 +91,10 @@ step "安装系统依赖（首次约 1-3 分钟）"
 apt-get update -qq >/dev/null 2>&1 || log "软件源更新失败（网络问题？），继续尝试安装"
 apt-get install -y -qq \
     python3 python3-venv python3-pip openssl sqlite3 curl net-tools \
-    libargon2-0 libargon2-dev libffi-dev >/dev/null 2>&1 \
+    libargon2-1 libargon2-dev libffi-dev >/dev/null 2>&1 \
   || apt-get install -y \
     python3 python3-venv python3-pip openssl sqlite3 curl net-tools \
-    libargon2-0 libargon2-dev libffi-dev >/dev/null
+    libargon2-1 libargon2-dev libffi-dev >/dev/null
 if ! command -v stunnel >/dev/null 2>&1; then
     log "安装 stunnel..."
     apt-get install -y stunnel >/dev/null 2>&1 \
