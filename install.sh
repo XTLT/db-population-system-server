@@ -127,10 +127,14 @@ case "$ARCH" in
         ;;
 esac
 [ -d venv ] || python3 -m venv $VENV_EXTRA venv
-venv/bin/pip install --upgrade pip -q
-if ! venv/bin/pip install -r requirements.txt -q 2>/dev/null; then
-    log "官方源安装失败，自动切换清华镜像重试..."
-    venv/bin/pip install -r requirements.txt -q -i https://pypi.tuna.tsinghua.edu.cn/simple
+# 国内网络下官方源（files.pythonhosted.org）常因 IPv6/DNS 卡死且不报错，
+# 故默认走清华镜像并加超时上限：失败快速切换另一源，避免无限静默重试。
+venv/bin/pip install --upgrade pip -q --timeout 30 --retries 1 \
+    -i https://pypi.tuna.tsinghua.edu.cn/simple 2>/dev/null || true
+if ! venv/bin/pip install -r requirements.txt -q --timeout 60 --retries 2 \
+        -i https://pypi.tuna.tsinghua.edu.cn/simple 2>/dev/null; then
+    log "清华镜像安装失败，切换官方源重试..."
+    venv/bin/pip install -r requirements.txt -q --timeout 60 --retries 2
 fi
 log "Python 依赖安装完成"
 
