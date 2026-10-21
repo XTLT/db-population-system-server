@@ -111,7 +111,22 @@ log "数据目录创建完成"
 
 # ---- 5. Python 虚拟环境与依赖 ----
 step "安装服务端 Python 依赖（首次约 3-8 分钟）"
-[ -d venv ] || python3 -m venv venv
+# ARM 平台（树莓派/OneCloud/盒子等）无 pandas 等 wheel，源码编译极慢（可达 1 小时）；
+# 先用 apt 装二进制包 + venv --system-site-packages，pip 只补装剩余依赖，速度提升数倍。
+ARCH="$(uname -m)"
+case "$ARCH" in
+    armv7l|armhf|armv6l|aarch64|arm64)
+        log "检测到 ARM 架构（$ARCH），使用 apt 二进制包加速安装 pandas 等..."
+        apt-get install -y -qq \
+            python3-pandas python3-numpy python3-openpyxl python3-xlrd \
+            python3-pil python3-yaml python3-requests >/dev/null 2>&1 || true
+        VENV_EXTRA="--system-site-packages"
+        ;;
+    *)
+        VENV_EXTRA=""
+        ;;
+esac
+[ -d venv ] || python3 -m venv $VENV_EXTRA venv
 venv/bin/pip install --upgrade pip -q
 if ! venv/bin/pip install -r requirements.txt -q 2>/dev/null; then
     log "官方源安装失败，自动切换清华镜像重试..."
