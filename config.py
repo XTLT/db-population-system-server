@@ -102,6 +102,7 @@ BACKUP_DIR = os.path.join(DATA_DIR, "backups")
 LOG_DIR = os.path.join(DATA_DIR, "logs")
 CERT_DIR = os.path.join(DATA_DIR, "certs")
 REPORTS_DIR = os.path.join(DATA_DIR, "reports")
+UPDATES_DIR = os.path.join(DATA_DIR, "updates")
 
 BACKUP_RETENTION_DAYS = 60
 BACKUP_SCHEDULE_DAY = 4
@@ -223,3 +224,4 @@ def ensure_dirs():
     os.makedirs(LOG_DIR, exist_ok=True)
     os.makedirs(CERT_DIR, exist_ok=True)
     os.makedirs(REPORTS_DIR, exist_ok=True)
+    os.makedirs(UPDATES_DIR, exist_ok=True)

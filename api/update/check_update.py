@@ -1,6 +1,7 @@
 from flask import request, jsonify
 
 from . import bp, RELEASE_REPOS, DEFAULT_RELEASE_TYPE
+from ._check_local_package import get_local_package_meta
 from ._fetch_releases import _fetch_releases
 from ._find_asset import _find_asset, _asset_size
 from ._parse_version import _parse_version
@@ -11,7 +12,29 @@ def check_update():
     app_type = request.args.get('type', 'mobile')
     current_code = request.args.get('version_code', 0, type=int)
 
-    # 按端选择对应的 release 仓库（mobile/desktop/server 各自独立仓库）
+    # ============ 主源：服务器本地更新包（updates/<type>/） ============
+    local_meta = get_local_package_meta(app_type)
+    if local_meta:
+        try:
+            local_code = int(local_meta.get('version_code') or 0)
+        except Exception:
+            local_code = 0
+        local_version = local_meta.get('latest_version', '0.0.0')
+        if local_code > 0:
+            if local_code > current_code:
+                return jsonify({
+                    'has_update': True,
+                    'latest_version': local_version,
+                    'latest_code': local_code,
+                    'release_notes': local_meta.get('release_notes', ''),
+                    'download_url': f'/api/update/download?type={app_type}',
+                    'is_external_url': False,
+                    'file_size': int(local_meta.get('file_size') or 0),
+                    'checksum': local_meta.get('sha256', ''),
+                })
+            return jsonify({'has_update': False})
+
+    # ============ 备用源：Gitee releases（服务器本地无对应更新包时） ============
     repo = RELEASE_REPOS.get(app_type, RELEASE_REPOS[DEFAULT_RELEASE_TYPE])
     releases = _fetch_releases(repo)
     if not releases:

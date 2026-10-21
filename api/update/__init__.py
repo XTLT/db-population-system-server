@@ -35,6 +35,8 @@ os.makedirs(LOG_DIR, exist_ok=True)
 from . import _fetch_releases  # noqa: E402,F401
 from . import _find_asset  # noqa: E402,F401
 from . import _parse_version  # noqa: E402,F401
+from . import _check_local_package  # noqa: E402,F401
 from . import check_update  # noqa: E402,F401
+from . import download_update  # noqa: E402,F401
 from . import update_server  # noqa: E402,F401
 from . import server_update_status  # noqa: E402,F401
