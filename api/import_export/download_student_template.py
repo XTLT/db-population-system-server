@@ -3,6 +3,7 @@ import secrets
 from flask import jsonify, send_file
 
 from utils.security import require_auth
+from utils.file_send import send_file_auto_cleanup, cleanup_temp
 from config import BASE_DIR
 from . import bp
 
@@ -20,7 +21,9 @@ def download_student_template():
     try:
         from student_importer import export_student_education_template
         export_student_education_template(tmp_path)
-        return send_file(tmp_path, as_attachment=True, 
+        return send_file_auto_cleanup(tmp_path, as_attachment=True, 
                         download_name='学生就读信息导入模板.xlsx')
     except Exception as e:
+        if 'tmp_path' in locals():
+            cleanup_temp(tmp_path)
         return jsonify({'error': str(e)}), 400

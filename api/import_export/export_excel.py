@@ -5,6 +5,7 @@ from flask import request, jsonify, send_file
 
 from database import get_session, add_operation_log
 from utils.security import require_auth
+from utils.file_send import send_file_auto_cleanup, cleanup_temp
 from config import BASE_DIR
 from . import bp
 
@@ -60,8 +61,11 @@ def export_excel():
                 request.remote_addr,
                 "Web"
             )
-            return send_file(tmp_path, as_attachment=True,
-                           download_name=f'人口信息_{datetime.now().strftime("%Y%m%d")}.xlsx')
+            return send_file_auto_cleanup(tmp_path, as_attachment=True,
+                                          download_name=f'人口信息_{datetime.now().strftime("%Y%m%d")}.xlsx')
+        cleanup_temp(tmp_path)
         return jsonify({'error': '没有数据可导出'}), 404
     except Exception as e:
+        if 'tmp_path' in locals():
+            cleanup_temp(tmp_path)
         return jsonify({'error': str(e)}), 400

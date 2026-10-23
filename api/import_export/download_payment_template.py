@@ -3,6 +3,7 @@ import secrets
 from flask import jsonify, send_file
 
 from utils.security import require_auth
+from utils.file_send import send_file_auto_cleanup, cleanup_temp
 from config import BASE_DIR
 from . import bp
 from ._constants import PAYMENT_TEMPLATE_MAP
@@ -31,6 +32,7 @@ def download_payment_template(payment_type):
         mod = importlib.import_module(module_name)
         func = getattr(mod, func_name)
         func(tmp_path)
-        return send_file(tmp_path, as_attachment=True, download_name=download_name)
+        return send_file_auto_cleanup(tmp_path, as_attachment=True, download_name=download_name)
     except Exception as e:
+        cleanup_temp(tmp_path)
         return jsonify({'error': str(e)}), 400

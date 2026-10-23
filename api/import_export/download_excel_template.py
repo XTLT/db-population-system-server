@@ -3,6 +3,7 @@ import secrets
 from flask import jsonify, send_file
 
 from utils.security import require_auth
+from utils.file_send import send_file_auto_cleanup, cleanup_temp
 from config import BASE_DIR, EXCEL_TEMPLATE_COLUMNS
 from . import bp
 
@@ -41,7 +42,9 @@ def download_excel_template():
             ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = 15
         
         wb.save(tmp_path)
-        return send_file(tmp_path, as_attachment=True, 
+        return send_file_auto_cleanup(tmp_path, as_attachment=True, 
                         download_name='人口信息导入模板.xlsx')
     except Exception as e:
+        if 'tmp_path' in locals():
+            cleanup_temp(tmp_path)
         return jsonify({'error': str(e)}), 400

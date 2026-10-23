@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import request, jsonify, send_file
 
 from utils.security import require_auth
+from utils.file_send import send_file_auto_cleanup, cleanup_temp
 from database import get_session, TekunPayment, add_operation_log
 from config import BASE_DIR
 from . import bp
@@ -57,9 +58,11 @@ def export_tekun_payment():
             request.headers.get('X-Client-Type', 'Web')
         )
 
-        return send_file(tmp_path, as_attachment=True,
+        return send_file_auto_cleanup(tmp_path, as_attachment=True,
                         download_name=f'特困数据_{datetime.now().strftime("%Y%m%d")}.xlsx')
     except Exception as e:
+        if 'tmp_path' in locals():
+            cleanup_temp(tmp_path)
         return jsonify({'error': str(e)}), 400
     finally:
         session.close()
