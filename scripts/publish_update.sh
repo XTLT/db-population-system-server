@@ -55,5 +55,18 @@ cat > "$UPDATES_DIR/version.json" <<EOF
 EOF
 echo "  元数据: $UPDATES_DIR/version.json"
 
-echo "== 3/3 完成 =="
+echo "== 3/4 清理旧更新包（只保留当前版本） =="
+REMOVED=0
+for f in "$UPDATES_DIR"/*; do
+    [ -f "$f" ] || continue
+    base="$(basename "$f")"
+    if [ "$base" != "$BASENAME" ] && [ "$base" != "version.json" ]; then
+        rm -f "$f"
+        REMOVED=$((REMOVED + 1))
+        echo "  删除旧包: $base"
+    fi
+done
+echo "  共清理 $REMOVED 个旧包（历史包不再积累，防止 updates 目录无限膨胀）"
+
+echo "== 4/4 完成 =="
 echo "已发布 $TYPE v$VERSION（code=$CODE）。客户端检查更新即可从服务器下载。"

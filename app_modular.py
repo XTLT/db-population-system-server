@@ -156,6 +156,10 @@ def create_app():
     from utils.security import cleanup_expired_tokens
     cleanup_expired_tokens()
 
+    # 启动清理：操作日志保留 90 天、updates 目录只留当前版本包（防无限膨胀）
+    from utils.startup_cleanup import run_startup_cleanup
+    run_startup_cleanup()
+
     from api.auth import _ensure_default_admin
     _ensure_default_admin()
 
