@@ -48,6 +48,18 @@ def api_add_person():
         hu_hao = f"H{secrets.token_hex(4).upper()}"
         data['hu_hao'] = hu_hao
 
+    # 每户只能有一个户主：添加的新成员关系为"户主"时，该户已有户主则拒绝
+    new_relation = (data.get('relation') or '').strip()
+    if new_relation == '户主':
+        from database.functions.head_guard import find_head
+        from database import get_session as _gs
+        _s = _gs()
+        try:
+            if find_head(_s, hu_hao):
+                return jsonify({'error': f'该户（{hu_hao}）已存在户主，每户只能有一个户主'}), 400
+        finally:
+            _s.close()
+
     # 使用随机ID替代可预测的身份证号ID
     person = Person(
         id=f"web_{secrets.token_hex(8)}",  # 随机ID，不可预测
