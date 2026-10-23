@@ -35,11 +35,12 @@ def api_update_person(person_id):
             return jsonify({'error': '身份证号不允许修改，如需更正请删除后重新添加'}), 400
         
         p.name = data.get('name', p.name)
-        # 每户唯一户主：把某人改为"户主"时，自动把该户原户主降级为对应关系
+        # 每户唯一户主：把某人改为"户主"时，整户关系按新户主自动重算
+        # （旧户主降级 + 可确定的家庭其他成员关系联动；不确定的保持原值）
         new_relation = (data.get('relation') or '').strip() or p.relation
         if new_relation == '户主' and p.relation != '户主':
-            from database.functions.head_guard import demote_old_head
-            demote_old_head(p.hu_hao, exclude_id=p.id, new_head_old_relation=p.relation)
+            from database.functions.head_guard import rebuild_family_relations
+            rebuild_family_relations(p.hu_hao, p.id, p.relation)
         p.relation = new_relation
         p.phone = data.get('phone', p.phone)
         p.is_dead = data.get('is_dead', p.is_dead)
