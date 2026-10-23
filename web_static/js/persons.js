@@ -132,6 +132,16 @@ function editPerson() {
             document.getElementById('editName').value = p.name;
             document.getElementById('editHuHao').value = p.hu_hao || '';
             document.getElementById('editRelation').value = p.relation || '';
+            // 存量关系不在标准下拉选项时动态并入，避免编辑时丢失原值
+            const relSel = document.getElementById('editRelation');
+            let relFound = false;
+            for (const opt of relSel.options) {
+                if (opt.value === (p.relation || '')) { relFound = true; break; }
+            }
+            if (!relFound && p.relation) {
+                relSel.add(new Option(p.relation, p.relation));
+            }
+            relSel.value = p.relation || '';
             document.getElementById('editIsDead').value = p.is_dead || '';
             document.getElementById('editPhone').value = (p.phone && p.phone !== '无') ? p.phone : '';
             document.getElementById('editAddress').value = (p.address && p.address !== '无') ? p.address : '';
