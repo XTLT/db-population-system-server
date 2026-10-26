@@ -21,6 +21,7 @@ def api_get_education_history(person_id):
         return jsonify({
             'success': True,
             'history': [{
+                'id': h.id,
                 'change_date': h.change_date,
                 'school_name': h.school_name,
                 'grade': h.grade,
