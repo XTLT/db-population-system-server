@@ -13,6 +13,7 @@ from . import add_person
 from . import update_person
 from . import delete_person
 from . import save_education
+from . import get_education_history
 from . import migrate_person
 from . import split_household
 from . import merge_household

@@ -40,13 +40,38 @@ def api_save_education(person_id):
             return jsonify({'success': True})
 
         if edu:
+            # 记录就读变更历史（与本地 save_student_education 行为一致）：
+            # 学校/年级/班级/学生状态任一变化时，把修改前的值存入 education_history
+            new_status = data.get('student_status', '')
+            changed = (
+                edu.school_name != school or
+                edu.grade != grade or
+                edu.class_name != class_name or
+                edu.student_status != new_status
+            )
+            if changed:
+                from datetime import datetime
+                import uuid
+                from database.models.education_history import EducationHistory
+                history = EducationHistory(
+                    id=str(uuid.uuid4()),
+                    person_id=p.id,
+                    id_card=p.id_card,
+                    school_name=edu.school_name,
+                    grade=edu.grade,
+                    class_name=edu.class_name,
+                    student_status=edu.student_status,
+                    change_date=datetime.now().strftime("%Y-%m-%d"),
+                    change_reason="编辑更新"
+                )
+                session.add(history)
             edu.school_name = school
             edu.grade = grade
             edu.class_name = class_name
             edu.guardian = data.get('guardian', '')
             edu.guardian_phone = data.get('guardian_phone', '')
             edu.is_left_behind = data.get('is_left_behind', '否')
-            edu.student_status = data.get('student_status', '')
+            edu.student_status = new_status
             edu.enrollment_date = data.get('enrollment_date', '')
             edu.graduation_date = data.get('graduation_date', '')
         else:
