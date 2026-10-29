@@ -11,57 +11,62 @@ from . import bp
 def api_statistics():
     session = get_session()
     try:
-        total = session.query(Person).count()
+        # 统计口径（用户确认 2026-10-29）：
+        # 除"已死亡"外，所有统计均排除死亡人员（is_dead='是'）
+        alive_filter = (Person.is_dead != '是') | (Person.is_dead.is_(None))
+
+        total = session.query(Person).filter(alive_filter).count()
         dead = session.query(Person).filter(Person.is_dead == '是').count()
-        migrated = session.query(Person).filter(Person.is_migrated == '是').count()
-        # 户数 = 去重后的户号数量（户号非空）
-        household_count = session.query(Person.hu_hao).filter(
-            Person.hu_hao != '', Person.hu_hao.isnot(None)
-        ).distinct().count()
+        migrated = session.query(Person).filter(Person.is_migrated == '是', alive_filter).count()
         # 低保人员统计：编辑页选项为 是/低保边缘家庭/特困家庭，另兼容历史旧值
         dibao = session.query(Person).filter(
+            alive_filter,
             Person.dibao.in_(['是', '低保边缘家庭', '特困家庭',
                               '最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'])
         ).count()
-        disability = session.query(Person).filter(Person.disability != '无', Person.disability != '').count()
+        disability = session.query(Person).filter(alive_filter, Person.disability != '无', Person.disability != '').count()
         # 特困供养人员统计：与编辑页选项/移动端下钻统一为 =='是'
-        tekun = session.query(Person).filter(
-            Person.tekun == '是'
-        ).count()
+        tekun = session.query(Person).filter(alive_filter, Person.tekun == '是').count()
+        # 户数 = 有在世成员的户号去重（整户都死亡的户不计入）
+        household_count = session.query(Person.hu_hao).filter(
+            Person.hu_hao != '', Person.hu_hao.isnot(None),
+            alive_filter
+        ).distinct().count()
 
         poor_type_distribution = {}
         poor_type_person_count = {}
-        
-        from sqlalchemy import case
-        
-        # 脱贫户/监测户按"户主类型"统计户数：
-        # 每户只看户主的 poor_type，户主未标记的户归为"一般户"
-        # （不用户内其他成员类型兜底，否则户数虚高）
-        hu_hao_poor_types = session.query(
-            Person.hu_hao,
-            func.max(case((Person.relation == '户主', Person.poor_type), else_=None)).label('hu_zhu_type')
-        ).filter(
-            Person.hu_hao != '', 
-            Person.hu_hao.isnot(None)
-        ).group_by(Person.hu_hao).all()
-        
-        for hu_hao, hu_zhu_type in hu_hao_poor_types:
-            pt_val = hu_zhu_type or '一般户'
-            if pt_val:
-                poor_type_distribution[pt_val] = poor_type_distribution.get(pt_val, 0) + 1
 
-        # 统计各 poor_type 的人数
+        from collections import defaultdict
+
+        # 脱贫户/监测户按"户内任一在世成员有该类型"统计户数（每类独立计数，可重叠）
+        house_types = defaultdict(set)
+        for hu_hao, pt in session.query(Person.hu_hao, Person.poor_type).filter(
+            Person.hu_hao != '', Person.hu_hao.isnot(None),
+            alive_filter,
+            Person.poor_type != '', Person.poor_type.isnot(None)
+        ).all():
+            house_types[hu_hao].add(pt)
+
+        for types in house_types.values():
+            for t in types:
+                poor_type_distribution[t] = poor_type_distribution.get(t, 0) + 1
+        # 一般户 = 总户数 - 有脱贫类型成员（在世）的户数
+        poor_type_distribution['一般户'] = household_count - len(house_types)
+
+        # 统计各 poor_type 的人数（排除死亡）
         pt_person_counts = session.query(
             Person.poor_type, func.count(Person.id)
         ).filter(
-            Person.poor_type != '', Person.poor_type.isnot(None)
+            Person.poor_type != '', Person.poor_type.isnot(None),
+            alive_filter
         ).group_by(Person.poor_type).all()
         for pt_val, cnt in pt_person_counts:
             poor_type_person_count[pt_val] = cnt
 
         dis_level_distribution = {}
         dis_levels = session.query(Person.dis_level).filter(
-            Person.dis_level != '', Person.dis_level.isnot(None), Person.dis_level != '无'
+            Person.dis_level != '', Person.dis_level.isnot(None), Person.dis_level != '无',
+            alive_filter
         ).all()
         for dl in dis_levels:
             dl_val = dl[0] or '其他'
@@ -69,14 +74,16 @@ def api_statistics():
 
         tekun_type_distribution = {}
         tekun_types = session.query(Person.tekun_type).filter(
-            Person.tekun_type != '', Person.tekun_type.isnot(None)
+            Person.tekun_type != '', Person.tekun_type.isnot(None),
+            alive_filter
         ).all()
         for tt in tekun_types:
             tt_val = tt[0] or '其他'
             tekun_type_distribution[tt_val] = tekun_type_distribution.get(tt_val, 0) + 1
 
         land_areas = session.query(Person.land_area).filter(
-            Person.land_area != '', Person.land_area.isnot(None)
+            Person.land_area != '', Person.land_area.isnot(None),
+            alive_filter
         ).all()
         total_land_area = 0.0
         land_count = 0
@@ -90,7 +97,8 @@ def api_statistics():
         avg_land_area = round(total_land_area / land_count, 2) if land_count > 0 else 0
 
         local_welfare_forest_areas = session.query(Person.local_welfare_forest_area).filter(
-            Person.local_welfare_forest_area != '', Person.local_welfare_forest_area.isnot(None)
+            Person.local_welfare_forest_area != '', Person.local_welfare_forest_area.isnot(None),
+            alive_filter
         ).all()
         total_local_welfare_forest_area = 0.0
         local_welfare_forest_count = 0
@@ -104,7 +112,8 @@ def api_statistics():
         avg_local_welfare_forest_area = round(total_local_welfare_forest_area / local_welfare_forest_count, 2) if local_welfare_forest_count > 0 else 0
 
         national_welfare_forest_areas = session.query(Person.national_welfare_forest_area).filter(
-            Person.national_welfare_forest_area != '', Person.national_welfare_forest_area.isnot(None)
+            Person.national_welfare_forest_area != '', Person.national_welfare_forest_area.isnot(None),
+            alive_filter
         ).all()
         total_national_welfare_forest_area = 0.0
         national_welfare_forest_count = 0
@@ -118,7 +127,8 @@ def api_statistics():
         avg_national_welfare_forest_area = round(total_national_welfare_forest_area / national_welfare_forest_count, 2) if national_welfare_forest_count > 0 else 0
 
         commercial_forest_areas = session.query(Person.commercial_forest_area).filter(
-            Person.commercial_forest_area != '', Person.commercial_forest_area.isnot(None)
+            Person.commercial_forest_area != '', Person.commercial_forest_area.isnot(None),
+            alive_filter
         ).all()
         total_commercial_forest_area = 0.0
         commercial_forest_count = 0
@@ -139,7 +149,7 @@ def api_statistics():
             'dibao': dibao,
             'disability': disability,
             'tekun': tekun,
-            'alive': total - dead,
+            'alive': total,
             'not_migrated': total - migrated,
             'poor_type_distribution': poor_type_distribution,
             'poor_type_person_count': poor_type_person_count,
