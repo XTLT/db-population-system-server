@@ -86,11 +86,23 @@ def search_persons_advanced(
             query = query.filter(Person.tekun_type == tekun_type)
         
         if poor_type:
+            hh_ok = (Person.hu_hao != '') & (Person.hu_hao.isnot(None))
+            # 与统计口径一致：除已死亡外均不统计死亡人员
+            alive = (Person.is_dead != '是') | (Person.is_dead.is_(None))
             if poor_type == '一般户':
-                # "一般户" = 户主未标记任何脱贫类型的户，库里存的是空值
-                query = query.filter((Person.poor_type == '') | (Person.poor_type.is_(None)))
+                # "一般户" = 户内没有任何在世成员有脱贫类型的户（库里存的是空值）
+                typed = session.query(Person.hu_hao).filter(
+                    hh_ok, alive,
+                    Person.poor_type != '', Person.poor_type.isnot(None)
+                ).distinct()
+                query = query.filter(hh_ok, ~Person.hu_hao.in_(typed))
             else:
-                query = query.filter(Person.poor_type == poor_type)
+                # 脱贫类型按户号命中：户内任一在世成员是该类型 → 该户命中（与统计一致）
+                hit = session.query(Person.hu_hao).filter(
+                    hh_ok, alive,
+                    Person.poor_type == poor_type
+                ).distinct()
+                query = query.filter(hh_ok, Person.hu_hao.in_(hit))
         
         if relation:
             query = query.filter(Person.relation == relation)

@@ -33,7 +33,31 @@ def query_persons_with_filters(filters: dict) -> list:
                 query = query.filter(Person.dis_level == dis_level)
         poor_type = filters.get("poor_type", [])
         if poor_type:
-            query = query.filter(Person.poor_type.in_(poor_type))
+            # 脱贫类型按户号命中（与统计口径一致）：
+            # 户内任一在世成员是该类型 → 该户命中；"一般户" = 户内无任何在世成员有脱贫类型
+            hh_ok = (Person.hu_hao != '') & (Person.hu_hao.isnot(None))
+            alive = (Person.is_dead != '是') | (Person.is_dead.is_(None))
+            if poor_type == ['一般户']:
+                typed = session.query(Person.hu_hao).filter(
+                    hh_ok, alive,
+                    Person.poor_type != '', Person.poor_type.isnot(None)
+                ).distinct()
+                query = query.filter(hh_ok, ~Person.hu_hao.in_(typed))
+            elif '一般户' in poor_type:
+                others = [t for t in poor_type if t != '一般户']
+                hit = session.query(Person.hu_hao).filter(
+                    hh_ok, alive, Person.poor_type.in_(others)
+                ).distinct()
+                typed = session.query(Person.hu_hao).filter(
+                    hh_ok, alive,
+                    Person.poor_type != '', Person.poor_type.isnot(None)
+                ).distinct()
+                query = query.filter(hh_ok, Person.hu_hao.in_(hit) | ~Person.hu_hao.in_(typed))
+            else:
+                hit = session.query(Person.hu_hao).filter(
+                    hh_ok, alive, Person.poor_type.in_(poor_type)
+                ).distinct()
+                query = query.filter(hh_ok, Person.hu_hao.in_(hit))
         if filters.get("dibao") and filters["dibao"] != "全部":
             query = query.filter(Person.dibao == filters["dibao"])
         if filters.get("tekun") and filters["tekun"] != "全部":
