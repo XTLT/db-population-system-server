@@ -86,7 +86,11 @@ def search_persons_advanced(
             query = query.filter(Person.tekun_type == tekun_type)
         
         if poor_type:
-            query = query.filter(Person.poor_type == poor_type)
+            if poor_type == '一般户':
+                # "一般户" = 户主未标记任何脱贫类型的户，库里存的是空值
+                query = query.filter((Person.poor_type == '') | (Person.poor_type.is_(None)))
+            else:
+                query = query.filter(Person.poor_type == poor_type)
         
         if relation:
             query = query.filter(Person.relation == relation)

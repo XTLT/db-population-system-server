@@ -34,17 +34,19 @@ def api_statistics():
         
         from sqlalchemy import case
         
+        # 脱贫户/监测户按"户主类型"统计户数：
+        # 每户只看户主的 poor_type，户主未标记的户归为"一般户"
+        # （不用户内其他成员类型兜底，否则户数虚高）
         hu_hao_poor_types = session.query(
             Person.hu_hao,
-            func.max(case((Person.relation == '户主', Person.poor_type), else_=None)).label('hu_zhu_type'),
-            func.max(case((Person.poor_type != '', Person.poor_type), else_=None)).label('first_type')
+            func.max(case((Person.relation == '户主', Person.poor_type), else_=None)).label('hu_zhu_type')
         ).filter(
             Person.hu_hao != '', 
             Person.hu_hao.isnot(None)
         ).group_by(Person.hu_hao).all()
         
-        for hu_hao, hu_zhu_type, first_type in hu_hao_poor_types:
-            pt_val = hu_zhu_type or first_type or '其他'
+        for hu_hao, hu_zhu_type in hu_hao_poor_types:
+            pt_val = hu_zhu_type or '一般户'
             if pt_val:
                 poor_type_distribution[pt_val] = poor_type_distribution.get(pt_val, 0) + 1
 
