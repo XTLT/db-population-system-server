@@ -9,6 +9,7 @@ from . import api_list_reports  # noqa: E402,F401
 from . import api_download_report  # noqa: E402,F401
 from . import api_get_report_logs  # noqa: E402,F401
 from . import api_import_ids  # noqa: E402,F401
+from . import api_fill_masked_ids  # noqa: E402,F401
 from . import api_edit_report  # noqa: E402,F401
 from . import api_get_report_data  # noqa: E402,F401
 from . import api_save_report  # noqa: E402,F401
