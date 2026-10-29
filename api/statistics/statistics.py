@@ -14,6 +14,10 @@ def api_statistics():
         total = session.query(Person).count()
         dead = session.query(Person).filter(Person.is_dead == '是').count()
         migrated = session.query(Person).filter(Person.is_migrated == '是').count()
+        # 户数 = 去重后的户号数量（户号非空）
+        household_count = session.query(Person.hu_hao).filter(
+            Person.hu_hao != '', Person.hu_hao.isnot(None)
+        ).distinct().count()
         # 低保人员统计：编辑页选项为 是/低保边缘家庭/特困家庭，另兼容历史旧值
         dibao = session.query(Person).filter(
             Person.dibao.in_(['是', '低保边缘家庭', '特困家庭',
@@ -127,6 +131,7 @@ def api_statistics():
 
         return jsonify({
             'total': total,
+            'household_count': household_count,
             'dead': dead,
             'migrated': migrated,
             'dibao': dibao,
