@@ -44,35 +44,29 @@ def get_person_distribution(field: str) -> dict:
                 result[label] = count
         
         elif field == 'age_group':
-            # 年龄段分布
+            # 年龄段分布（用户口径 2026-11-04：0-18 / 19-59 / 60-80 / 80以上）
             persons = session.query(Person.age).all()
             
             age_groups = {
-                '0-17岁': 0,
-                '18-35岁': 0,
-                '36-50岁': 0,
-                '51-65岁': 0,
-                '66-80岁': 0,
+                '0-18岁': 0,
+                '19-59岁': 0,
+                '60-80岁': 0,
                 '80岁以上': 0
             }
             
             for p in persons:
                 try:
                     age = int(p.age) if p.age else 0
-                    if age <= 17:
-                        age_groups['0-17岁'] += 1
-                    elif age <= 35:
-                        age_groups['18-35岁'] += 1
-                    elif age <= 50:
-                        age_groups['36-50岁'] += 1
-                    elif age <= 65:
-                        age_groups['51-65岁'] += 1
+                    if age <= 18:
+                        age_groups['0-18岁'] += 1
+                    elif age <= 59:
+                        age_groups['19-59岁'] += 1
                     elif age <= 80:
-                        age_groups['66-80岁'] += 1
+                        age_groups['60-80岁'] += 1
                     else:
                         age_groups['80岁以上'] += 1
                 except Exception:
-                    age_groups['0-17岁'] += 1
+                    age_groups['0-18岁'] += 1
             
             result = age_groups
         
