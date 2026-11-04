@@ -34,7 +34,12 @@ def api_upload_report():
     file_data = file.read()
     file_size = len(file_data)
 
-    stored_filename = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{secure_filename(original_name)}"
+    # 中文/特殊字符文件名经 secure_filename 后可能丢失扩展名，导致 openpyxl 无法识别格式
+    # （旧报表文件因此打不开）→ 落盘文件名强制 .xlsx 后缀
+    safe_name = secure_filename(original_name) or 'report'
+    if not safe_name.lower().endswith(('.xlsx', '.xlsm', '.xltx', '.xltm')):
+        safe_name = os.path.splitext(safe_name)[0] + '.xlsx'
+    stored_filename = f"report_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{safe_name}"
     file_path = os.path.join(REPORTS_DIR, stored_filename)
 
     os.makedirs(REPORTS_DIR, exist_ok=True)

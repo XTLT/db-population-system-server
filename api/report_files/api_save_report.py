@@ -23,14 +23,24 @@ def api_save_report(report_id):
     data = request.get_json(silent=True) or {}
     headers = data.get('headers', [])
     rows = data.get('rows', [])
+    sheet_name = data.get('sheet', '')
 
     if not headers:
         return jsonify({'error': '数据为空'}), 400
 
     try:
         import openpyxl
-        wb = openpyxl.load_workbook(report['file_path'])
-        ws = wb.active
+        from io import BytesIO
+        try:
+            wb = openpyxl.load_workbook(report['file_path'])
+        except Exception:
+            # 兼容旧报表：落盘文件名可能无 .xlsx 后缀（secure_filename 丢扩展名），按字节流打开
+            with open(report['file_path'], 'rb') as _f:
+                wb = openpyxl.load_workbook(BytesIO(_f.read()))
+        if sheet_name and sheet_name in wb.sheetnames:
+            ws = wb[sheet_name]
+        else:
+            ws = wb.active
 
         ws.delete_rows(1, ws.max_row)
 

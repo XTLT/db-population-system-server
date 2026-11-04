@@ -1,5 +1,5 @@
 import os
-from flask import jsonify
+from flask import jsonify, request
 
 from database import get_report_file
 from . import bp
@@ -22,8 +22,20 @@ def api_get_report_data(report_id):
 
     try:
         import openpyxl
-        wb = openpyxl.load_workbook(report['file_path'], data_only=True)
-        ws = wb.active
+        from io import BytesIO
+        try:
+            wb = openpyxl.load_workbook(report['file_path'], data_only=True)
+        except Exception:
+            # 兼容旧报表：落盘文件名可能无 .xlsx 后缀（secure_filename 丢扩展名），按字节流打开
+            with open(report['file_path'], 'rb') as _f:
+                wb = openpyxl.load_workbook(BytesIO(_f.read()), data_only=True)
+        sheets = wb.sheetnames
+        sheet_name = request.args.get('sheet', '')
+        if sheet_name and sheet_name in sheets:
+            ws = wb[sheet_name]
+        else:
+            ws = wb.active
+            sheet_name = ws.title
     except Exception as e:
         return jsonify({'error': f'读取失败: {e}'}), 500
 
@@ -38,7 +50,8 @@ def api_get_report_data(report_id):
             rows.append([str(cell) if cell is not None else '' for cell in row])
 
     return jsonify({
-        'sheet_name': ws.title,
+        'sheet_name': sheet_name,
+        'sheets': sheets,
         'headers': headers,
         'rows': rows,
     })
