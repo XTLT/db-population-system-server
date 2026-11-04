@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 from flask import request, jsonify
 
@@ -85,7 +86,7 @@ def api_import_ids(report_id):
         username=user['username'],
         operation_type='批量导入证件号码',
         operation_detail=f'更新:{updated}, 未匹配:{not_found}',
-        ip_address=request.remote_addr,
+        ip_address=get_client_ip(),
         client_type='Desktop',
     )
 

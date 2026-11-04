@@ -1,3 +1,4 @@
+from .get_client_ip import get_client_ip
 import functools
 from datetime import datetime
 from flask import request, jsonify
@@ -22,7 +23,7 @@ def require_auth(f):
             remove_token(token)
             return jsonify({'error': '登录已过期，请重新登录'}), 401
 
-        current_ip = request.remote_addr
+        current_ip = get_client_ip()
         if token_data.get('ip') and token_data['ip'] != current_ip:
             logger.warning(f"Token IP变化: {token_data['ip']} -> {current_ip}, 用户: {token_data['user'].get('username')}")
 

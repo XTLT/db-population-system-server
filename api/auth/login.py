@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import hashlib
 from datetime import datetime, timedelta
 from flask import request, jsonify
@@ -32,7 +33,7 @@ def api_login():
     username = data.get('username', '')
     password = data.get('password', '')
     password_hashed = data.get('password_hashed', False)
-    ip_address = request.remote_addr or ''
+    ip_address = get_client_ip() or ''
 
     # ---- IP 级限流：防止换账号批量爆破 ----
     ip_locked, ip_remaining = is_login_ip_locked(ip_address)

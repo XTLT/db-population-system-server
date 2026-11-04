@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 from flask import request, jsonify
 
@@ -90,7 +91,7 @@ def api_fill_masked_ids(report_id):
         username=user['username'],
         operation_type='补全脱敏身份证',
         operation_detail=f'脱敏:{total_mask}, 补全:{filled}, 保留:{kept}',
-        ip_address=request.remote_addr,
+        ip_address=get_client_ip(),
         client_type=request.headers.get('X-Client-Type', 'Web'),
     )
 

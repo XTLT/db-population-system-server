@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import secrets
 from flask import request, jsonify
 
@@ -34,7 +35,7 @@ def import_students():
             request.current_user['username'],
             "导入学生数据",
             f"导入{result.get('imported', 0)}条，更新{result.get('updated', 0)}条",
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
         

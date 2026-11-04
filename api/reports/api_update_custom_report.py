@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import get_custom_report, update_custom_report, add_operation_log
@@ -39,7 +40,7 @@ def api_update_custom_report(report_id):
             user['username'],
             "更新自定义报表",
             f"ID:{report_id}",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
 

@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import create_user, add_operation_log
@@ -51,7 +52,7 @@ def api_add_user():
             request.current_user['username'], 
             "添加用户", 
             username, 
-            request.remote_addr, 
+            get_client_ip(), 
             "Web"
         )
         return jsonify({'success': True})

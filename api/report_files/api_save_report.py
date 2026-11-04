@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 from flask import request, jsonify
 
@@ -61,7 +62,7 @@ def api_save_report(report_id):
         username=user['username'],
         operation_type='在线编辑保存',
         operation_detail=f'行数:{len(rows)}',
-        ip_address=request.remote_addr,
+        ip_address=get_client_ip(),
         client_type='Web',
     )
 

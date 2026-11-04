@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 import shutil
 from flask import request, jsonify
@@ -38,7 +39,7 @@ def api_backup_delete():
             user['username'],
             "删除备份",
             backup_name,
-            request.remote_addr,
+            get_client_ip(),
             "APP"
         )
         return jsonify({'success': True, 'message': f'已删除备份: {backup_name}'})

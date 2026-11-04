@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 import secrets
 from datetime import datetime
@@ -52,7 +53,7 @@ def api_backup_download():
             request.current_user['username'],
             "下载备份",
             f"文件:{os.path.basename(latest['path'])}",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         return send_file(db_path, as_attachment=True, download_name=safe_name)

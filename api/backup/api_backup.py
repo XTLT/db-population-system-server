@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import add_operation_log
@@ -19,7 +20,7 @@ def api_backup():
         request.current_user['username'],
         "数据备份",
         f"成功:{result.get('success', False)}",
-        request.remote_addr,
+        get_client_ip(),
         "Web"
     )
     return jsonify(result)

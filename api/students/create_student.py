@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import secrets
 from flask import request, jsonify
 
@@ -65,7 +66,7 @@ def create_student():
             request.current_user['username'],
             "添加学生",
             id_card,
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Mobile')
         )
         

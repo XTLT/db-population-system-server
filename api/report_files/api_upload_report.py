@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 from datetime import datetime
 from flask import request, jsonify
@@ -62,7 +63,7 @@ def api_upload_report():
         username=user['username'],
         operation_type='上传报表',
         operation_detail=f'文件:{original_name}, 名称:{name}',
-        ip_address=request.remote_addr,
+        ip_address=get_client_ip(),
         client_type='Desktop',
     )
 

@@ -1,3 +1,4 @@
+from .get_client_ip import get_client_ip
 import secrets
 import json
 from datetime import datetime, timedelta
@@ -13,7 +14,7 @@ def create_token(user_data: dict, expiry_hours: int = 24) -> str:
     token = secrets.token_hex(32)
     token_hash = _hash_token(token)  # 存储 token 的哈希值
     user_id = user_data.get('id')
-    ip = request.remote_addr if request else 'unknown'
+    ip = get_client_ip() if request else 'unknown'
     expires_at = datetime.now() + timedelta(hours=expiry_hours)
 
     session = get_session()

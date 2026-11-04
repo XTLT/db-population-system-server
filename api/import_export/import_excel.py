@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 import secrets
 from flask import request, jsonify
@@ -74,7 +75,7 @@ def api_import_excel():
             request.current_user['username'],
             "导入Excel",
             f"模式:{mode} 成功:{result.get('imported',0)}",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         return jsonify(result)

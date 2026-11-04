@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from utils.security import require_auth
@@ -21,7 +22,7 @@ def promote_grades():
             request.current_user['username'],
             "年级升级",
             (f"升级{count}名学生（指定{len(id_cards)}人）" if id_cards else f"升级{count}名学生"),
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
         return jsonify({'success': True, 'count': count})

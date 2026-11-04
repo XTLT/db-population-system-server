@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from utils.security import require_auth
@@ -44,7 +45,7 @@ def batch_delete_students():
             request.current_user['username'],
             "批量删除学生",
             f"删除{deleted_count}条记录",
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
         

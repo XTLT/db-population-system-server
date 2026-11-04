@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 import secrets
 from datetime import datetime
@@ -58,7 +59,7 @@ def export_excel():
                 request.current_user['username'],
                 "导出Excel",
                 "导出人员数据",
-                request.remote_addr,
+                get_client_ip(),
                 "Web"
             )
             return send_file_auto_cleanup(tmp_path, as_attachment=True,

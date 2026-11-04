@@ -1,10 +1,11 @@
+from .get_client_ip import get_client_ip
 from datetime import datetime
 from flask import request
 from ._base import _id_card_query_times, ID_CARD_QUERY_LIMIT, ID_CARD_QUERY_WINDOW
 
 
 def check_id_card_rate_limit(person_id: str) -> tuple:
-    ip = request.remote_addr
+    ip = get_client_ip()
     now = datetime.now()
 
     if ip in _id_card_query_times:

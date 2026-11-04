@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 import secrets
 from datetime import datetime
@@ -54,7 +55,7 @@ def export_disability_care_payment():
             request.current_user['username'],
             "残疾人护理补贴",
             f"导出{len(records)}条记录",
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
 

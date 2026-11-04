@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 from flask import request, jsonify, send_file
 
@@ -24,7 +25,7 @@ def api_download_report(report_id):
         username=user['username'],
         operation_type='下载报表',
         operation_detail=f'文件:{report["original_name"]}',
-        ip_address=request.remote_addr,
+        ip_address=get_client_ip(),
         client_type='Desktop',
     )
 

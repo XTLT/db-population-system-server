@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import secrets
 from flask import request, jsonify
 
@@ -49,7 +50,7 @@ def export_students():
                 request.current_user['username'],
                 "导出敏感数据",
                 "导出学生就读信息Excel",
-                request.remote_addr,
+                get_client_ip(),
                 request.headers.get('X-Client-Type', 'Web')
             )
             return send_file(tmp_path, as_attachment=True, 

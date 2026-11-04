@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from utils.security import require_auth
@@ -25,7 +26,7 @@ def delete_elderly_allowance(record_id):
             request.current_user['username'],
             "高龄补贴",
             record_id,
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
 

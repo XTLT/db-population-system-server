@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from utils.security import require_auth
@@ -42,7 +43,7 @@ def update_student(id_card):
             request.current_user['username'],
             "更新学生信息",
             id_card,
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Mobile')
         )
         

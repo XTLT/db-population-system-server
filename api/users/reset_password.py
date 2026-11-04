@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import get_session, User, add_operation_log
@@ -56,7 +57,7 @@ def api_reset_password(user_id):
             request.current_user['username'],
             "重置密码",
             user.username,
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         

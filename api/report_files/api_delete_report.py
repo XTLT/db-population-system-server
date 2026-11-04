@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 from flask import request, jsonify
 
@@ -9,8 +10,10 @@ from . import bp
 @bp.route('/<report_id>', methods=['DELETE'])
 @require_auth
 def api_delete_report(report_id):
-    """删除报表"""
+    """删除报表（仅管理员）"""
     user = request.current_user
+    if user.get('role') != 'admin':
+        return jsonify({'error': '仅管理员可删除报表'}), 403
     report = get_report_file(report_id)
     if not report:
         return jsonify({'error': '报表不存在'}), 404
@@ -29,7 +32,7 @@ def api_delete_report(report_id):
         username=user['username'],
         operation_type='删除报表',
         operation_detail=f'文件:{report["original_name"]}',
-        ip_address=request.remote_addr,
+        ip_address=get_client_ip(),
         client_type='Desktop',
     )
 

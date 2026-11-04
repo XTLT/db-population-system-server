@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from utils.security import require_auth
@@ -55,7 +56,7 @@ def batch_update_students():
             request.current_user['username'],
             "批量更新学生",
             f"更新{updated_count}条记录",
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
         

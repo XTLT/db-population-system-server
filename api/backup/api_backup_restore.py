@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 import json
 import subprocess
@@ -65,7 +66,7 @@ def api_backup_restore():
         user['username'],
         "恢复备份",
         manifest.get("timestamp", ""),
-        request.remote_addr,
+        get_client_ip(),
         "Web"
     )
 
