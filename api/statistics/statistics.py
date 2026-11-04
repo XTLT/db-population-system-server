@@ -19,10 +19,16 @@ def api_statistics():
         dead = session.query(Person).filter(Person.is_dead == '是').count()
         migrated = session.query(Person).filter(Person.is_migrated == '是', alive_filter).count()
         # 低保人员统计：编辑页选项为 是/低保边缘家庭/特困家庭，另兼容历史旧值
+        # 用户口径（2026-11-04）：低保边缘家庭单独统计，不计算在低保人员里面
         dibao = session.query(Person).filter(
             alive_filter,
-            Person.dibao.in_(['是', '低保边缘家庭', '特困家庭',
-                              '最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'])
+            Person.dibao.in_(['是', '特困家庭',
+                              '最低生活保障家庭', '单人保家庭'])
+        ).count()
+        # 低保边缘家庭单独统计（不计入低保人员）
+        dibao_border = session.query(Person).filter(
+            alive_filter,
+            Person.dibao.in_(['低保边缘家庭', '最低生活保障边缘家庭'])
         ).count()
         disability = session.query(Person).filter(alive_filter, Person.disability != '无', Person.disability != '').count()
         # 特困供养人员统计：与编辑页选项/移动端下钻统一为 =='是'
@@ -147,6 +153,7 @@ def api_statistics():
             'dead': dead,
             'migrated': migrated,
             'dibao': dibao,
+            'dibao_border': dibao_border,
             'disability': disability,
             'tekun': tekun,
             'alive': total,

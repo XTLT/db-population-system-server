@@ -2,6 +2,7 @@
 
 from ..models.person import Person
 from .._base import get_session
+from sqlalchemy import cast, Integer
 
 def search_persons_advanced(
     name: str = "",
@@ -50,10 +51,17 @@ def search_persons_advanced(
             query = query.filter(Person.address.like(f"%{escaped_address}%", escape='\\'))
         
         if age_min is not None:
-            query = query.filter(Person.age >= str(age_min))
+            # age 列是字符串，必须转数值比较；空串 cast 为 0 会污染结果，先排除
+            query = query.filter(
+                Person.age != '', Person.age.isnot(None),
+                cast(Person.age, Integer) >= age_min
+            )
         
         if age_max is not None:
-            query = query.filter(Person.age <= str(age_max))
+            query = query.filter(
+                Person.age != '', Person.age.isnot(None),
+                cast(Person.age, Integer) <= age_max
+            )
         
         if disability:
             if disability == '是':
@@ -65,19 +73,25 @@ def search_persons_advanced(
             query = query.filter(Person.dis_level == dis_level)
 
         if dibao:
-            # 支持逗号分隔多值（如 是,低保边缘家庭,特困家庭）
+            # 支持逗号分隔多值（如 是,特困家庭）
             dibao_values = [v.strip() for v in dibao.split(',') if v.strip()]
-            # 与 statistics.py 的低保统计口径对齐：统计把以下 6 个值都计为“低保”。
-            # 下钻传“是”时，展开为全部低保口径值（含 3 个历史值），保证统计数 == 下钻数。
-            DIBAO_ALL = {'是', '低保边缘家庭', '特困家庭',
-                         '最低生活保障家庭', '最低生活保障边缘家庭', '单人保家庭'}
+            # 与 statistics.py 的低保统计口径对齐（2026-11-04）：
+            #   低保人员 = 是/特困家庭/最低生活保障家庭/单人保家庭
+            #   低保边缘家庭 = 低保边缘家庭/最低生活保障边缘家庭（单独统计，不计入低保）
+            # 下钻传"是"时展开为低保口径值（不含边缘家庭）；"低保边缘家庭"单独传值
+            DIBAO_ALL = {'是', '特困家庭', '最低生活保障家庭', '单人保家庭'}
+            DIBAO_BORDER = {'低保边缘家庭', '最低生活保障边缘家庭'}
             expanded = set()
             for v in dibao_values:
                 if v == '是':
                     expanded |= DIBAO_ALL
+                elif v in ('低保边缘家庭', '最低生活保障边缘家庭'):
+                    expanded |= DIBAO_BORDER
                 else:
                     expanded.add(v)
-            query = query.filter(Person.dibao.in_(expanded))
+            # 与统计口径一致：除已死亡外均排除死亡人员（E18 铁律：统计==下钻==搜索）
+            alive = (Person.is_dead != '是') | (Person.is_dead.is_(None))
+            query = query.filter(alive, Person.dibao.in_(expanded))
         
         if tekun:
             query = query.filter(Person.tekun == tekun)
