@@ -114,7 +114,10 @@ def is_database_encrypted() -> bool:
 def get_engine():
     global _engine
     if _engine is None:
-        _engine = create_engine(f"sqlite:///{DB_PATH}", echo=False)
+        # timeout=30：WAL 下写是串行的，多 worker/多线程并发写时延长等待，
+        # 避免批量导入等场景偶发 "database is locked"（sqlite3 默认仅 5 秒）。
+        _engine = create_engine(f"sqlite:///{DB_PATH}", echo=False,
+                                connect_args={"timeout": 30})
 
         @event.listens_for(_engine, "connect")
         def set_sqlite_pragma(dbapi_connection, _connection_record):
