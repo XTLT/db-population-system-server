@@ -160,6 +160,61 @@ sleep 6
 systemctl disable --now "${SVC_PREFIX}-stunnel" >/dev/null 2>&1 || true
 log "服务已配置并启动（gunicorn 直接终结 TLS，端口 $PORT）"
 
+# ---- 7.5 防火墙：对外端口单 IP 新建连接限速 ----
+# gunicorn 自己终结 TLS 后，慢握手（只建 TCP 不发 ClientHello）会占住 worker 直到超时；
+# 这里给对外端口加"单 IP 每分钟最多 60 个新连接"，把堆连接的速度压到约 1 个/秒，
+# 与 unit 里的 --threads 4 配合，保证被刷时正常用户不超时。只作用于新建连接。
+step "配置防火墙限速（单 IP 每分钟 60 个新建连接）"
+RATE_LIMIT_UNIT=""
+if ! command -v ufw >/dev/null 2>&1; then
+    yellow "未安装 ufw，跳过限速配置（服务不受影响，仅少一层抗慢连接防护）"
+else
+    BEFORE=/etc/ufw/before.rules
+    BEFORE6=/etc/ufw/before6.rules
+    L4="population${PORT}"
+    L6="population6${PORT}"
+    if grep -q "hashlimit-name ${L4}" "$BEFORE" 2>/dev/null; then
+        log "限速规则已存在，跳过插入"
+    else
+        cp "$BEFORE" "${BEFORE}.bak.$(date +%s)" 2>/dev/null || true
+        # 必须整行等于 COMMIT 才插入：文件里有一行注释也含 COMMIT 字样，
+        # 用子串搜索会把规则插进注释中间，iptables-restore 直接报语法错并可能锁死 SSH（见 C10）
+        awk -v chain="ufw-before-input" -v p="$PORT" -v nm="$L4" '
+            /^COMMIT$/ && !done {
+                printf "-A %s -p tcp --dport %s -m conntrack --ctstate NEW -m hashlimit --hashlimit-upto 60/min --hashlimit-burst 20 --hashlimit-mode srcip --hashlimit-name %s -j ACCEPT\n", chain, p, nm;
+                printf "-A %s -p tcp --dport %s -m conntrack --ctstate NEW -j DROP\n", chain, p;
+                done=1
+            }
+            {print}
+        ' "$BEFORE" > "${BEFORE}.tmp" && mv "${BEFORE}.tmp" "$BEFORE"
+        if [ -f "$BEFORE6" ] && ! grep -q "hashlimit-name ${L6}" "$BEFORE6" 2>/dev/null; then
+            cp "$BEFORE6" "${BEFORE6}.bak.$(date +%s)" 2>/dev/null || true
+            awk -v chain="ufw6-before-input" -v p="$PORT" -v nm="$L6" '
+                /^COMMIT$/ && !done {
+                    printf "-A %s -p tcp --dport %s -m conntrack --ctstate NEW -m hashlimit --hashlimit-upto 60/min --hashlimit-burst 20 --hashlimit-mode srcip --hashlimit-name %s -j ACCEPT\n", chain, p, nm;
+                    printf "-A %s -p tcp --dport %s -m conntrack --ctstate NEW -j DROP\n", chain, p;
+                    done=1
+                }
+                {print}
+            ' "$BEFORE6" > "${BEFORE6}.tmp" && mv "${BEFORE6}.tmp" "$BEFORE6"
+        fi
+        log "限速规则已写入 ufw 配置（IPv4 + IPv6）"
+    fi
+    # 顺序不能反：先放行 22 再启用防火墙，否则启用瞬间就可能把自己关在门外
+    ufw allow 22/tcp >/dev/null 2>&1 || true
+    # 对外端口本身也放行一次做兜底：5000 有两条命——限速规则优先（超限的新连接被 DROP），
+    # 万一 hashlimit 规则被误删或模块没加载，这条 allow 保证业务不会整体不可达
+    ufw allow "${PORT}/tcp" >/dev/null 2>&1 || true
+    # 失联兜底：启用后若规则有误导致 SSH 不通，180 秒自动关闭防火墙；安装验证通过后主动取消
+    if command -v systemd-run >/dev/null 2>&1; then
+        RATE_LIMIT_UNIT="ufw-rescue-$$"
+        systemd-run --on-active=180 --unit="$RATE_LIMIT_UNIT" /bin/sh -c 'ufw --force disable' >/dev/null 2>&1 \
+            || RATE_LIMIT_UNIT=""
+    fi
+    ufw --force enable >/dev/null 2>&1 || yellow "ufw 启用失败，限速不生效（服务不受影响）"
+    log "防火墙已启用（失联兜底: ${RATE_LIMIT_UNIT:-未设置}，安装成功后会取消）"
+fi
+
 # ---- 8. 验证 ----
 step "验证安装结果"
 ACTIVE=$(systemctl is-active "${SVC_PREFIX}-server" || true)
@@ -178,6 +233,18 @@ if curl -sk -m 5 "https://127.0.0.1:$PORT/api/health" >/dev/null 2>&1; then
     yellow "警告：无客户端证书也能访问，mTLS 未生效，请检查 $SRV_SERVER 里的 --cert-reqs 2 / --ca-certs"
 else
     green "mTLS 双向校验生效：无客户端证书的访问已被拒绝"
+fi
+
+# 限速是否真正落到内核 + 取消失联兜底
+if iptables -S ufw-before-input 2>/dev/null | grep -q "hashlimit-name population${PORT}"; then
+    green "慢连接限速生效：单 IP 每分钟最多 60 个新建连接"
+else
+    yellow "限速规则未生效（ufw 未启用），不影响服务运行"
+fi
+if [ -n "$RATE_LIMIT_UNIT" ]; then
+    systemctl stop "$RATE_LIMIT_UNIT" >/dev/null 2>&1 || true
+    systemctl reset-failed "$RATE_LIMIT_UNIT" >/dev/null 2>&1 || true
+    log "已取消防火墙失联兜底"
 fi
 
 # ---- 9. 汇总 ----
@@ -210,4 +277,6 @@ echo "常用管理命令："
 echo "    查看状态: systemctl status ${SVC_PREFIX}-server"
 echo "    重启服务: systemctl restart ${SVC_PREFIX}-server"
 echo "    查看日志: journalctl -u ${SVC_PREFIX}-server -n 100"
+echo "    防火墙:   ufw status（对外 ${PORT} 已限速：单 IP 每分钟 60 个新连接）"
+echo "    收紧 SSH: ufw delete allow 22/tcp && ufw allow from <内网段> to any port 22"
 echo "======================================================"
