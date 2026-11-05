@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import get_custom_report, delete_custom_report, add_operation_log
@@ -28,7 +29,7 @@ def api_delete_custom_report(report_id):
                 user['username'],
                 "删除自定义报表",
                 f"ID:{report_id}, 标题:{existing['title']}",
-                request.remote_addr,
+                get_client_ip(),
                 "Web"
             )
             return jsonify({'success': True})

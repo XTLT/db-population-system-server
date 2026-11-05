@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from datetime import datetime
 from flask import request, jsonify
 
@@ -112,7 +113,7 @@ def api_update_person(person_id):
             request.current_user['username'],
             "修改人员",
             p.name,
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         return jsonify({'success': True, 'updated_at': p.updated_at})

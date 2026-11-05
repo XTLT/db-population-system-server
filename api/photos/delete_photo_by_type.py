@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 from flask import request, jsonify
 
@@ -37,7 +38,7 @@ def api_delete_photo_by_type(id_card, photo_type):
             request.current_user['username'],
             "删除照片",
             f"删除 {p.name} 的 {photo_type} 照片",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         

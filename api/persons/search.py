@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import search_by_name, add_operation_log
@@ -21,7 +22,7 @@ def api_search():
             request.current_user['username'],
             "搜索人员",
             f"关键词: {name}, 结果数: {len(persons)}",
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
     

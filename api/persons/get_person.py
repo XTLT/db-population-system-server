@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import get_session, get_student_education, add_operation_log
@@ -23,7 +24,7 @@ def api_person(person_id):
             request.current_user['username'],
             "查看人员详情",
             f"{p.name}({p.id_card[:6]}****{p.id_card[-4:]})" if p.id_card else p.name,
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
         

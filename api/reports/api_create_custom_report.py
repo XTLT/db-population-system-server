@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import create_custom_report, add_operation_log
@@ -47,7 +48,7 @@ def api_create_custom_report():
             user['username'],
             "创建自定义报表",
             f"标题:{title}, 类型:{report_type}",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
 

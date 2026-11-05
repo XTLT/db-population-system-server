@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import split_household, add_operation_log
@@ -24,7 +25,7 @@ def api_split_household():
             request.current_user['username'],
             "分户",
             f"新户号:{result_hu_hao}",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         return jsonify({'success': True, 'new_hu_hao': result_hu_hao})

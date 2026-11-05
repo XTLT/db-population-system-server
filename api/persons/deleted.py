@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import get_session, get_deleted_persons, recover_person, purge_deleted_persons, DeletedPerson, add_operation_log
@@ -57,7 +58,7 @@ def api_recover_person(deleted_id):
         request.current_user['username'],
         "找回人员",
         f"{name}({id_card[:6]}****{id_card[-4:]})" if id_card else name,
-        request.remote_addr,
+        get_client_ip(),
         "Web",
         "是"
     )
@@ -86,7 +87,7 @@ def api_purge_deleted():
         request.current_user['username'],
         "清理删除记录",
         f"物理清理{count}条（保留{days}天内）",
-        request.remote_addr,
+        get_client_ip(),
         "Web",
         "是"
     )

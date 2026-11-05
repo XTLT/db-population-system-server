@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from utils.security import require_auth
@@ -25,7 +26,7 @@ def delete_subsidy(subsidy_id):
             request.current_user['username'],
             "删除补贴记录",
             subsidy_id,
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
 

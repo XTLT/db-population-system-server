@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import get_session, Person, add_operation_log
@@ -55,7 +56,7 @@ def api_batch_delete_persons():
             request.current_user['username'],
             "批量删除人员",
             f"删除{deleted_count}人，ID列表: {','.join(person_ids[:10])}{'...' if len(person_ids) > 10 else ''}",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         

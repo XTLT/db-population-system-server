@@ -3,7 +3,7 @@ from datetime import datetime
 from flask import request, jsonify
 
 from database import get_session, User, add_operation_log
-from utils.security import hash_password
+from utils.security import hash_password, get_client_ip
 from utils.response import get_json_data, safe_exception
 from utils import validate_username, validate_real_name
 from database import validate_password
@@ -97,7 +97,7 @@ def api_create_admin():
             default_user.is_active = "否"
 
         session.commit()
-        add_operation_log(user.id, user.username, "创建管理员账户", "", "", "Web")
+        add_operation_log(user.id, user.username, "创建管理员账户", "", get_client_ip(), "Web")
 
         return jsonify({'success': True})
     except Exception as e:

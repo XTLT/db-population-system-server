@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import get_session, delete_person, add_operation_log
@@ -27,7 +28,7 @@ def api_delete_person(person_id):
         request.current_user['username'],
         "删除人员",
         person_id,
-        request.remote_addr,
+        get_client_ip(),
         "Web",
         "是"
     )

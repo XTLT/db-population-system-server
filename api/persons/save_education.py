@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import get_session, StudentEducation, add_operation_log
@@ -96,7 +97,7 @@ def api_save_education(person_id):
             request.current_user['username'],
             "修改就读信息",
             p.name,
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         return jsonify({'success': True})

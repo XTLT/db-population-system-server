@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import secrets
 from flask import request, jsonify
 
@@ -93,7 +94,7 @@ def api_add_person():
         request.current_user['username'],
         "添加人员",
         data.get('name', ''),
-        request.remote_addr,
+        get_client_ip(),
         "Web"
     )
     return jsonify({'success': True})

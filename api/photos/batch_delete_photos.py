@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 from flask import request, jsonify
 
@@ -70,7 +71,7 @@ def api_batch_delete_photos():
             request.current_user['username'],
             "批量删除照片",
             f"删除{deleted_count}张，未找到{not_found_count}张",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         

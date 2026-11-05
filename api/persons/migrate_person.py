@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import get_session, migrate_person, add_operation_log
@@ -36,7 +37,7 @@ def api_migrate_person(person_id):
         request.current_user['username'],
         "户籍迁出",
         person_id,
-        request.remote_addr,
+        get_client_ip(),
         "Web"
     )
     return jsonify({'success': True})

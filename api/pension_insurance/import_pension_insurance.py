@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 import secrets
 from flask import request, jsonify
@@ -34,7 +35,7 @@ def import_pension_insurance():
             request.current_user['username'],
             "导入养老保险",
             f"导入{result.get('imported', 0)}条记录",
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
 

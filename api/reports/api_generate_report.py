@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from flask import request, jsonify
 
 from database import generate_report_data, add_operation_log
@@ -39,7 +40,7 @@ def api_generate_report():
             user['username'],
             "生成报表数据",
             f"类型:{report_type}, 维度:{','.join(dimensions)}",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
 

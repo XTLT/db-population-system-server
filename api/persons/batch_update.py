@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 from datetime import datetime
 from flask import request, jsonify
 
@@ -64,7 +65,7 @@ def api_batch_update_persons():
             request.current_user['username'],
             "批量更新人员",
             f"更新{updated_count}人，字段: {','.join(filtered_updates.keys())}",
-            request.remote_addr,
+            get_client_ip(),
             "Web"
         )
         

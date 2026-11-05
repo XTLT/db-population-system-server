@@ -1,3 +1,4 @@
+from utils.security import get_client_ip
 import os
 import secrets
 from datetime import datetime
@@ -73,7 +74,7 @@ def export_land_subsidy():
             request.current_user['username'],
             "导出土地补贴",
             f"导出{len(subsidies)}条记录",
-            request.remote_addr,
+            get_client_ip(),
             request.headers.get('X-Client-Type', 'Web')
         )
 
