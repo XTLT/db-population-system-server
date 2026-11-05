@@ -12,9 +12,15 @@ Environment="FLASK_ENV=production"
 Environment="PYTHONUNBUFFERED=1"
 Environment="TZ=Asia/Shanghai"
 
+# gunicorn 直接终结 TLS（不再经 stunnel 转发）：
+# 这样 request.remote_addr 就是真实客户端 IP，操作日志才能记到来源地址。
 ExecStart=__INSTALL_DIR__/venv/bin/gunicorn \
     --workers __WORKERS__ \
-    --bind 127.0.0.1:__INNER_PORT__ \
+    --bind [::]:__PORT__ \
+    --certfile __CERT_DIR__/server.crt \
+    --keyfile __CERT_DIR__/server.key \
+    --ca-certs __CA_CERT__ \
+    --cert-reqs 2 \
     --timeout 120 \
     --max-requests 1000 \
     --max-requests-jitter 50 \

@@ -39,7 +39,6 @@ while [ $# -gt 0 ]; do
 done
 
 INSTALL_DIR="$(cd "$(dirname "$0")" && pwd)"
-INNER_PORT=$((PORT + 1))
 CERT_DIR="$INSTALL_DIR/certs"
 
 # ---- 输出函数 ----
@@ -95,14 +94,8 @@ apt-get install -y -qq \
   || apt-get install -y \
     python3 python3-venv python3-pip openssl sqlite3 curl net-tools \
     libargon2-1 libargon2-dev libffi-dev >/dev/null
-if ! command -v stunnel >/dev/null 2>&1; then
-    log "安装 stunnel..."
-    apt-get install -y stunnel >/dev/null 2>&1 \
-        || apt-get install -y stunnel4 >/dev/null \
-        || { red "stunnel 安装失败，请检查网络后重试"; exit 1; }
-fi
-STUNNEL_BIN="$(command -v stunnel)"
-log "系统依赖安装完成（stunnel: $STUNNEL_BIN）"
+# gunicorn 直接终结 TLS（不再需要 stunnel 做 TCP 转发）
+log "系统依赖安装完成"
 
 # ---- 4. 目录结构 ----
 step "创建数据目录"
@@ -148,34 +141,24 @@ bash scripts/gen_certs.sh "$CERT_DIR" "$DOMAINS"
 step "配置开机自启服务"
 systemctl daemon-reload >/dev/null 2>&1 || true
 SRV_SERVER="/etc/systemd/system/${SVC_PREFIX}-server.service"
-SRV_STUNNEL="/etc/systemd/system/${SVC_PREFIX}-stunnel.service"
-STUNNEL_CONF="/etc/stunnel/${SVC_PREFIX}.conf"
+# 新装环境有独立 ca.crt；老环境（server.crt 自签当 CA）则回落到 server.crt
+CA_CERT="$CERT_DIR/ca.crt"
+[ -f "$CA_CERT" ] || CA_CERT="$CERT_DIR/server.crt"
 
 sed -e "s|__INSTALL_DIR__|$INSTALL_DIR|g" \
-    -e "s|__INNER_PORT__|$INNER_PORT|g" \
+    -e "s|__CERT_DIR__|$CERT_DIR|g" \
+    -e "s|__CA_CERT__|$CA_CERT|g" \
+    -e "s|__PORT__|$PORT|g" \
     -e "s|__WORKERS__|$WORKERS|g" \
     deploy/population-server.service > "$SRV_SERVER"
-
-mkdir -p /etc/stunnel
-sed -e "s|__CERT_DIR__|$CERT_DIR|g" \
-    -e "s|__PORT__|$PORT|g" \
-    -e "s|__INNER_PORT__|$INNER_PORT|g" \
-    -e "s|__NAME__|$SVC_PREFIX|g" \
-    deploy/stunnel/population.conf > "$STUNNEL_CONF"
-
-sed -e "s|__STUNNEL_BIN__|$STUNNEL_BIN|g" \
-    -e "s|__CONF__|$STUNNEL_CONF|g" \
-    -e "s|__NAME__|$SVC_PREFIX|g" \
-    deploy/stunnel/population-stunnel.service > "$SRV_STUNNEL"
 
 systemctl daemon-reload
 systemctl enable "${SVC_PREFIX}-server" >/dev/null 2>&1
 systemctl restart "${SVC_PREFIX}-server"
 sleep 6
-systemctl enable "${SVC_PREFIX}-stunnel" >/dev/null 2>&1
-systemctl restart "${SVC_PREFIX}-stunnel"
-sleep 2
-log "服务已配置并启动"
+# 旧版本遗留的 stunnel 单元必须停掉，否则会抢占 5000 端口并让日志回落成 127.0.0.1
+systemctl disable --now "${SVC_PREFIX}-stunnel" >/dev/null 2>&1 || true
+log "服务已配置并启动（gunicorn 直接终结 TLS，端口 $PORT）"
 
 # ---- 8. 验证 ----
 step "验证安装结果"
@@ -184,8 +167,6 @@ if [ "$ACTIVE" != "active" ]; then
     red "服务端未启动，查看日志: journalctl -u ${SVC_PREFIX}-server -n 50"
     exit 1
 fi
-ACTIVE_S=$(systemctl is-active "${SVC_PREFIX}-stunnel" || true)
-[ "$ACTIVE_S" = "active" ] || yellow "stunnel 状态异常: $ACTIVE_S（请检查 journalctl -u ${SVC_PREFIX}-stunnel）"
 
 H="$(curl -sk --cert "$CERT_DIR/client.crt" --key "$CERT_DIR/client.key" -m 10 \
      "https://127.0.0.1:$PORT/api/health" 2>/dev/null || true)"
@@ -194,7 +175,7 @@ case "$H" in
     *) red "健康检查失败: $H"; exit 1 ;;
 esac
 if curl -sk -m 5 "https://127.0.0.1:$PORT/api/health" >/dev/null 2>&1; then
-    yellow "警告：无客户端证书也能访问，mTLS 未生效，请检查 $STUNNEL_CONF"
+    yellow "警告：无客户端证书也能访问，mTLS 未生效，请检查 $SRV_SERVER 里的 --cert-reqs 2 / --ca-certs"
 else
     green "mTLS 双向校验生效：无客户端证书的访问已被拒绝"
 fi
@@ -226,7 +207,7 @@ echo "    $CERT_DIR/client.key"
 echo "  一键导出: bash scripts/export_client_certs.sh"
 echo ""
 echo "常用管理命令："
-echo "    查看状态: systemctl status ${SVC_PREFIX}-server ${SVC_PREFIX}-stunnel"
-echo "    重启服务: systemctl restart ${SVC_PREFIX}-server ${SVC_PREFIX}-stunnel"
+echo "    查看状态: systemctl status ${SVC_PREFIX}-server"
+echo "    重启服务: systemctl restart ${SVC_PREFIX}-server"
 echo "    查看日志: journalctl -u ${SVC_PREFIX}-server -n 100"
 echo "======================================================"
