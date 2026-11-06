@@ -22,4 +22,4 @@ def validate_phone(phone: str) -> tuple[bool, str]:
     if re.match(r'^1[3-9]\d{9}$', phone):
         return True, ""
 
-    return False, "电话号码格式无效，请输入11位手机号或座机号码"
+    return False, "电话号码格式无效，请输入11位手机号"
