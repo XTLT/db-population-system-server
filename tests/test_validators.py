@@ -13,6 +13,7 @@
 """
 
 import importlib.util
+import json
 import os
 import sys
 import unittest
@@ -133,6 +134,42 @@ class TestValidatePhone(unittest.TestCase):
     def test_hyphon_tolerated(self):
         # 清洗阶段剔除 "-"，号码本身合法就放行
         self.assertEqual(_validate_phone('138-0013-8000'), (True, ""))
+
+
+VECTOR_FILE = os.path.join(ROOT, "tests", "vectors", "validation_vectors.json")
+
+
+class TestSharedVectors(unittest.TestCase):
+    """三端共享向量 validation_vectors.json 的逐条比对。
+
+    权威源在本仓库 tests/vectors/，由 sync_vectors.py 复制到 desktop/tests/vectors
+    与 mobile/test/vectors，三份 sha256 必须一致。任一端口径漂移，三端各自这一组就会红。
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        with open(VECTOR_FILE, encoding="utf-8") as f:
+            cls.doc = json.load(f)
+
+    def test_id_card_vectors(self):
+        self.assertTrue(self.doc["id_card"], "身份证向量为空")
+        for case in self.doc["id_card"]:
+            with self.subTest(note=case["note"], value=case["input"]):
+                self.assertEqual(
+                    _validate_id_card(case["input"]),
+                    (case["valid"], case["msg"]),
+                    case["note"],
+                )
+
+    def test_phone_vectors(self):
+        self.assertTrue(self.doc["phone"], "电话向量为空")
+        for case in self.doc["phone"]:
+            with self.subTest(note=case["note"], value=case["input"]):
+                self.assertEqual(
+                    _validate_phone(case["input"]),
+                    (case["valid"], case["msg"]),
+                    case["note"],
+                )
 
 
 if __name__ == '__main__':

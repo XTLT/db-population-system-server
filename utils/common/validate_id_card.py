@@ -27,11 +27,13 @@ def validate_id_card(id_card: str) -> tuple[bool, str]:
     if len(id_card) != 18:
         return False, "身份证号必须为18位"
 
-    if not id_card[:17].isdigit():
+    # 用 ASCII [0-9] 而不是 str.isdigit()：isdigit() 会把全角数字也算成数字，
+    # 而 Dart 端的 \d 只认 ASCII，两边会分叉（2026-11-06 由共享向量发现）。
+    if not re.fullmatch(r'[0-9]{17}', id_card[:17]):
         return False, "身份证号前17位必须为数字"
 
     last_char = id_card[17]
-    if not (last_char.isdigit() or last_char == 'X'):
+    if not (re.fullmatch(r'[0-9]', last_char) or last_char == 'X'):
         return False, "身份证号最后一位必须为数字或X"
 
     total = sum(int(id_card[i]) * _WEIGHTS[i] for i in range(17))
