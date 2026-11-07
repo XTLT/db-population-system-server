@@ -1,59 +1,59 @@
 """get_person_distribution 函数。"""
-
 from ..models.person import Person
 from .._base import get_session
+from ._alive_filter import alive_filter
 
 def get_person_distribution(field: str) -> dict:
     from sqlalchemy import func
-    
+
     session = get_session()
     try:
         result = {}
-        
+
         if field == 'disability':
             # 残疾情况分布
             counts = session.query(
                 Person.disability,
                 func.count(Person.id).label('count')
-            ).group_by(Person.disability).all()
-            
+            ).filter(alive_filter()).group_by(Person.disability).all()
+
             for disability, count in counts:
                 label = disability if disability else '无'
                 result[label] = count
-        
+
         elif field == 'dibao':
             # 低保情况分布
             counts = session.query(
                 Person.dibao,
                 func.count(Person.id).label('count')
-            ).group_by(Person.dibao).all()
-            
+            ).filter(alive_filter()).group_by(Person.dibao).all()
+
             for dibao, count in counts:
                 label = dibao if dibao else '无'
                 result[label] = count
-        
+
         elif field == 'tekun':
             # 特困供养情况分布
             counts = session.query(
                 Person.tekun,
                 func.count(Person.id).label('count')
-            ).group_by(Person.tekun).all()
-            
+            ).filter(alive_filter()).group_by(Person.tekun).all()
+
             for tekun, count in counts:
                 label = tekun if tekun else '无'
                 result[label] = count
-        
+
         elif field == 'age_group':
             # 年龄段分布（用户口径 2026-11-04：0-18 / 19-59 / 60-80 / 80以上）
-            persons = session.query(Person.age).all()
-            
+            persons = session.query(Person.age).filter(alive_filter()).all()
+
             age_groups = {
                 '0-18岁': 0,
                 '19-59岁': 0,
                 '60-80岁': 0,
                 '80岁以上': 0
             }
-            
+
             for p in persons:
                 try:
                     age = int(p.age) if p.age else 0
@@ -67,17 +67,17 @@ def get_person_distribution(field: str) -> dict:
                         age_groups['80岁以上'] += 1
                 except Exception:
                     age_groups['0-18岁'] += 1
-            
+
             result = age_groups
-        
+
         elif field == 'gender':
             # 性别分布（从身份证号推断）
-            persons = session.query(Person.id_card).all()
-            
+            persons = session.query(Person.id_card).filter(alive_filter()).all()
+
             male = 0
             female = 0
             unknown = 0
-            
+
             for p in persons:
                 if p.id_card and len(p.id_card) >= 2:
                     try:
@@ -91,27 +91,26 @@ def get_person_distribution(field: str) -> dict:
                         unknown += 1
                 else:
                     unknown += 1
-            
+
             result = {
                 '男性': male,
                 '女性': female
             }
             if unknown > 0:
                 result['未知'] = unknown
-        
+
         else:
             # 通用字段统计
             if hasattr(Person, field):
                 counts = session.query(
                     getattr(Person, field),
                     func.count(Person.id).label('count')
-                ).group_by(getattr(Person, field)).all()
-                
+                ).filter(alive_filter()).group_by(getattr(Person, field)).all()
+
                 for value, count in counts:
                     label = value if value else '无'
                     result[label] = count
-        
+
         return result
     finally:
         session.close()
-

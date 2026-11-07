@@ -1,0 +1,12 @@
+[Unit]
+Description=Run population system database backup every day
+
+[Timer]
+# 必须带 Asia/Shanghai：26 的系统时区是 UTC，不写时区时 02:30 会在北京时间上午 10:30 触发
+OnCalendar=*-*-* 02:30:00 Asia/Shanghai
+Persistent=true
+RandomizedDelaySec=10min
+Unit=population-backup.service
+
+[Install]
+WantedBy=timers.target

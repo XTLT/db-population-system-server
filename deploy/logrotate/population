@@ -1,0 +1,30 @@
+# 人口通服务端日志轮转（logrotate）
+#
+# 覆盖 5 个日志，路径按 26 生产实际目录：
+#   gunicorn --access-logfile /root/population-system/data/logs/access.log
+#   gunicorn --error-logfile  /root/population-system/data/logs/error.log
+#   app.log 由 config.LOG_DIR 写入，DATA_DIR=/root/population-system/server
+#   更新日志 /root/population-system/server/logs/server_update.log
+#   自动备份 /root/population-system/server/backups/auto_backup.log
+#
+# 策略：每周切一次，保留 8 份（约两个月），单份超 100MB 也提前切。
+# 必须用 copytruncate（不能 create + USR1）：gunicorn master 和 Python
+# logging.FileHandler 都长期持有句柄，改名后仍写旧文件，新文件永远 0 字节。
+# 详见 deploy/logrotate/README.md 与教训库 E51。
+
+/root/population-system/data/logs/access.log
+/root/population-system/data/logs/error.log
+/root/population-system/server/logs/app.log
+/root/population-system/server/logs/server_update.log
+/root/population-system/server/backups/auto_backup.log
+{
+    weekly
+    rotate 8
+    maxsize 100M
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su root root
+}

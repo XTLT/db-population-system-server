@@ -25,6 +25,7 @@ def restore_database(backup_path: str, password: str = None) -> dict:
     if not os.path.exists(complete_file):
         return {"success": False, "error": "备份不完整"}
 
+    manifest = None
     try:
         # 读取清单
         with open(complete_file, "r") as f:
@@ -42,10 +43,27 @@ def restore_database(backup_path: str, password: str = None) -> dict:
         if not os.path.exists(db_backup):
             return {"success": False, "error": "数据库备份文件不存在"}
 
+        # 覆盖现网库之前先校验备份本身是否完好，坏了就不动现网
+        from .backup_database import _integrity_check
+        try:
+            integrity = _integrity_check(db_backup)
+        except Exception as e:
+            # 不是合法 SQLite 文件时 PRAGMA 会直接抛异常，不能让它把恢复流程带崩
+            return {"success": False, "error": f"备份文件无法校验（可能已损坏）: {e}"}
+        if integrity.lower() != "ok":
+            return {"success": False, "error": f"备份完整性校验失败: {integrity}"}
+
         # 备份当前数据库
         current_backup = f"{DB_PATH}.before_restore"
         if os.path.exists(DB_PATH):
             shutil.copy2(DB_PATH, current_backup)
+
+        # 残留的 -wal/-shm 属于旧库：直接覆盖主库后再打开会把旧 WAL 重放进新库，
+        # 造成"恢复后数据错乱"，必须先删
+        for ext in ("-wal", "-shm"):
+            p = DB_PATH + ext
+            if os.path.exists(p):
+                os.remove(p)
 
         # 恢复数据库
         shutil.copy2(db_backup, DB_PATH)
@@ -87,7 +105,7 @@ def restore_database(backup_path: str, password: str = None) -> dict:
         return {"success": False, "error": str(e)}
     finally:
         # 清理解密后的文件
-        if manifest.get("encrypted"):
+        if manifest and manifest.get("encrypted"):
             for filename in os.listdir(backup_path):
                 if filename.endswith(".db") or filename.endswith(".tar.gz"):
                     filepath = os.path.join(backup_path, filename)

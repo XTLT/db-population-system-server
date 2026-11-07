@@ -35,7 +35,11 @@ def import_land_subsidy():
     try:
         file.save(tmp_path)
         from excel_importer import import_land_subsidy_excel
-        result = import_land_subsidy_excel(tmp_path, subsidy_year)
+        dry_run = request.form.get('dry_run', '').strip().lower() in ('1', 'true', 'yes')
+        result = import_land_subsidy_excel(tmp_path, subsidy_year, dry_run=dry_run)
+
+        if dry_run:
+            return jsonify(result)
 
         add_operation_log(
             request.current_user['id'],

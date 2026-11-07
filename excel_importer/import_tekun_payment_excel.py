@@ -8,7 +8,7 @@ from ._backfill_social_card import _backfill_social_card
 from excel_payment_templates import TEKUN_PAYMENT_COLUMNS
 
 
-def import_tekun_payment_excel(file_path: str, progress_callback=None, period: str = "", import_source: str = "") -> dict:
+def import_tekun_payment_excel(file_path: str, progress_callback=None, period: str = "", import_source: str = "", dry_run: bool = False) -> dict:
     """导入特困发放数据
 
     新模板单表头行（77列）：序号/人员编码/.../申请人姓名/申请人身份证号/城乡类型/性别/.../村名称/救助类型/...。
@@ -130,11 +130,14 @@ def import_tekun_payment_excel(file_path: str, progress_callback=None, period: s
                 skipped += 1
                 errors.append(f"行{idx + 2}: {str(e)}")
 
-        session.commit()
+        if dry_run:
+            session.rollback()
+        else:
+            session.commit()
     except Exception:
         session.rollback()
         raise
     finally:
         session.close()
 
-    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
+    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found, "dry_run": dry_run}

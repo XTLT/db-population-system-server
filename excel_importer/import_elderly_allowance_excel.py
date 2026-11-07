@@ -8,7 +8,7 @@ from ._backfill_social_card import _backfill_social_card
 from excel_payment_templates import ELDERLY_ALLOWANCE_COLUMNS
 
 
-def import_elderly_allowance_excel(file_path: str, progress_callback=None, period: str = "", import_source: str = "") -> dict:
+def import_elderly_allowance_excel(file_path: str, progress_callback=None, period: str = "", import_source: str = "", dry_run: bool = False) -> dict:
     """导入高龄补贴数据
 
     支持三种Excel格式：
@@ -125,11 +125,14 @@ def import_elderly_allowance_excel(file_path: str, progress_callback=None, perio
                 skipped += 1
                 errors.append(f"行{idx + 2}: {str(e)}")
 
-        session.commit()
+        if dry_run:
+            session.rollback()
+        else:
+            session.commit()
     except Exception:
         session.rollback()
         raise
     finally:
         session.close()
 
-    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
+    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found, "dry_run": dry_run}

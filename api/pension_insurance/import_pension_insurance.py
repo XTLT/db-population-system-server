@@ -28,7 +28,11 @@ def import_pension_insurance():
         file.save(tmp_path)
         from excel_importer import import_pension_insurance_excel
         period = request.form.get('period', '').strip()
-        result = import_pension_insurance_excel(tmp_path, period=period)
+        dry_run = request.form.get('dry_run', '').strip().lower() in ('1', 'true', 'yes')
+        result = import_pension_insurance_excel(tmp_path, period=period, dry_run=dry_run)
+
+        if dry_run:
+            return jsonify(result)
 
         add_operation_log(
             request.current_user['id'],

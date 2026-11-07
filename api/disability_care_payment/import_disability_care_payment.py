@@ -28,7 +28,11 @@ def import_disability_care_payment():
         file.save(tmp_path)
         from excel_importer import import_disability_care_payment_excel
         period = request.form.get('period', '').strip()
-        result = import_disability_care_payment_excel(tmp_path, period=period, import_source=file.filename)
+        dry_run = request.form.get('dry_run', '').strip().lower() in ('1', 'true', 'yes')
+        result = import_disability_care_payment_excel(tmp_path, period=period, import_source=file.filename, dry_run=dry_run)
+
+        if dry_run:
+            return jsonify(result)
 
         add_operation_log(
             request.current_user['id'],

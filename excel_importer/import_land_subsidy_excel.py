@@ -55,7 +55,7 @@ def _row_value(row, col):
     return safe_str(row.get(col, "")) if col else ""
 
 
-def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_callback=None) -> dict:
+def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_callback=None, dry_run: bool = False) -> dict:
     """导入地力补贴数据
 
     只导入身份证号在数据库中存在的人员
@@ -207,11 +207,14 @@ def import_land_subsidy_excel(file_path: str, subsidy_year: str = "", progress_c
                 skipped += 1
                 errors.append(f"行{idx + 2}: {str(e)}")
 
-        session.commit()
+        if dry_run:
+            session.rollback()
+        else:
+            session.commit()
     except Exception:
         session.rollback()
         raise
     finally:
         session.close()
 
-    return {"imported": imported, "updated": updated, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
+    return {"imported": imported, "updated": updated, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found, "dry_run": dry_run}

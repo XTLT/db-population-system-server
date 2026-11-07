@@ -7,6 +7,7 @@ from .get_person_distribution import get_person_distribution
 from .get_person_trend_data import get_person_trend_data
 from .get_person_comparison import get_person_comparison
 from .get_person_count import get_person_count
+from ._report_scope import build_report_scope
 
 def generate_report_data(report_type: str, dimensions: list, 
                          date_range: dict = None, filters: dict = None) -> dict:
@@ -153,7 +154,7 @@ def generate_report_data(report_type: str, dimensions: list,
                     year_counts = {}
                     year_amounts = {}
                     for s in subsidies:
-                        year = s.subsidy_year or '未知'
+                        year = s.year or '未知'
                         year_counts[year] = year_counts.get(year, 0) + 1
                         amount = float(s.total_amount) if s.total_amount else 0
                         year_amounts[year] = year_amounts.get(year, 0) + amount
@@ -192,5 +193,6 @@ def generate_report_data(report_type: str, dimensions: list,
         finally:
             session.close()
     
+    result['scope'] = build_report_scope(report_type, start_date, end_date, result.get('total', 0))
     return result
 

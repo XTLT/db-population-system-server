@@ -8,7 +8,7 @@ from ._backfill_social_card import _backfill_social_card
 from excel_payment_templates import DIBAO_PAYMENT_COLUMNS
 
 
-def import_dibao_payment_excel(file_path: str, progress_callback=None, period: str = "", import_source: str = "") -> dict:
+def import_dibao_payment_excel(file_path: str, progress_callback=None, period: str = "", import_source: str = "", dry_run: bool = False) -> dict:
     """导入低保发放数据
 
     新模板单表头行（76列）：序号/人员编码/家庭编码/.../人员姓名/人员身份证号/性别/.../村名称/救助类型/...。
@@ -130,11 +130,14 @@ def import_dibao_payment_excel(file_path: str, progress_callback=None, period: s
                 skipped += 1
                 errors.append(f"行{idx + 2}: {str(e)}")
 
-        session.commit()
+        if dry_run:
+            session.rollback()
+        else:
+            session.commit()
     except Exception:
         session.rollback()
         raise
     finally:
         session.close()
 
-    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
+    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found, "dry_run": dry_run}

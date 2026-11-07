@@ -8,7 +8,7 @@ from ._backfill_social_card import _backfill_social_card
 from excel_payment_templates import PENSION_INSURANCE_COLUMNS
 
 
-def import_pension_insurance_excel(file_path: str, progress_callback=None, period: str = "") -> dict:
+def import_pension_insurance_excel(file_path: str, progress_callback=None, period: str = "", dry_run: bool = False) -> dict:
     """导入养老保险数据
 
     新模板单表头行：所属乡镇/所属村/费款所属期/支付标志/个人编号/公民身份证号码/
@@ -109,11 +109,14 @@ def import_pension_insurance_excel(file_path: str, progress_callback=None, perio
                 skipped += 1
                 errors.append(f"行{idx + 2}: {str(e)}")
 
-        session.commit()
+        if dry_run:
+            session.rollback()
+        else:
+            session.commit()
     except Exception:
         session.rollback()
         raise
     finally:
         session.close()
 
-    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found}
+    return {"imported": imported, "skipped": skipped, "errors": errors, "total": total, "not_found": not_found, "dry_run": dry_run}

@@ -59,6 +59,15 @@ def api_backup_restore():
     if not os.path.exists(db_backup):
         return jsonify({'error': '数据库备份文件不存在'}), 400
 
+    # 停服务、覆盖现网库之前先校验备份本身完好；坏了直接拒绝，不停服也不动数据
+    try:
+        from excel_importer.backup_database import _integrity_check
+        integrity = _integrity_check(db_backup)
+    except Exception as e:
+        return jsonify({'error': f'备份文件校验失败: {str(e)}'}), 400
+    if integrity.lower() != 'ok':
+        return jsonify({'error': f'备份完整性校验未通过: {integrity}'}), 400
+
     photos_backup = os.path.join(backup_path, "photos.tar.gz")
 
     add_operation_log(
@@ -87,6 +96,10 @@ if [ -f "{DB_PATH}" ]; then
     cp "{DB_PATH}" "{DB_PATH}.before_restore"
     echo "已备份当前数据库到 .before_restore" >> "{restore_log}"
 fi
+
+# WAL 模式下 -wal/-shm 属于旧库，不删会被重放进恢复后的新库，导致数据错乱
+rm -f "{DB_PATH}-wal" "{DB_PATH}-shm"
+echo "已清理旧 WAL/SHM" >> "{restore_log}"
 
 cp "{db_backup}" "{DB_PATH}"
 echo "数据库已恢复" >> "{restore_log}"

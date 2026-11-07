@@ -1,0 +1,10 @@
+[Unit]
+Description=Population system daily database backup
+After=population-server.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /root/population-system/server/deploy/backup_daily.sh
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
