@@ -90,6 +90,7 @@ from .functions.create_notification import create_notification
 from .functions.get_notifications import get_notifications
 from .functions.mark_notification_read import mark_notification_read
 from .functions.get_unread_count import get_unread_count
+from .functions.ensure_age_notifications import ensure_age_notifications
 from .functions.get_person_trend_data import get_person_trend_data
 from .functions.get_person_distribution import get_person_distribution
 from .functions.get_person_comparison import get_person_comparison
@@ -182,6 +183,7 @@ __all__ = [
     "get_notifications",
     "mark_notification_read",
     "get_unread_count",
+    "ensure_age_notifications",
     "get_person_trend_data",
     "get_person_distribution",
     "get_person_comparison",
