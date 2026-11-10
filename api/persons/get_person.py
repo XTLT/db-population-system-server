@@ -158,6 +158,7 @@ def api_person_subsidies(person_id):
                     'fail_reason': getattr(r, 'fail_reason', '') or '',
                     'village': getattr(r, 'village', '') or '',
                     'town': getattr(r, 'town', '') or '',
+                    'bank_account': getattr(r, 'bank_account', '') or '',
                 })
             by_module.append({
                 'module': module,
