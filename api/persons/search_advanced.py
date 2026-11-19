@@ -13,6 +13,7 @@ def api_search_advanced():
     name = request.args.get('name', '')
     id_card = request.args.get('id_card', '')
     hu_hao = request.args.get('hu_hao', '')
+    phone = request.args.get('phone', '')
     address = request.args.get('address', '')
     age_min = request.args.get('age_min', type=int)
     age_max = request.args.get('age_max', type=int)
@@ -42,6 +43,7 @@ def api_search_advanced():
         name=name,
         id_card=id_card,
         hu_hao=hu_hao,
+        phone=phone,
         address=address,
         age_min=age_min,
         age_max=age_max,

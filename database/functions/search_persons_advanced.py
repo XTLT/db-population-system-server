@@ -8,6 +8,7 @@ def search_persons_advanced(
     name: str = "",
     id_card: str = "",
     hu_hao: str = "",
+    phone: str = "",
     address: str = "",
     age_min: int = None,
     age_max: int = None,
@@ -45,6 +46,16 @@ def search_persons_advanced(
         
         if hu_hao:
             query = query.filter(Person.hu_hao == hu_hao)
+
+        if phone:
+            # 完整号码（>=7 位）精确匹配；短号（如后 4 位）模糊匹配
+            escaped_phone = escape_like(phone)
+            if len(phone) >= 7:
+                query = query.filter(Person.phone == phone)
+            else:
+                query = query.filter(
+                    Person.phone.like(f"%{escaped_phone}%", escape='\\')
+                )
         
         if address:
             escaped_address = escape_like(address)

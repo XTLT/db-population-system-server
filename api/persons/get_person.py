@@ -273,3 +273,158 @@ def api_pending_correction():
         return jsonify({'total': len(items), 'items': items})
     finally:
         session.close()
+
+
+# ---------------------------------------------------------------------------
+# 村级数据体检（2026-11-19）
+# ---------------------------------------------------------------------------
+
+_DATA_HEALTH_MAX_ITEMS = 200
+
+
+@bp.route('/persons/data-health')
+@require_auth
+def api_data_health():
+    """村级数据体检：按常见数据质量问题分组，返回待补录人员清单。
+
+    只读接口，不修改任何数据；只检查在世人员（死亡/迁出不在体检范围）。
+    检查项：缺身份证、身份证格式错、缺电话、缺户号、本户无户主、
+            同一身份证挂多个户号、学生缺监护人电话。
+    """
+    from datetime import datetime
+    from utils import validate_id_card
+    from database import StudentEducation as _StudentEducation
+
+    session = get_session()
+    try:
+        persons = (
+            session.query(Person)
+            .filter(or_(Person.is_dead != '是', Person.is_dead.is_(None)))
+            .all()
+        )
+
+        buckets = {
+            'id_card_empty': {'label': '缺身份证号', 'severity': 'high', 'items': []},
+            'id_card_invalid': {'label': '身份证格式不对', 'severity': 'high', 'items': []},
+            'phone_empty': {'label': '电话为空', 'severity': 'medium', 'items': []},
+            'hu_hao_empty': {'label': '户号为空', 'severity': 'high', 'items': []},
+            'no_head': {'label': '本户没有户主', 'severity': 'high', 'items': []},
+            'idcard_multi_house': {'label': '同一身份证挂多个户号', 'severity': 'high', 'items': []},
+            'student_no_guardian_phone': {'label': '学生缺监护人电话', 'severity': 'medium', 'items': []},
+        }
+
+        def _base(p):
+            return {
+                'person_id': p.id,
+                'name': p.name or '',
+                'id_card': (p.id_card or '').strip(),
+                'hu_hao': (p.hu_hao or '').strip(),
+                'group_name': p.group_name or '',
+            }
+
+        def _add(key, p, detail):
+            row = _base(p)
+            row['detail'] = detail
+            buckets[key]['items'].append(row)
+
+        by_house = {}
+        by_card = {}
+        person_by_id = {p.id: p for p in persons}
+
+        for p in persons:
+            card = (p.id_card or '').strip()
+            hu = (p.hu_hao or '').strip()
+            phone = (p.phone or '').strip()
+
+            if not card:
+                _add('id_card_empty', p, '身份证号为空')
+            else:
+                ok, msg = validate_id_card(card)
+                if not ok:
+                    _add('id_card_invalid', p, msg)
+
+            if not phone:
+                _add('phone_empty', p, '电话为空')
+
+            if not hu:
+                _add('hu_hao_empty', p, '户号为空')
+            else:
+                by_house.setdefault(hu, []).append(p)
+
+            if card:
+                slot = by_card.setdefault(card, {'hu_list': set(), 'persons': []})
+                if hu:
+                    slot['hu_list'].add(hu)
+                slot['persons'].append(p)
+
+        # 本户没有户主
+        for hu, members in by_house.items():
+            if not any((m.relation or '').strip() == '户主' for m in members):
+                for m in members:
+                    _add('no_head', m, f'户号 {hu} 全户无户主（{len(members)} 人）')
+
+        # 同一身份证挂多个户号
+        for card, info in by_card.items():
+            hu_set = info['hu_list']
+            if len(hu_set) > 1:
+                hu_text = '、'.join(sorted(hu_set))
+                for m in info['persons']:
+                    _add(
+                        'idcard_multi_house', m,
+                        f'同一身份证出现在 {len(hu_set)} 个户号：{hu_text}',
+                    )
+
+        # 学生缺监护人电话（学生表异常不影响其他体检项）
+        try:
+            students = (
+                session.query(_StudentEducation)
+                .filter(or_(
+                    _StudentEducation.guardian_phone == '',
+                    _StudentEducation.guardian_phone.is_(None),
+                ))
+                .all()
+            )
+            seen_students = set()
+            for s in students:
+                pid = s.person_id
+                if pid in seen_students:
+                    continue
+                p = person_by_id.get(pid)
+                if p is None:
+                    continue
+                seen_students.add(pid)
+                _add(
+                    'student_no_guardian_phone', p,
+                    f'学生（{s.school_name or "学校未填"}）缺监护人电话',
+                )
+        except Exception:
+            pass
+
+        checks = []
+        for key, info in buckets.items():
+            items = info['items']
+            checks.append({
+                'key': key,
+                'label': info['label'],
+                'severity': info['severity'],
+                'count': len(items),
+                'items': items[:_DATA_HEALTH_MAX_ITEMS],
+                'truncated': len(items) > _DATA_HEALTH_MAX_ITEMS,
+            })
+
+        checks.sort(key=lambda x: (-x['count'], x['key']))
+
+        issue_ids = set()
+        for c in checks:
+            for it in c['items']:
+                issue_ids.add(it['person_id'])
+
+        return jsonify({
+            'checked_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'total_alive': len(persons),
+            'total_issue_persons': len(issue_ids),
+            'total_issue_count': sum(c['count'] for c in checks),
+            'checks': checks,
+        })
+    finally:
+        session.close()
