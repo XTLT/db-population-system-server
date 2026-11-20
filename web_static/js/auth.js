@@ -1,51 +1,6 @@
-function checkAuth() {
-    if (authToken) {
-        apiRequest('GET', '/api/stats').then(() => {
-            showMain();
-        }).catch(() => {
-            showLogin();
-        });
-    } else {
-        showLogin();
-    }
-}
 
-function showLogin() {
-    document.getElementById('loginPage').style.display = 'flex';
-    document.getElementById('mainPage').style.display = 'none';
-}
 
-function showMain() {
-    document.getElementById('loginPage').style.display = 'none';
-    document.getElementById('mainPage').style.display = 'block';
-    document.getElementById('currentUser').textContent = currentUser?.real_name || currentUser?.username || '';
-    const roleMap = {admin: '管理员', user: '普通用户'};
-    document.getElementById('currentRole').textContent = roleMap[userRole] || userRole;
-    applyRolePermissions();
-}
 
-function applyRolePermissions() {
-    const canEdit = userRole === 'admin' || userRole === 'user';
-    const canDelete = userRole === 'admin';
-    document.getElementById('btnEdit').style.display = canEdit ? '' : 'none';
-    document.getElementById('btnMigrate').style.display = canEdit ? '' : 'none';
-    document.getElementById('btnDelete').style.display = canDelete ? '' : 'none';
-    document.getElementById('btnUserManage').style.display = canDelete ? '' : 'none';
-    document.getElementById('btnImport').style.display = canDelete ? '' : 'none';
-    document.getElementById('btnExport').style.display = canDelete ? '' : 'none';
-    document.getElementById('btnTemplate').style.display = canEdit ? '' : 'none';
-    document.getElementById('btnDeleted').style.display = canDelete ? '' : 'none';
-    document.getElementById('btnBackup').style.display = canDelete ? '' : 'none';
-    document.getElementById('btnLogs').style.display = canDelete ? '' : 'none';
-    document.getElementById('btnStuImport').style.display = canDelete ? '' : 'none';
-    document.getElementById('btnStuExport').style.display = canDelete ? '' : 'none';
-    document.getElementById('btnAddHousehold').style.display = canEdit ? '' : 'none';
-    document.getElementById('btnSplitHousehold').style.display = canEdit ? '' : 'none';
-    document.getElementById('btnMergeHousehold').style.display = canEdit ? '' : 'none';
-    document.getElementById('btnAddPerson').style.display = canEdit ? '' : 'none';
-    document.getElementById('btnLandSubsidy').style.display = canEdit ? '' : 'none';
-    document.getElementById('btnSubsidyImport').style.display = canDelete ? '' : 'none';
-}
 
 document.getElementById('loginForm').onsubmit = function(e) {
     e.preventDefault();
@@ -100,23 +55,7 @@ document.getElementById('loginForm').onsubmit = function(e) {
     });
 };
 
-function showCreateAdmin() {
-    document.getElementById('loginPage').style.display = 'none';
-    document.getElementById('mainPage').style.display = 'none';
-    document.getElementById('createAdminPage').style.display = 'flex';
-}
 
-function logout() {
-    apiRequest('POST', '/api/logout').catch(() => {});
-    authToken = '';
-    currentUser = null;
-    userRole = '';
-    isDefaultUser = false;
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('isDefaultUser');
-    showLogin();
-}
 
 window.onload = function() {
     fetch('/api/status').then(r => r.json()).then(data => {
