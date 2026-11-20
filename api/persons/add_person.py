@@ -61,6 +61,18 @@ def api_add_person():
         finally:
             _s.close()
 
+    # 新增时就标记为死亡，同样要求死亡时间
+    new_is_dead = data.get('is_dead', '否')
+    new_death_date = (data.get('death_date', '') or '').strip()
+    if new_is_dead == '是' and not new_death_date:
+        return jsonify({'error': '改为死亡时必须填写死亡时间'}), 400
+    if new_death_date:
+        from datetime import datetime as _dt
+        try:
+            _dt.strptime(new_death_date, '%Y-%m-%d')
+        except ValueError:
+            return jsonify({'error': '死亡时间格式应为 YYYY-MM-DD'}), 400
+
     # 使用随机ID替代可预测的身份证号ID
     person = Person(
         id=f"web_{secrets.token_hex(8)}",  # 随机ID，不可预测
@@ -72,7 +84,8 @@ def api_add_person():
         group_name=data.get('group_name', ''),
         relation=data.get('relation', ''),
         phone=data.get('phone', ''),
-        is_dead=data.get('is_dead', '否'),
+        is_dead=new_is_dead,
+        death_date=new_death_date,
         land_area=data.get('land_area', ''),
         local_welfare_forest_area=data.get('local_welfare_forest_area', ''),
         national_welfare_forest_area=data.get('national_welfare_forest_area', ''),

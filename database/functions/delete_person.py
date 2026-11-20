@@ -27,6 +27,7 @@ def delete_person(person_id: str):
                 address=person.address,
                 relation=person.relation,
                 is_dead=person.is_dead,
+                death_date=person.death_date,
                 phone=person.phone,
                 remark=person.remark,
                 poor_type=person.poor_type,

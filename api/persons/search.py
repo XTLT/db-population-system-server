@@ -37,6 +37,7 @@ def api_search():
         'relation': p.relation or '',
         'phone': p.phone or '',
         'is_dead': p.is_dead or '否',
+        'death_date': p.death_date or '',
         'remark': p.remark or '',
         'poor_type': p.poor_type or '',
         'disability': p.disability or '',

@@ -47,6 +47,7 @@ def api_person(person_id):
                 'age': p.age,
                 'phone': p.phone,
                 'is_dead': p.is_dead,
+                'death_date': p.death_date or '',
                 'social_card1': p.social_card1,
                 'social_card2': p.social_card2,
                 'social_card3': p.social_card3,
@@ -264,6 +265,7 @@ def api_pending_correction():
                 'hu_hao': p.hu_hao or '',
                 'group_name': p.group_name or '',
                 'is_dead': p.is_dead or '',
+                'death_date': p.death_date or '',
                 'is_migrated': p.is_migrated or '',
                 'modules': module_list,
                 'module_count': len(module_list),
@@ -289,7 +291,7 @@ def api_data_health():
 
     只读接口，不修改任何数据；只检查在世人员（死亡/迁出不在体检范围）。
     检查项：缺身份证、身份证格式错、缺电话、缺户号、本户无户主、
-            同一身份证挂多个户号、学生缺监护人电话。
+            同一身份证挂多个户号；学生缺监护人电话为参考项（非必填，不计入待补录合计）。
     """
     from datetime import datetime
     from utils import validate_id_card
@@ -310,7 +312,8 @@ def api_data_health():
             'hu_hao_empty': {'label': '户号为空', 'severity': 'high', 'items': []},
             'no_head': {'label': '本户没有户主', 'severity': 'high', 'items': []},
             'idcard_multi_house': {'label': '同一身份证挂多个户号', 'severity': 'high', 'items': []},
-            'student_no_guardian_phone': {'label': '学生缺监护人电话', 'severity': 'medium', 'items': []},
+            # 参考项：监护人电话不是必填，只展示不催办
+            'student_no_guardian_phone': {'label': '学生缺监护人电话', 'severity': 'info', 'items': [], 'required': False},
         }
 
         def _base(p):
@@ -407,6 +410,7 @@ def api_data_health():
                 'key': key,
                 'label': info['label'],
                 'severity': info['severity'],
+                'required': info.get('required', True),
                 'count': len(items),
                 'items': items[:_DATA_HEALTH_MAX_ITEMS],
                 'truncated': len(items) > _DATA_HEALTH_MAX_ITEMS,
@@ -414,8 +418,10 @@ def api_data_health():
 
         checks.sort(key=lambda x: (-x['count'], x['key']))
 
+        # 只有必填项计入"待补录"合计，非必填项（如学生监护人电话）仅作参考
+        required_checks = [c for c in checks if c.get('required', True)]
         issue_ids = set()
-        for c in checks:
+        for c in required_checks:
             for it in c['items']:
                 issue_ids.add(it['person_id'])
 
@@ -423,7 +429,7 @@ def api_data_health():
             'checked_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
             'total_alive': len(persons),
             'total_issue_persons': len(issue_ids),
-            'total_issue_count': sum(c['count'] for c in checks),
+            'total_issue_count': sum(c['count'] for c in required_checks),
             'checks': checks,
         })
     finally:

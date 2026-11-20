@@ -32,6 +32,7 @@ def api_family(hu_hao):
             'age': m.age,
             'phone': m.phone,
             'is_dead': m.is_dead,
+            'death_date': m.death_date or '',
             'social_card1': m.social_card1,
             'social_card2': m.social_card2,
             'social_card3': m.social_card3,

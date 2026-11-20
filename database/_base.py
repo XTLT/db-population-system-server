@@ -402,4 +402,15 @@ def _migrate_db(engine):
                 conn.commit()
             except Exception:
                 pass
+        # 死亡时间（2026-11-19：把人员改为死亡时必填，存量已死亡人员不回填）
+        try:
+            conn.execute(text("ALTER TABLE persons ADD COLUMN death_date VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE deleted_persons ADD COLUMN death_date VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
 

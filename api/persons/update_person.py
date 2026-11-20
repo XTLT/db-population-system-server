@@ -44,7 +44,20 @@ def api_update_person(person_id):
             rebuild_family_relations(p.hu_hao, p.id, p.relation)
         p.relation = new_relation
         p.phone = data.get('phone', p.phone)
-        p.is_dead = data.get('is_dead', p.is_dead)
+        old_is_dead = p.is_dead or '否'
+        new_is_dead = data.get('is_dead', p.is_dead)
+        new_death_date = (data.get('death_date', p.death_date) or '').strip()
+        # 只在"由非死亡改为死亡"时要求填死亡时间；
+        # 已是死亡的人改其他字段不强制（存量已死亡人员不回填）
+        if new_is_dead == '是' and old_is_dead != '是' and not new_death_date:
+            return jsonify({'error': '改为死亡时必须填写死亡时间'}), 400
+        if new_death_date:
+            try:
+                datetime.strptime(new_death_date, '%Y-%m-%d')
+            except ValueError:
+                return jsonify({'error': '死亡时间格式应为 YYYY-MM-DD'}), 400
+        p.is_dead = new_is_dead
+        p.death_date = new_death_date
         p.address = data.get('address', p.address)
         p.group_name = data.get('group_name', p.group_name)
         p.poor_type = data.get('poor_type', p.poor_type)

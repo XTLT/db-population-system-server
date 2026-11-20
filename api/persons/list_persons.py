@@ -42,6 +42,7 @@ def api_persons():
                 'group_name': p.group_name or '',
                 'phone': p.phone or '',
                 'is_dead': p.is_dead or '否',
+                'death_date': p.death_date or '',
                 'disability': p.disability or '',
                 'disability_type': p.disability_type or '',
                 'dibao': p.dibao or '',

@@ -15,6 +15,7 @@ class DeletedPerson(Base):
     address = Column(String, default="")
     relation = Column(String, default="")
     is_dead = Column(String, default="否")
+    death_date = Column(String, default="")
     phone = Column(String, default="")
     remark = Column(String, default="")
     poor_type = Column(String, default="")
