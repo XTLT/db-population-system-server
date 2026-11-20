@@ -1,0 +1,28 @@
+"""人员详情相关函数的统一调度出口。
+
+外部只从这里取函数，新增/重写某个函数时只改对应文件，不影响调用方。
+"""
+
+from .to_amount import to_amount
+from .build_person_detail import build_person_detail
+from .build_base_row import build_base_row
+from .add_health_item import add_health_item
+from .api_person import api_person
+from .api_person_subsidies import api_person_subsidies
+from .api_pending_correction import api_pending_correction
+from .api_data_health import api_data_health
+from .subsidy_modules import SUBSIDY_MODULES, MAX_RECORDS, DATA_HEALTH_MAX_ITEMS
+
+__all__ = [
+    'to_amount',
+    'build_person_detail',
+    'build_base_row',
+    'add_health_item',
+    'api_person',
+    'api_person_subsidies',
+    'api_pending_correction',
+    'api_data_health',
+    'SUBSIDY_MODULES',
+    'MAX_RECORDS',
+    'DATA_HEALTH_MAX_ITEMS',
+]
