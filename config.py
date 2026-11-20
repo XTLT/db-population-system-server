@@ -1,10 +1,5 @@
 import os
 import sys
-import shutil
-import base64
-from cryptography.fernet import Fernet
-from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 APP_NAME = "人口通"
 APP_VERSION = "0.0.1"
@@ -26,21 +21,7 @@ else:
     _OLD_APPDATA_DIR = os.path.join(os.path.expanduser("~"), ".config", _OLD_APP_NAME)
 
 
-def _migrate_old_appdata():
-    """从旧应用名目录迁移配置文件到新目录（仅升级时执行一次）。"""
-    if not os.path.isdir(_OLD_APPDATA_DIR):
-        return
-    os.makedirs(APPDATA_DIR, exist_ok=True)
-    for item in os.listdir(_OLD_APPDATA_DIR):
-        src = os.path.join(_OLD_APPDATA_DIR, item)
-        dst = os.path.join(APPDATA_DIR, item)
-        if os.path.exists(dst):
-            continue
-        if os.path.isfile(src):
-            shutil.copy2(src, dst)
-        elif os.path.isdir(src):
-            shutil.copytree(src, dst)
-
+from config_funcs import migrate_old_appdata as _migrate_old_appdata
 
 _migrate_old_appdata()
 
@@ -48,51 +29,13 @@ CONFIG_FILE = os.path.join(APPDATA_DIR, "data_path.conf")
 _SALT = b'population_config_salt_v1'
 
 
-def _get_machine_key():
-    if sys.platform == "win32":
-        info = (os.environ.get("COMPUTERNAME", "") + os.environ.get("USERNAME", "")).encode()
-    else:
-        info = (os.environ.get("HOSTNAME", "") + os.environ.get("USER", "")).encode()
-    
-    kdf = PBKDF2HMAC(
-        algorithm=hashes.SHA256(),
-        length=32,
-        salt=_SALT,
-        iterations=100000,
-    )
-    key = base64.urlsafe_b64encode(kdf.derive(info))
-    return key
-
-
-def _get_fernet():
-    key = _get_machine_key()
-    return Fernet(key)
-
-
-def encrypt_path(path):
-    fernet = _get_fernet()
-    encrypted = fernet.encrypt(path.encode("utf-8"))
-    return base64.b64encode(encrypted).decode("ascii")
-
-
-def decrypt_path(token):
-    fernet = _get_fernet()
-    encrypted = base64.b64decode(token)
-    return fernet.decrypt(encrypted).decode("utf-8")
-
-
-def get_data_dir():
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                token = f.read().strip()
-            if token:
-                path = decrypt_path(token)
-                if os.path.isdir(path):
-                    return path
-        except Exception:
-            pass
-    return BASE_DIR
+from config_funcs import (
+    get_machine_key as _get_machine_key,
+    get_fernet as _get_fernet,
+    encrypt_path,
+    decrypt_path,
+    get_data_dir,
+)
 
 
 DATA_DIR = get_data_dir()
@@ -218,10 +161,4 @@ FONT_NAME = "微软雅黑"
 FONT_SIZE = 10
 
 
-def ensure_dirs():
-    os.makedirs(PHOTOS_DIR, exist_ok=True)
-    os.makedirs(BACKUP_DIR, exist_ok=True)
-    os.makedirs(LOG_DIR, exist_ok=True)
-    os.makedirs(CERT_DIR, exist_ok=True)
-    os.makedirs(REPORTS_DIR, exist_ok=True)
-    os.makedirs(UPDATES_DIR, exist_ok=True)
+from config_funcs import ensure_dirs
