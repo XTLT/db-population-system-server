@@ -1,94 +1,15 @@
-from utils.security import get_client_ip
-from flask import request, jsonify
+"""已删除人员路由注册入口（函数实现见 deleted_funcs/）。"""
 
-from database import get_session, get_deleted_persons, recover_person, purge_deleted_persons, DeletedPerson, add_operation_log
-from utils.security import require_auth
 from . import bp
+from .deleted_funcs import (
+    api_list_deleted,
+    api_recover_person,
+    api_purge_deleted,
+)
 
-
-def _deleted_to_dict(d):
-    """把 DeletedPerson ORM 对象序列化为前端期望的 dict。"""
-    return {
-        'id': d.id,
-        'original_id': d.original_id,
-        'hu_hao': d.hu_hao,
-        'id_card': d.id_card,
-        'name': d.name,
-        'age': d.age or '',
-        'address': d.address or '',
-        'group_name': getattr(d, 'group_name', '') or '',
-        'relation': d.relation or '',
-        'deleted_at': d.deleted_at or '',
-    }
-
-
-@bp.route('/deleted', methods=['GET'])
-@require_auth
-def api_list_deleted():
-    """列出已删除人员（供“找回人员”弹窗使用）。"""
-    deleted = get_deleted_persons()
-    return jsonify([_deleted_to_dict(d) for d in deleted])
-
-
-@bp.route('/recover/<deleted_id>', methods=['POST'])
-@require_auth
-def api_recover_person(deleted_id):
-    """找回（恢复）已删除人员。"""
-    if request.current_user.get('role') != 'admin':
-        return jsonify({'success': False, 'error': '权限不足'}), 403
-
-    # 先确认该删除记录存在，否则 recover_person 会静默不做事
-    session = get_session()
-    try:
-        deleted = session.query(DeletedPerson).filter(DeletedPerson.id == deleted_id).first()
-        if deleted is None:
-            return jsonify({'success': False, 'error': '该删除记录不存在或已被找回'}), 404
-        name = deleted.name
-        id_card = deleted.id_card
-    finally:
-        session.close()
-
-    try:
-        recover_person(deleted_id)
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'找回失败: {e}'}), 500
-
-    add_operation_log(
-        request.current_user['id'],
-        request.current_user['username'],
-        "找回人员",
-        f"{name}({id_card[:6]}****{id_card[-4:]})" if id_card else name,
-        get_client_ip(),
-        "Web",
-        "是"
-    )
-    return jsonify({'success': True})
-
-
-@bp.route('/deleted/purge', methods=['POST'])
-@require_auth
-def api_purge_deleted():
-    """物理清理超过指定天数的已删除记录（默认 90 天，管理员）。"""
-    if request.current_user.get('role') != 'admin':
-        return jsonify({'success': False, 'error': '权限不足'}), 403
-    body = request.get_json(silent=True) or {}
-    try:
-        days = int(body.get('days', 90) or 90)
-    except (TypeError, ValueError):
-        return jsonify({'success': False, 'error': 'days 必须为正整数'}), 400
-    if days < 1:
-        return jsonify({'success': False, 'error': 'days 必须为正整数'}), 400
-    try:
-        count = purge_deleted_persons(days=days)
-    except Exception as e:
-        return jsonify({'success': False, 'error': f'清理失败: {e}'}), 500
-    add_operation_log(
-        request.current_user['id'],
-        request.current_user['username'],
-        "清理删除记录",
-        f"物理清理{count}条（保留{days}天内）",
-        get_client_ip(),
-        "Web",
-        "是"
-    )
-    return jsonify({'success': True, 'purged': count})
+bp.add_url_rule('/deleted', endpoint='api_list_deleted', view_func=api_list_deleted,
+                methods=['GET'])
+bp.add_url_rule('/recover/<deleted_id>', endpoint='api_recover_person',
+                view_func=api_recover_person, methods=['POST'])
+bp.add_url_rule('/deleted/purge', endpoint='api_purge_deleted',
+                view_func=api_purge_deleted, methods=['POST'])
