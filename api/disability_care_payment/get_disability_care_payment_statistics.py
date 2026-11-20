@@ -2,6 +2,7 @@ from flask import request, jsonify
 from sqlalchemy import distinct
 
 from utils.security import require_auth
+from utils.to_amount import to_amount
 from database import get_session, DisabilityCarePayment
 from . import bp
 
@@ -27,7 +28,7 @@ def get_disability_care_payment_statistics():
             ).all()
 
             count = len(records)
-            amount = sum(float(p.amount or 0) for p in records)
+            amount = sum(to_amount(p.amount) for p in records)
 
             by_year.append({
                 'year': year,

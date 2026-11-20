@@ -1,4 +1,5 @@
 from database import get_session, LandSubsidy
+from utils.to_amount import to_amount
 
 
 def get_person_subsidy_total(id_card: str, subsidy_year: str = None) -> str:
@@ -14,7 +15,7 @@ def get_person_subsidy_total(id_card: str, subsidy_year: str = None) -> str:
         total = 0.0
         for s in subsidies:
             try:
-                total += float(s.total_amount)
+                total += to_amount(s.total_amount)
             except (ValueError, TypeError):
                 pass
         return f"{total:.2f}" if total > 0 else ""

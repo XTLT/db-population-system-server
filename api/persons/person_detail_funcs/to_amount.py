@@ -1,8 +1,3 @@
-"""把库里的金额字符串转成 float，非法值按 0 处理。"""
+"""把库里的金额字符串转成 float（唯一实现见 utils/to_amount.py，此文件仅转发）。"""
 
-
-def to_amount(value) -> float:
-    try:
-        return float(str(value or "").replace(",", "").strip())
-    except (TypeError, ValueError):
-        return 0.0
+from utils.to_amount import to_amount  # noqa: F401

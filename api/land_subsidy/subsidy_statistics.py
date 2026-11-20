@@ -1,16 +1,14 @@
 from flask import jsonify
 
 from utils.security import require_auth
+from utils.to_amount import to_amount
 from database import get_session, LandSubsidy
 from . import bp
 
 
 def _to_float(value):
-    """字符串转浮点数，失败返回 0。"""
-    try:
-        return float(value) if value else 0.0
-    except (ValueError, TypeError):
-        return 0.0
+    """字符串转浮点数（兼容千分位），失败返回 0。"""
+    return to_amount(value)
 
 
 @bp.route('/land_subsidy/statistics')

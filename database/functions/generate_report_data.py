@@ -3,6 +3,7 @@
 from ..models.student_education import StudentEducation
 from ..models.land_subsidy import LandSubsidy
 from .._base import get_session
+from utils.to_amount import to_amount
 from .get_person_distribution import get_person_distribution
 from .get_person_trend_data import get_person_trend_data
 from .get_person_comparison import get_person_comparison
@@ -156,7 +157,7 @@ def generate_report_data(report_type: str, dimensions: list,
                     for s in subsidies:
                         year = s.year or '未知'
                         year_counts[year] = year_counts.get(year, 0) + 1
-                        amount = float(s.total_amount) if s.total_amount else 0
+                        amount = to_amount(s.total_amount)
                         year_amounts[year] = year_amounts.get(year, 0) + amount
                     result['labels'] = list(year_counts.keys())
                     result['values'] = list(year_amounts.values())
@@ -175,7 +176,7 @@ def generate_report_data(report_type: str, dimensions: list,
                     }
                     for s in subsidies:
                         try:
-                            amount = float(s.total_amount) if s.total_amount else 0
+                            amount = to_amount(s.total_amount)
                             if amount < 500:
                                 amount_ranges['0-500'] += 1
                             elif amount < 1000:
