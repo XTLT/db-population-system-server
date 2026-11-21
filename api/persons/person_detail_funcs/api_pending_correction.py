@@ -5,6 +5,7 @@ from sqlalchemy import or_
 from utils.security import require_auth
 
 from database import get_session, Person
+from database.models.pending_correction_handled import PendingCorrectionHandled
 from .subsidy_modules import SUBSIDY_MODULES
 from .to_amount import to_amount
 
@@ -13,15 +14,21 @@ from .to_amount import to_amount
 def api_pending_correction():
     """只读排查清单，不修改任何数据。
 
-    没有补贴记录的人不会进入本清单（说明已经干净）。
+    没有补贴记录的人不会进入本清单（说明已经干净）；
+    已标记"已核销"的人也不再出现。
     """
     session = get_session()
     try:
+        handled_ids = {
+            row.person_id
+            for row in session.query(PendingCorrectionHandled).all()
+        }
         persons = (
             session.query(Person)
             .filter(or_(Person.is_dead == '是', Person.is_migrated == '是'))
             .all()
         )
+        persons = [p for p in persons if p.id not in handled_ids]
         if not persons:
             return jsonify({'total': 0, 'items': []})
 

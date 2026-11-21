@@ -93,6 +93,7 @@ from .functions.get_unread_count import get_unread_count
 from .functions.ensure_age_notifications import ensure_age_notifications
 from .functions.list_age_notice import list_age_notice
 from .functions.mark_age_notice_handled import mark_age_notice_handled
+from .functions.mark_pending_correction_handled import mark_pending_correction_handled
 from .functions.get_person_trend_data import get_person_trend_data
 from .functions.get_person_distribution import get_person_distribution
 from .functions.get_person_comparison import get_person_comparison
@@ -188,6 +189,7 @@ __all__ = [
     "ensure_age_notifications",
     "list_age_notice",
     "mark_age_notice_handled",
+    "mark_pending_correction_handled",
     "get_person_trend_data",
     "get_person_distribution",
     "get_person_comparison",

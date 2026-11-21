@@ -16,4 +16,5 @@ from .report_operation_log import ReportOperationLog
 from .report_file import ReportFile
 from .notification import Notification
 from .age_notice_handled import AgeNoticeHandled
+from .pending_correction_handled import PendingCorrectionHandled
 from .custom_report import CustomReport

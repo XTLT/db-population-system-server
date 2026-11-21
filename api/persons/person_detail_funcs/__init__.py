@@ -10,6 +10,7 @@ from .add_health_item import add_health_item
 from .api_person import api_person
 from .api_person_subsidies import api_person_subsidies
 from .api_pending_correction import api_pending_correction
+from .api_mark_pending_correction import api_mark_pending_correction_handled
 from .api_data_health import api_data_health
 from .subsidy_modules import SUBSIDY_MODULES, MAX_RECORDS, DATA_HEALTH_MAX_ITEMS
 
@@ -21,6 +22,7 @@ __all__ = [
     'api_person',
     'api_person_subsidies',
     'api_pending_correction',
+    'api_mark_pending_correction_handled',
     'api_data_health',
     'SUBSIDY_MODULES',
     'MAX_RECORDS',

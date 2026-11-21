@@ -9,6 +9,7 @@ from .person_detail_funcs import (
     api_person,
     api_person_subsidies,
     api_pending_correction,
+    api_mark_pending_correction_handled,
     api_data_health,
 )
 
@@ -22,6 +23,12 @@ bp.add_url_rule(
     '/persons/pending-correction',
     endpoint='api_pending_correction',
     view_func=api_pending_correction,
+)
+bp.add_url_rule(
+    '/persons/pending-correction/handled',
+    endpoint='api_mark_pending_correction_handled',
+    view_func=api_mark_pending_correction_handled,
+    methods=['POST'],
 )
 bp.add_url_rule(
     '/persons/data-health',
