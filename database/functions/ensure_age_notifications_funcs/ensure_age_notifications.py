@@ -80,18 +80,6 @@ def ensure_age_notifications(today=None, force=False):
                 _fill_notification(existing, age, target_month, persons)
             changed += 1
 
-        # 更早月份的到龄提醒已过期，直接从通知中心清掉，
-        # 避免旧名单里的人一直挂在提醒里。
-        current_ids = {
-            "notif_age%d_%d%02d" % (age, target_year, target_month)
-            for age in (60, 80)
-        }
-        for stale in session.query(Notification).filter(
-                Notification.id.like("notif_age%")).all():
-            if stale.id not in current_ids:
-                session.delete(stale)
-                changed += 1
-
         if changed:
             try:
                 session.commit()
