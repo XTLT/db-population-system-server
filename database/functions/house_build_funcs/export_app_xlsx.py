@@ -10,7 +10,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 
-from .template_texts import APPLICANT_SIGN, VILLAGE_SIGN
+from .template_texts import APPLICANT_SIGN, VILLAGE_SIGN, APPROVAL_SIGN
 
 TEMPLATE = Path(__file__).resolve().parents[3] / 'house_build_templates' / '建房资料空表.xlsx'
 
@@ -170,7 +170,7 @@ def _fill_apply(ws, app):
     # 落款贴单元格右下角：理由左对齐，落款行用空格顶到右侧（单元格内无法混排对齐）
     reason = _s(app.get('apply_reason'))
     opinion = _s(app.get('village_opinion'))
-    sign_pad = ' ' * 43
+    sign_pad = ' ' * 33
     _set(ws, 'B20', '%s\n\n%s%s' % (reason, sign_pad, APPLICANT_SIGN), wrap=True)
     _set(ws, 'B22', '%s\n%s%s' % (opinion, sign_pad, VILLAGE_SIGN), wrap=True)
     for coord in ('B20', 'B22'):
@@ -200,6 +200,13 @@ def _fill_approval(ws, app):
 
     # 五个机构意见格按空表原文打印（含示例意见、(盖章)、空白负责人/年月日），不写用户录入内容
     # 行高保持模板的 75，不参与自动加高（原文行数固定，加高会撑成两页）
+    # 负责人落款换成加宽空档的版本，只改字间距、文案不动，留出手写位置
+    for row in (12, 13, 14, 15, 16):
+        cell = ws['B%d' % row]
+        value = str(cell.value or '')
+        index = value.rfind('负责人：')
+        if index >= 0:
+            cell.value = value[:index] + ' ' * 30 + APPROVAL_SIGN
 
 
 def export_app_xlsx(app):
@@ -220,6 +227,11 @@ def export_app_xlsx(app):
         _fill_approval(approval_ws, app)
     wb.save(out_path)
     return out_path
+
+
+
+
+
 
 
 
