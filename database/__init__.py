@@ -103,6 +103,16 @@ from .functions.get_custom_report import get_custom_report
 from .functions.update_custom_report import update_custom_report
 from .functions.delete_custom_report import delete_custom_report
 from .functions.generate_report_data import generate_report_data
+from .functions.house_build_funcs import (
+    create_house_build_app,
+    delete_house_build_app,
+    export_app_pdf,
+    export_app_xlsx,
+    get_house_build_app,
+    list_house_build_apps,
+    prefill_by_id_card,
+    update_house_build_app,
+)
 
 __all__ = [
     # 常量 / Base
@@ -199,4 +209,12 @@ __all__ = [
     "update_custom_report",
     "delete_custom_report",
     "generate_report_data",
+    "create_house_build_app",
+    "update_house_build_app",
+    "delete_house_build_app",
+    "get_house_build_app",
+    "list_house_build_apps",
+    "prefill_by_id_card",
+    "export_app_xlsx",
+    "export_app_pdf",
 ]

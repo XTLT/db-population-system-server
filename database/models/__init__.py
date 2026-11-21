@@ -17,4 +17,5 @@ from .report_file import ReportFile
 from .notification import Notification
 from .age_notice_handled import AgeNoticeHandled
 from .pending_correction_handled import PendingCorrectionHandled
+from .house_build_app import HouseBuildApp, HouseBuildMember
 from .custom_report import CustomReport
