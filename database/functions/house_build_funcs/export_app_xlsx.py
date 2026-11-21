@@ -10,14 +10,14 @@ from pathlib import Path
 from openpyxl import load_workbook
 from openpyxl.styles import Alignment
 
+from .template_texts import APPLICANT_SIGN, VILLAGE_SIGN
+
 TEMPLATE = Path(__file__).resolve().parents[3] / 'house_build_templates' / '建房资料空表.xlsx'
 
 BUILD_TYPES = [(1, '原址翻建'), (2, '改扩建'), (3, '异址新建')]
 LAND_TYPES = [(1, '建设用地'), (2, '未利用地'), (3, '农用地(耕地、林地、草地、其它  )')]
 
-# 落款沿用空表原文，姓名/日期留空由当事人手写、盖章
-APPLICANT_SIGN = '\n\n\n申请人：               年   月     日'
-VILLAGE_SIGN = '\n                                   负责人：               年   月     日'
+# 落款沿用空表原文（template_texts），姓名/日期留空由当事人手写、盖章
 
 # 面积统一按“数值 m²”输出，输入自带的中文单位先剥掉
 AREA_UNIT_RE = re.compile(r'\s*(平方米|平米|m²|m2|㎡)\s*$', re.IGNORECASE)
@@ -107,7 +107,7 @@ def _set(ws, coord, value, wrap=False):
 def _autofit(ws, row, char_units, base_height, min_height=None):
     """按文本长度估算所需行高，超过原行高才放大，避免长文本被裁掉。"""
     values = []
-    for col in range(1, 10):
+    for col in range(2, 10):
         value = ws.cell(row=row, column=col).value
         if value:
             values.append(str(value))
@@ -167,19 +167,21 @@ def _fill_apply(ws, app):
     no = '√' if design in ('2', '否') else ''
     _set(ws, 'B19', '是否有农村住宅设计方案或拟采用的住宅建设通用图集：  1.是%s     2.否%s' % (yes, no), wrap=True)
 
+    # 落款贴单元格右下角：理由左对齐，落款行用空格顶到右侧（单元格内无法混排对齐）
     reason = _s(app.get('apply_reason'))
-    _set(ws, 'B20', '%s%s' % (reason, APPLICANT_SIGN), wrap=True)
-
     opinion = _s(app.get('village_opinion'))
-    _set(ws, 'B22', '%s%s' % (opinion, VILLAGE_SIGN), wrap=True)
+    sign_pad = ' ' * 43
+    _set(ws, 'B20', '%s\n\n%s%s' % (reason, sign_pad, APPLICANT_SIGN), wrap=True)
+    _set(ws, 'B22', '%s\n%s%s' % (opinion, sign_pad, VILLAGE_SIGN), wrap=True)
+    for coord in ('B20', 'B22'):
+        ws[coord].alignment = Alignment(horizontal='left', vertical='bottom', wrap_text=True)
 
-    _autofit(ws, 20, 8 * 5 + 8.43, 25.0, min_height=25.0)
-    _autofit(ws, 22, 8 * 5 + 8.43, 69.0, min_height=69.0)
+    # B:I 合并区总宽 98.375 字符（B/C/D/E/F/H=13、G=9.25、I=11.125），约 49 个汉字一行
+    _autofit(ws, 20, 98.375, 25.0, min_height=25.0)
+    _autofit(ws, 22, 98.375, 69.0, min_height=69.0)
 
 
 def _fill_approval(ws, app):
-    approvals = app.get('approvals') or {}
-
     _set(ws, 'C2', _s(app.get('owner_name')))
     _set(ws, 'E2', _s(app.get('owner_gender')))
     _set(ws, 'G2', _s(app.get('owner_id_card')))
@@ -187,7 +189,7 @@ def _fill_approval(ws, app):
     _set(ws, 'C4', _s(app.get('apply_reason')), wrap=True)
     _set(ws, 'C5', _area(app.get('approval_land_area')))
     _set(ws, 'G5', _area(app.get('approval_foundation_area')))
-    _set(ws, 'C6', _s(app.get('approval_address')))
+    _set(ws, 'C6', _s(app.get('approval_address')) or _s(app.get('owner_hukou')))
     _set(ws, 'C7', _four_to(app))
     _set(ws, 'C8', _four_from(app))
     _set(ws, 'G7', _tick(BUILD_TYPES, app.get('approval_build_type') or app.get('build_type'), '建房类型：'))
@@ -196,21 +198,8 @@ def _fill_approval(ws, app):
     _set(ws, 'F11', _s(app.get('approval_floors')))
     _set(ws, 'I11', _s(app.get('approval_height')))
 
-    mapping = [('natural', 12), ('housing', 13), ('agriculture', 14), ('other', 15), ('government', 16)]
-    for key, row in mapping:
-        item = approvals.get(key) or {}
-        opinion = _s(item.get('opinion'))
-        leader = _s(item.get('leader'))
-        date = _s(item.get('date'))
-        tail = []
-        if key in ('other', 'government'):
-            tail.append('(盖章)')
-        tail.append('')
-        tail.append('负责人：%s          %s' % (leader, date))
-        _set(ws, 'B%d' % row, '%s\n\n%s' % (opinion, '\n'.join(tail)), wrap=True)
-
-    for row in (12, 13, 14, 15, 16):
-        _autofit(ws, row, 8 * 5 + 8.43, 75.0, min_height=75.0)
+    # 五个机构意见格按空表原文打印（含示例意见、(盖章)、空白负责人/年月日），不写用户录入内容
+    # 行高保持模板的 75，不参与自动加高（原文行数固定，加高会撑成两页）
 
 
 def export_app_xlsx(app):
@@ -231,4 +220,6 @@ def export_app_xlsx(app):
         _fill_approval(approval_ws, app)
     wb.save(out_path)
     return out_path
+
+
 

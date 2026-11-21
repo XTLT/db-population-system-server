@@ -13,6 +13,14 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.platypus import Paragraph, SimpleDocTemplate, PageBreak, Spacer, Table, TableStyle
 
+from .template_texts import (
+    APPLICANT_SIGN,
+    VILLAGE_SIGN,
+    APPROVAL_HEADS,
+    APPROVAL_SEAL,
+    APPROVAL_SIGN,
+)
+
 FONT_PATH = Path(__file__).resolve().parents[3] / 'house_build_templates' / 'simhei.ttf'
 FONT_NAME = 'HBFont'
 _registered = False
@@ -20,9 +28,7 @@ _registered = False
 BUILD_TYPES = [(1, '原址翻建'), (2, '改扩建'), (3, '异址新建')]
 LAND_TYPES = [(1, '建设用地'), (2, '未利用地'), (3, '农用地(耕地、林地、草地、其它)')]
 
-# 落款沿用空表原文，姓名/日期留空由当事人手写、盖章
-APPLICANT_SIGN = '申请人：               年   月     日'
-VILLAGE_SIGN = '负责人：               年   月     日'
+# 落款与机构意见文案见 template_texts（与空表原文一致）
 
 AREA_UNIT_RE = re.compile(r'\s*(平方米|平米|m²|m2|㎡)\s*$', re.IGNORECASE)
 
@@ -336,7 +342,6 @@ def _build_approval(app, width, limit):
     ratios = (70.8, 49.2, 49.2, 49.2, 49.2, 49.2, 49.2, 41.6, 49.2)
     total = sum(ratios)
     col = [width * r / total for r in ratios]
-    approvals = app.get('approvals') or {}
 
     grid = [['' for _ in range(9)] for _ in range(17)]
 
@@ -360,7 +365,7 @@ def _build_approval(app, width, limit):
     put(4, 0, '拟批准\n宅基地\n及建房情况', 11, 1)
     put(4, 1, '宅基地面积', 9, 1); put_area(4, 2, app.get('approval_land_area'), 10, 1)
     put(4, 5, '房基占地\n面积', 9, 1); put_area(4, 6, app.get('approval_foundation_area'), 10, 1)
-    put(5, 1, '地址', 10, 1); put(5, 2, _s(app.get('approval_address')), 10, 0)
+    put(5, 1, '地址', 10, 1); put(5, 2, _s(app.get('approval_address')) or _s(app.get('owner_hukou')), 10, 0)
     put(6, 1, '四至', 10, 1)
     put(6, 2, '东至：%s        南至：%s' % (_s(app.get('east_to')), _s(app.get('south_to'))), 9, 0)
     put(7, 2, '   西至：%s             北至：%s' % (_s(app.get('west_to')), _s(app.get('north_to'))), 9, 0)
@@ -381,11 +386,15 @@ def _build_approval(app, width, limit):
     ]
     for index, (key, label) in enumerate(labels):
         row = 11 + index
-        item = approvals.get(key) or {}
         put(row, 0, label, 9, 1)
-        tail = '(盖章)\n\n' if key in ('other', 'government') else ''
-        put(row, 1, '%s\n\n%s负责人：%s          %s' % (
-            _s(item.get('opinion')), tail, _s(item.get('leader')), _s(item.get('date'))), 9, 0)
+        # 意见格按空表原文：示例意见 + (盖章) + 空白负责人/年月日，落款贴右下角
+        grid[row][1] = [
+            _p(APPROVAL_HEADS.get(key, ''), 9, 1),
+            Spacer(1, 4),
+            _p(APPROVAL_SEAL, 9, 1),
+            Spacer(1, 10),
+            _p(APPROVAL_SIGN, 9, 2),
+        ]
 
     put(16, 1, '1.其他机构部门审批意见由各地根据实际情况进行添加；\n'
                '2.宅基地涉及占用耕地的，宅基地面积最高不超过170平方米：宅基地不涉及占用耕地的，\n'
@@ -420,12 +429,8 @@ def _build_approval(app, width, limit):
     body_width = sum(col[1:])
     for index, (key, _label) in enumerate(labels):
         row = 11 + index
-        item = approvals.get(key) or {}
-        text = '%s\n\n%s负责人：%s          %s' % (
-            _s(item.get('opinion')),
-            '(盖章)\n\n' if key in ('other', 'government') else '',
-            _s(item.get('leader')), _s(item.get('date')))
-        need = _need_height(text, body_width, 9)
+        head = APPROVAL_HEADS.get(key, '')
+        need = _need_height(head, body_width, 9) + 4 + 13 + 10 + 13 + 4
         if need > heights[row]:
             heights[row] = need
 
@@ -435,6 +440,7 @@ def _build_approval(app, width, limit):
         spans + [
             ('GRID', (0, 0), (-1, -1), 0.6, '#000000'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('VALIGN', (1, 11), (8, 15), 'BOTTOM'),
             ('LEFTPADDING', (0, 0), (-1, -1), 3),
             ('RIGHTPADDING', (0, 0), (-1, -1), 3),
             ('TOPPADDING', (0, 0), (-1, -1), 2),
