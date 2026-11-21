@@ -239,3 +239,9 @@ def migrate_db(engine):
             conn.commit()
         except Exception:
             pass
+        # 待核销核销快照（2026-11-21：核销后新增补贴要重新回到清单）
+        try:
+            conn.execute(text("ALTER TABLE pending_correction_handled ADD COLUMN snapshot VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass

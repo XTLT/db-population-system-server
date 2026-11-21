@@ -1,12 +1,16 @@
 """POST /api/persons/pending-correction/handled：把待核销清单里的人标记为已核销。
 
-标记后该人不再出现在待核销清单；名下补贴记录本身不动（仍需到对应模块处理）。
+核销后该人不再出现在待核销清单；名下补贴记录本身不动（仍需到对应模块处理）。
+核销时的补贴快照（模块 / 笔数 / 合计金额）由服务端按当前数据现算并存下，
+之后补发/新增了补贴（快照签名变化）该人会重新回到清单。
 """
 
 from flask import jsonify, request
 
-from database import add_operation_log, mark_pending_correction_handled
+from database import add_operation_log, get_session, mark_pending_correction_handled
 from utils.security import get_client_ip, require_auth
+from .subsidy_snapshot import signature_for_person
+from .to_amount import to_amount
 
 
 @require_auth
@@ -18,12 +22,17 @@ def api_mark_pending_correction_handled():
 
     name = (data.get('name') or '').strip()
     id_card = (data.get('id_card') or '').strip()
-    labels = (data.get('module_labels') or '').strip()
+
+    # 快照以服务端现算的为准，不信任客户端传来的
+    session = get_session()
     try:
-        module_count = int(data.get('module_count') or 0)
-    except (TypeError, ValueError):
-        module_count = 0
-    total_amount = (data.get('total_amount') or '').strip()
+        snapshot, module_list = signature_for_person(session, id_card)
+    finally:
+        session.close()
+    labels = '、'.join([m['label'] for m in module_list])
+    module_count = len(module_list)
+    amount_sum = sum(to_amount(m.get('total_amount') or '') for m in module_list)
+    total_amount = f"{amount_sum:.2f}" if amount_sum else ''
 
     user = request.current_user
     try:
@@ -35,6 +44,7 @@ def api_mark_pending_correction_handled():
             module_labels=labels,
             module_count=module_count,
             total_amount=total_amount,
+            snapshot=snapshot,
         )
         add_operation_log(
             user['id'],

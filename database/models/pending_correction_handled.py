@@ -16,5 +16,7 @@ class PendingCorrectionHandled(Base):
     module_labels = Column(String, default="")  # 核销时挂着的补贴模块，逗号分隔
     module_count = Column(Integer, default=0)
     total_amount = Column(String, default="")
+    # 核销当时的补贴记录签名（模块:笔数:合计金额）；之后签名变了说明有新补贴，重新回到清单
+    snapshot = Column(String, default="")
     handled_at = Column(String, default="")
     handled_by = Column(String, default="")
