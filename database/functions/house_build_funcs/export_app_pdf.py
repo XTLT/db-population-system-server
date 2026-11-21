@@ -1,6 +1,7 @@
 """用 reportlab 按原表版式重排两张表，每张一页 A4 纵向，中文字体 simhei。"""
 
 import os
+import re
 import tempfile
 from pathlib import Path
 from xml.sax.saxutils import escape
@@ -18,6 +19,12 @@ _registered = False
 
 BUILD_TYPES = [(1, '原址翻建'), (2, '改扩建'), (3, '异址新建')]
 LAND_TYPES = [(1, '建设用地'), (2, '未利用地'), (3, '农用地(耕地、林地、草地、其它)')]
+
+# 落款沿用空表原文，姓名/日期留空由当事人手写、盖章
+APPLICANT_SIGN = '申请人：               年   月     日'
+VILLAGE_SIGN = '负责人：               年   月     日'
+
+AREA_UNIT_RE = re.compile(r'\s*(平方米|平米|m²|m2|㎡)\s*$', re.IGNORECASE)
 
 
 def _ensure_font():
@@ -38,6 +45,66 @@ def _s(value):
     return '' if value is None else str(value).strip()
 
 
+def _area_text(value):
+    """面积值统一成 "120.5"，单位在渲染时单独画上标。"""
+    text = _s(value)
+    if not text:
+        return ''
+    return AREA_UNIT_RE.sub('', text).strip()
+
+
+def _area_p(value, size=10, align=1):
+    """面积段落：数字 + 上标 m²（simhei 没有 ² 字形，用上标画出来）。"""
+    text = _area_text(value)
+    if not text:
+        return ''
+    font = _ensure_font()
+    style = ParagraphStyle(
+        'hbarea%d_%d' % (size, align),
+        fontName=font,
+        fontSize=size,
+        leading=size * 1.45,
+        alignment=align,
+        wordWrap='CJK',
+    )
+    return Paragraph('%s m<super rise=2 size=6>2</super>' % escape(text), style)
+
+
+def _area_markup(value, size=10):
+    """面积的内联标记：数字 + 上标 2，前后不再带单位文字。"""
+    text = _area_text(value)
+    if not text:
+        return ''
+    return '%s m<super rise=2 size=%d>2</super>' % (escape(text), max(4, int(size * 0.6)))
+
+
+def _pick(options, selected):
+    """把选中值归一到一个选项名：支持序号、选项名、"1.原址翻建"、部分关键词。
+    空值返回 None，绝不再因为空串而把所有选项都打勾。"""
+    sel = _s(selected)
+    if not sel:
+        return None
+    for no, name in options:
+        if sel == str(no) or sel == name:
+            return name
+    for no, name in options:
+        if sel.startswith('%d.' % no) or ('%d.' % no) in sel:
+            return name
+    for no, name in options:
+        if len(sel) >= 2 and (sel in name or name in sel):
+            return name
+    return None
+
+
+def _tick(options, selected, head, sep='\n'):
+    """只勾唯一命中的那一个选项。"""
+    pick = _pick(options, selected)
+    return '%s%s' % (head, sep.join(
+        '%d.%s%s' % (no, name, '√' if name == pick else '')
+        for no, name in options
+    ))
+
+
 def _p(text, size=10, align=0, leading=None):
     font = _ensure_font()
     style = ParagraphStyle(
@@ -51,6 +118,20 @@ def _p(text, size=10, align=0, leading=None):
     return Paragraph(escape(_s(text)).replace('\n', '<br/>'), style)
 
 
+def _raw_p(markup, size=10, align=0):
+    """已是 reportlab 标记的段落，不再转义。"""
+    font = _ensure_font()
+    style = ParagraphStyle(
+        'hbraw%d_%d' % (size, align),
+        fontName=font,
+        fontSize=size,
+        leading=size * 1.45,
+        alignment=align,
+        wordWrap='CJK',
+    )
+    return Paragraph(markup.replace('\n', '<br/>'), style)
+
+
 def _need_height(text, width, size=10):
     text = _s(text)
     if not text:
@@ -60,14 +141,6 @@ def _need_height(text, width, size=10):
     for seg in text.split('\n'):
         lines += max(1, (len(seg) + per_line - 1) // per_line)
     return lines * (size * 1.45) + 8
-
-
-def _tick(options, selected, head, sep='\n'):
-    sel = _s(selected)
-    return '%s%s' % (head, sep.join(
-        '%d.%s%s' % (no, name, '√' if (sel == str(no) or sel == name or sel in name) else '')
-        for no, name in options
-    ))
 
 
 def _fit_heights(heights, limit, floor=16.0):
@@ -87,13 +160,25 @@ def _date_cn(value):
 
 
 def _disposal_text(app):
+    """现宅基地处置情况：纯文本版（供高度估算）。"""
     mode = _s(app.get('current_disposal'))
-    area = _s(app.get('current_land_area'))
+    area = _area_text(app.get('current_land_area'))
     other = _s(app.get('current_disposal_other'))
-    keep = '√' if mode in ('1', '保留', '保留') else ''
+    keep = '√' if mode in ('1', '保留') else ''
     back = '√' if (mode in ('2', '退给村集体') or '退' in mode) else ''
     oth = '√' if mode in ('3', '其他') else ''
-    return '1.保留( %s 平方米)%s;2.退给村集体%s；3.其他(%s)%s' % (area, keep, back, other, oth)
+    return '1.保留( %s m² )%s;2.退给村集体%s；3.其他(%s)%s' % (area, keep, back, other, oth)
+
+
+def _disposal_markup(app, size=9):
+    """现宅基地处置情况：带 m 上标 2 的段落标记。"""
+    mode = _s(app.get('current_disposal'))
+    area = _area_markup(app.get('current_land_area'), size)
+    other = escape(_s(app.get('current_disposal_other')))
+    keep = '√' if mode in ('1', '保留') else ''
+    back = '√' if (mode in ('2', '退给村集体') or '退' in mode) else ''
+    oth = '√' if mode in ('3', '其他') else ''
+    return '1.保留( %s )%s;2.退给村集体%s；3.其他(%s)%s' % (area, keep, back, other, oth)
 
 
 def _build_apply(app, width, limit):
@@ -107,6 +192,20 @@ def _build_apply(app, width, limit):
 
     def put(row, colno, text, size=10, align=0):
         grid[row][colno] = _p(text, size, align) if text is not None else ''
+
+    def put_area(row, colno, value, size=10, align=1):
+        grid[row][colno] = _area_p(value, size, align)
+
+    def put_raw(row, colno, markup, size=9, align=0):
+        grid[row][colno] = _raw_p(markup, size, align)
+
+    def put_sign(row, colno, text, sign, size=10):
+        flow = []
+        if text:
+            flow.append(_p(text, size, 0))
+        flow.append(Spacer(1, 14))
+        flow.append(_p(sign, size, 2))
+        grid[row][colno] = flow
 
     put(0, 0, '农村宅基地和建房(规划许可)申请表', 16, 1)
     put(1, 0, '申请人信息', 11, 1)
@@ -133,15 +232,14 @@ def _build_apply(app, width, limit):
         put(row, 6, _s(member.get('hukou')), 10, 1)
 
     put(9, 0, '拟申请\n宅基地\n及建房\n(规划许可)\n情况', 11, 1)
-    put(9, 1, '宅基地面积', 10, 1); put(9, 3, _s(app.get('apply_land_area')), 10, 1)
-    put(9, 4, '建筑面积', 10, 1); put(9, 5, _s(app.get('building_area')), 10, 1)
+    put(9, 1, '宅基地面积', 10, 1); put_area(9, 3, app.get('apply_land_area'), 10, 1)
+    put(9, 4, '建筑面积', 10, 1); put_area(9, 5, app.get('building_area'), 10, 1)
     put(9, 6, '权属证书号', 9, 1); put(9, 7, _s(app.get('cert_no')), 9, 1)
 
     put(10, 1, '现宅基地处置情况', 10, 1)
-    put(10, 3, _disposal_text(app), 9, 0)
-
-    put(11, 1, '宅基地面积', 10, 1); put(11, 3, _s(app.get('current_land_area')), 10, 1)
-    put(11, 5, '房基占地面积', 10, 1); put(11, 7, _s(app.get('foundation_area')), 10, 1)
+    put_raw(10, 3, _disposal_markup(app, 9), 9, 0)
+    put(11, 1, '宅基地面积', 10, 1); put_area(11, 3, app.get('current_land_area'), 10, 1)
+    put(11, 5, '房基占地面积', 10, 1); put_area(11, 7, app.get('foundation_area'), 10, 1)
 
     put(12, 1, '四至', 10, 1)
     put(12, 2, '东至：%s        南至：%s' % (_s(app.get('east_to')), _s(app.get('south_to'))), 9, 0)
@@ -151,7 +249,7 @@ def _build_apply(app, width, limit):
     put(14, 1, '地类', 10, 1)
     put(14, 2, _tick(LAND_TYPES, app.get('land_type'), '', '    '), 9, 0)
 
-    put(16, 1, '住房建筑面积', 10, 1); put(16, 3, _s(app.get('house_floor_area')), 10, 1)
+    put(16, 1, '住房建筑面积', 10, 1); put_area(16, 3, app.get('house_floor_area'), 10, 1)
     put(16, 4, '建筑\n层数', 10, 1); put(16, 5, _s(app.get('floors')), 10, 1)
     put(16, 6, '建筑高度', 10, 1); put(16, 7, _s(app.get('building_height')), 10, 1)
 
@@ -166,12 +264,10 @@ def _build_apply(app, width, limit):
     put(18, 1, '是否有农村住宅设计方案或拟采用的住宅建设通用图集：  1.是%s     2.否%s' % (yes, no), 9, 0)
 
     put(19, 0, '申请理由', 11, 1)
-    put(19, 1, '%s\n\n申请人：%s          %s' % (
-        _s(app.get('apply_reason')), _s(app.get('owner_name')), _date_cn(app.get('created_at'))), 10, 0)
+    put_sign(19, 1, _s(app.get('apply_reason')), APPLICANT_SIGN, 10)
 
     put(21, 0, '村集体经济\n组织或村民\n委员会意见', 11, 1)
-    put(21, 1, '%s\n\n负责人：%s          %s' % (
-        _s(app.get('village_opinion')), _s(app.get('village_leader')), _s(app.get('village_date'))), 10, 0)
+    put_sign(21, 1, _s(app.get('village_opinion')), VILLAGE_SIGN, 10)
 
     put(22, 0, '备注', 10, 1)
     put(22, 1, '宅基地涉及占用耕地的，宅基地面积最高不超过170平方米；宅基地不涉及占用耕地的，\n'
@@ -208,14 +304,12 @@ def _build_apply(app, width, limit):
 
     heights = [28.0] + [25.0] * 18 + [25.0, 25.0] + [69.0, 30.0]
 
-    reason_text = '%s\n\n申请人：%s          %s' % (
-        _s(app.get('apply_reason')), _s(app.get('owner_name')), _date_cn(app.get('created_at')))
+    reason_text = '%s\n\n%s' % (_s(app.get('apply_reason')), APPLICANT_SIGN)
     need = _need_height(reason_text, width - col[0], 10)
     if need > heights[19] + heights[20]:
         heights[20] += need - heights[19] - heights[20]
 
-    village_text = '%s\n\n负责人：%s          %s' % (
-        _s(app.get('village_opinion')), _s(app.get('village_leader')), _s(app.get('village_date')))
+    village_text = '%s\n\n%s' % (_s(app.get('village_opinion')), VILLAGE_SIGN)
     need = _need_height(village_text, width - col[0], 10)
     if need > heights[21]:
         heights[21] = need
@@ -226,6 +320,8 @@ def _build_apply(app, width, limit):
         spans + [
             ('GRID', (0, 0), (-1, -1), 0.6, '#000000'),
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('VALIGN', (1, 19), (8, 20), 'BOTTOM'),
+            ('VALIGN', (1, 21), (8, 21), 'BOTTOM'),
             ('LEFTPADDING', (0, 0), (-1, -1), 3),
             ('RIGHTPADDING', (0, 0), (-1, -1), 3),
             ('TOPPADDING', (0, 0), (-1, -1), 2),
@@ -247,6 +343,9 @@ def _build_approval(app, width, limit):
     def put(row, colno, text, size=10, align=0):
         grid[row][colno] = _p(text, size, align) if text is not None else ''
 
+    def put_area(row, colno, value, size=10, align=1):
+        grid[row][colno] = _area_p(value, size, align)
+
     put(0, 0, '农村宅基地和建房(规划许可)审批表', 16, 1)
     put(1, 0, '申请人信息', 11, 1)
     put(1, 1, '姓名', 10, 1); put(1, 2, _s(app.get('owner_name')), 10, 1)
@@ -259,17 +358,17 @@ def _build_approval(app, width, limit):
     put(3, 2, _s(app.get('apply_reason')), 10, 0)
 
     put(4, 0, '拟批准\n宅基地\n及建房情况', 11, 1)
-    put(4, 1, '宅基地面积', 9, 1); put(4, 2, _s(app.get('approval_land_area')), 10, 1)
-    put(4, 5, '房基占地\n面积', 9, 1); put(4, 6, _s(app.get('approval_foundation_area')), 10, 1)
+    put(4, 1, '宅基地面积', 9, 1); put_area(4, 2, app.get('approval_land_area'), 10, 1)
+    put(4, 5, '房基占地\n面积', 9, 1); put_area(4, 6, app.get('approval_foundation_area'), 10, 1)
     put(5, 1, '地址', 10, 1); put(5, 2, _s(app.get('approval_address')), 10, 0)
     put(6, 1, '四至', 10, 1)
     put(6, 2, '东至：%s        南至：%s' % (_s(app.get('east_to')), _s(app.get('south_to'))), 9, 0)
     put(7, 2, '   西至：%s             北至：%s' % (_s(app.get('west_to')), _s(app.get('north_to'))), 9, 0)
-    put(6, 6, _tick(BUILD_TYPES, app.get('approval_build_type'), '建房类型：'), 9, 0)
+    put(6, 6, _tick(BUILD_TYPES, app.get('approval_build_type') or app.get('build_type'), '建房类型：'), 9, 0)
     put(8, 1, '地类', 10, 1)
-    put(8, 2, _tick(LAND_TYPES, app.get('approval_land_type'), '', '    '), 9, 0)
+    put(8, 2, _tick(LAND_TYPES, app.get('approval_land_type') or app.get('land_type'), '', '    '), 9, 0)
 
-    put(10, 1, '住房建筑面积', 10, 1); put(10, 3, _s(app.get('approval_house_floor_area')), 10, 1)
+    put(10, 1, '住房建筑面积', 10, 1); put_area(10, 3, app.get('approval_house_floor_area'), 10, 1)
     put(10, 4, '建筑层数', 10, 1); put(10, 5, _s(app.get('approval_floors')), 10, 1)
     put(10, 6, '建筑高度', 10, 1); put(10, 8, _s(app.get('approval_height')), 10, 1)
 

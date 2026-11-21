@@ -2,6 +2,7 @@
 
 import math
 import os
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -14,16 +15,52 @@ TEMPLATE = Path(__file__).resolve().parents[3] / 'house_build_templates' / '建�
 BUILD_TYPES = [(1, '原址翻建'), (2, '改扩建'), (3, '异址新建')]
 LAND_TYPES = [(1, '建设用地'), (2, '未利用地'), (3, '农用地(耕地、林地、草地、其它  )')]
 
+# 落款沿用空表原文，姓名/日期留空由当事人手写、盖章
+APPLICANT_SIGN = '\n\n\n申请人：               年   月     日'
+VILLAGE_SIGN = '\n                                   负责人：               年   月     日'
+
+# 面积统一按“数值 m²”输出，输入自带的中文单位先剥掉
+AREA_UNIT_RE = re.compile(r'\s*(平方米|平米|m²|m2|㎡)\s*$', re.IGNORECASE)
+
 
 def _s(value):
     return '' if value is None else str(value).strip()
 
 
-def _tick(options, selected, head, sep='\n'):
-    """把选项文本按选中项打 √：支持传序号 "1" 或选项名。"""
+def _area(value):
+    """面积值统一成 “120.5 m²”，空值保持空。"""
+    text = _s(value)
+    if not text:
+        return ''
+    text = AREA_UNIT_RE.sub('', text).strip()
+    if not text:
+        return ''
+    return '%s m²' % text
+
+
+def _pick(options, selected):
+    """把选中值归一到一个选项名：支持序号、选项名、"1.原址翻建"、部分关键词。
+    空值返回 None，绝不再因为空串而把所有选项都打勾。"""
     sel = _s(selected)
+    if not sel:
+        return None
+    for no, name in options:
+        if sel == str(no) or sel == name:
+            return name
+    for no, name in options:
+        if sel.startswith('%d.' % no) or ('%d.' % no) in sel:
+            return name
+    for no, name in options:
+        if len(sel) >= 2 and (sel in name or name in sel):
+            return name
+    return None
+
+
+def _tick(options, selected, head, sep='\n'):
+    """把选项文本按选中项打 √：只勾唯一命中的那一个。"""
+    pick = _pick(options, selected)
     return '%s%s' % (head, sep.join(
-        '%d.%s%s' % (no, name, '√' if (sel == str(no) or sel == name or sel in name) else '')
+        '%d.%s%s' % (no, name, '√' if name == pick else '')
         for no, name in options
     ))
 
@@ -106,17 +143,17 @@ def _fill_apply(ws, app):
         _set(ws, 'E%d' % row, _s(member.get('id_card')))
         _set(ws, 'G%d' % row, _s(member.get('hukou')))
 
-    _set(ws, 'D10', _s(app.get('apply_land_area')))
-    _set(ws, 'F10', _s(app.get('building_area')))
+    _set(ws, 'D10', _area(app.get('apply_land_area')))
+    _set(ws, 'F10', _area(app.get('building_area')))
     _set(ws, 'H10', _s(app.get('cert_no')))
     _set(ws, 'D11', _disposal_text(app), wrap=True)
-    _set(ws, 'D12', _s(app.get('current_land_area')))
-    _set(ws, 'H12', _s(app.get('foundation_area')))
+    _set(ws, 'D12', _area(app.get('current_land_area')))
+    _set(ws, 'H12', _area(app.get('foundation_area')))
     _set(ws, 'C13', _four_to(app))
     _set(ws, 'C14', _four_from(app))
     _set(ws, 'G13', _tick(BUILD_TYPES, app.get('build_type'), '建房类型：'))
     _set(ws, 'C15', _tick(LAND_TYPES, app.get('land_type'), '', '    '))
-    _set(ws, 'D17', _s(app.get('house_floor_area')))
+    _set(ws, 'D17', _area(app.get('house_floor_area')))
     _set(ws, 'F17', _s(app.get('floors')))
     _set(ws, 'H17', _s(app.get('building_height')))
 
@@ -131,13 +168,10 @@ def _fill_apply(ws, app):
     _set(ws, 'B19', '是否有农村住宅设计方案或拟采用的住宅建设通用图集：  1.是%s     2.否%s' % (yes, no), wrap=True)
 
     reason = _s(app.get('apply_reason'))
-    date = _date_cn(app.get('created_at'))
-    _set(ws, 'B20', '%s\n\n申请人：%s          %s' % (reason, _s(app.get('owner_name')), date), wrap=True)
+    _set(ws, 'B20', '%s%s' % (reason, APPLICANT_SIGN), wrap=True)
 
     opinion = _s(app.get('village_opinion'))
-    leader = _s(app.get('village_leader'))
-    vdate = _s(app.get('village_date'))
-    _set(ws, 'B22', '%s\n\n负责人：%s          %s' % (opinion, leader, vdate), wrap=True)
+    _set(ws, 'B22', '%s%s' % (opinion, VILLAGE_SIGN), wrap=True)
 
     _autofit(ws, 20, 8 * 5 + 8.43, 25.0, min_height=25.0)
     _autofit(ws, 22, 8 * 5 + 8.43, 69.0, min_height=69.0)
@@ -151,14 +185,14 @@ def _fill_approval(ws, app):
     _set(ws, 'G2', _s(app.get('owner_id_card')))
     _set(ws, 'C3', _s(app.get('approval_address')) or _s(app.get('owner_hukou')))
     _set(ws, 'C4', _s(app.get('apply_reason')), wrap=True)
-    _set(ws, 'C5', _s(app.get('approval_land_area')))
-    _set(ws, 'G5', _s(app.get('approval_foundation_area')))
+    _set(ws, 'C5', _area(app.get('approval_land_area')))
+    _set(ws, 'G5', _area(app.get('approval_foundation_area')))
     _set(ws, 'C6', _s(app.get('approval_address')))
     _set(ws, 'C7', _four_to(app))
     _set(ws, 'C8', _four_from(app))
-    _set(ws, 'G7', _tick(BUILD_TYPES, app.get('approval_build_type'), '建房类型：'))
-    _set(ws, 'C9', _tick(LAND_TYPES, app.get('approval_land_type'), '', '    '))
-    _set(ws, 'D11', _s(app.get('approval_house_floor_area')))
+    _set(ws, 'G7', _tick(BUILD_TYPES, app.get('approval_build_type') or app.get('build_type'), '建房类型：'))
+    _set(ws, 'C9', _tick(LAND_TYPES, app.get('approval_land_type') or app.get('land_type'), '', '    '))
+    _set(ws, 'D11', _area(app.get('approval_house_floor_area')))
     _set(ws, 'F11', _s(app.get('approval_floors')))
     _set(ws, 'I11', _s(app.get('approval_height')))
 
