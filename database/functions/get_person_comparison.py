@@ -3,6 +3,7 @@
 from ..models.person import Person
 from ..models.student_education import StudentEducation
 from .._base import get_session
+from utils import person_age
 
 def get_person_comparison(dimensions: list) -> dict:
     from sqlalchemy import func
@@ -22,15 +23,13 @@ def get_person_comparison(dimensions: list) -> dict:
             count = 0
             
             if dim == 'age':
-                # 平均年龄
-                persons = session.query(Person.age).all()
+                # 平均年龄：age 为空时按身份证推导，推不出的不参与平均
+                persons = session.query(Person.age, Person.id_card).all()
                 ages = []
-                for p in persons:
-                    try:
-                        if p.age:
-                            ages.append(int(p.age))
-                    except Exception:
-                        pass
+                for age_value, id_card in persons:
+                    age = person_age(age_value, id_card)
+                    if age is not None:
+                        ages.append(age)
                 
                 if ages:
                     avg_age = sum(ages) / len(ages)

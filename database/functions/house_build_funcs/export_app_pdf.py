@@ -1,5 +1,7 @@
 """用 reportlab 按原表版式重排两张表，每张一页 A4 纵向，中文字体 simhei。"""
 
+import base64
+import binascii
 import os
 import re
 import tempfile
@@ -9,9 +11,18 @@ from xml.sax.saxutils import escape
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import Paragraph, SimpleDocTemplate, PageBreak, Spacer, Table, TableStyle
+from reportlab.platypus import (
+    Flowable,
+    Paragraph,
+    SimpleDocTemplate,
+    PageBreak,
+    Spacer,
+    Table,
+    TableStyle,
+)
 
 from .template_texts import (
     APPLICANT_SIGN,
@@ -165,6 +176,87 @@ def _date_cn(value):
     return ''
 
 
+class _SignatureLine(Flowable):
+    """申请人落款行：申请人： + 手写签名图 + 签名日期，整体右对齐。"""
+
+    def __init__(self, label, image_path, date_text, size=10, image_height=28):
+        super().__init__()
+        self.label = label
+        self.image_path = image_path
+        self.date_text = date_text
+        self.size = size
+        self.image_height = image_height
+        self.font = _ensure_font()
+        self._image_ratio = 2.0
+        self._avail_width = 0
+        if image_path:
+            try:
+                iw, ih = ImageReader(image_path).getSize()
+                if ih:
+                    self._image_ratio = float(iw) / float(ih)
+            except Exception:
+                self._image_ratio = 2.0
+
+    def wrap(self, availWidth, availHeight):
+        self._avail_width = availWidth
+        self.height = max(self.size * 1.45, self.image_height + 2, 34)
+        return availWidth, self.height
+
+    def draw(self):
+        canvas = self.canv
+        label_width = pdfmetrics.stringWidth(self.label, self.font, self.size)
+        date_width = pdfmetrics.stringWidth(self.date_text, self.font, self.size)
+        image_height = self.image_height
+        image_width = image_height * self._image_ratio
+        blank = max(0, self._avail_width - label_width - date_width - 6)
+        image_width = min(image_width, blank)
+        total = label_width + image_width + (4 if self.date_text else 0) + date_width
+        start = max(0, self._avail_width - total)
+        baseline = 3
+
+        canvas.setFont(self.font, self.size)
+        canvas.drawString(start, baseline, self.label)
+        if self.image_path and image_width > 2:
+            try:
+                canvas.drawImage(
+                    self.image_path,
+                    start + label_width + 2,
+                    1,
+                    width=image_width,
+                    height=image_height,
+                    mask='auto',
+                    preserveAspectRatio=True,
+                )
+            except Exception:
+                pass
+        if self.date_text:
+            canvas.drawString(
+                start + label_width + image_width + 4,
+                baseline,
+                self.date_text,
+            )
+
+
+def _signature_file(app, tmp_dir):
+    """把库里的 base64 签名落成临时 PNG，供 PDF 嵌图；无效返回 None。"""
+    encoded = _s(app.get('applicant_signature'))
+    if not encoded:
+        return None
+    try:
+        if encoded.startswith('data:') and ',' in encoded:
+            encoded = encoded.split(',', 1)[1]
+        raw = base64.b64decode(re.sub(r'\s+', '', encoded), validate=True)
+        if not raw:
+            return None
+        path = os.path.join(tmp_dir, 'applicant_signature.png')
+        with open(path, 'wb') as file:
+            file.write(raw)
+        ImageReader(path).getSize()
+        return path
+    except (binascii.Error, ValueError, OSError, TypeError):
+        return None
+
+
 def _disposal_text(app):
     """现宅基地处置情况：纯文本版（供高度估算）。"""
     mode = _s(app.get('current_disposal'))
@@ -187,7 +279,7 @@ def _disposal_markup(app, size=9):
     return '1.保留( %s )%s;2.退给村集体%s；3.其他(%s)%s' % (area, keep, back, other, oth)
 
 
-def _build_apply(app, width, limit):
+def _build_apply(app, width, limit, applicant_signature_path=None):
     """申请表：9 列网格，按模板合并区拼装。"""
     col = [width * r for r in (61.1 / 474.2, 49.1 / 474.2, 49.1 / 474.2, 49.1 / 474.2,
                                49.1 / 474.2, 49.1 / 474.2, 53.8 / 474.2, 49.1 / 474.2,
@@ -205,12 +297,15 @@ def _build_apply(app, width, limit):
     def put_raw(row, colno, markup, size=9, align=0):
         grid[row][colno] = _raw_p(markup, size, align)
 
-    def put_sign(row, colno, text, sign, size=10):
+    def put_sign(row, colno, text, sign, size=10, signature_path=None, date_text=''):
         flow = []
         if text:
             flow.append(_p(text, size, 0))
         flow.append(Spacer(1, 14))
-        flow.append(_p(sign, size, 2))
+        if signature_path:
+            flow.append(_SignatureLine('申请人：', signature_path, date_text, size))
+        else:
+            flow.append(_p(sign, size, 2))
         grid[row][colno] = flow
 
     put(0, 0, '农村宅基地和建房(规划许可)申请表', 16, 1)
@@ -270,7 +365,15 @@ def _build_apply(app, width, limit):
     put(18, 1, '是否有农村住宅设计方案或拟采用的住宅建设通用图集：  1.是%s     2.否%s' % (yes, no), 9, 0)
 
     put(19, 0, '申请理由', 11, 1)
-    put_sign(19, 1, _s(app.get('apply_reason')), APPLICANT_SIGN, 10)
+    put_sign(
+        19,
+        1,
+        _s(app.get('apply_reason')),
+        APPLICANT_SIGN,
+        10,
+        signature_path=applicant_signature_path,
+        date_text=_date_cn(app.get('applicant_signature_at')),
+    )
 
     put(21, 0, '村集体经济\n组织或村民\n委员会意见', 11, 1)
     put_sign(21, 1, _s(app.get('village_opinion')), VILLAGE_SIGN, 10)
@@ -312,6 +415,9 @@ def _build_apply(app, width, limit):
 
     reason_text = '%s\n\n%s' % (_s(app.get('apply_reason')), APPLICANT_SIGN)
     need = _need_height(reason_text, width - col[0], 10)
+    if applicant_signature_path:
+        # 签名图行约 34 高，比空白文本行多占约 20，避免把落款压出格。
+        need = _need_height(_s(app.get('apply_reason')), width - col[0], 10) + 14 + 36
     if need > heights[19] + heights[20]:
         heights[20] += need - heights[19] - heights[20]
 
@@ -459,6 +565,7 @@ def export_app_pdf(app):
     tmp_dir = tempfile.mkdtemp(prefix='hb_pdf_')
     out_name = '宅基地建房申请_%s_%s.pdf' % (_s(app.get('owner_name')) or '未命名', _s(app.get('app_no')) or '')
     out_path = os.path.join(tmp_dir, out_name)
+    applicant_signature_path = _signature_file(app, tmp_dir)
 
     left = 0.86875 * 72
     right = 0.822222 * 72
@@ -478,7 +585,7 @@ def export_app_pdf(app):
         author='人口通',
     )
     story = [
-        _build_apply(app, width, limit),
+        _build_apply(app, width, limit, applicant_signature_path),
         PageBreak(),
         _build_approval(app, width, limit),
     ]

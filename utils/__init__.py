@@ -13,6 +13,7 @@ from .security import (
 from .response import safe_error, get_json_data
 from .common import (
     calculate_age,
+    person_age,
     clean_filename,
     validate_photo_filename,
     find_existing_photo,
@@ -44,6 +45,7 @@ __all__ = [
     'get_json_data',
     # common
     'calculate_age',
+    'person_age',
     'clean_filename',
     'validate_photo_filename',
     'find_existing_photo',

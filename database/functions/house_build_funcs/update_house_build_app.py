@@ -8,6 +8,7 @@ from ...models.house_build_app import HouseBuildApp, HouseBuildMember
 from .create_house_build_app import normalize_approvals
 from .fields import APP_FIELDS, to_number
 from .serialize_app import serialize_app
+from .signature import normalize_signature
 
 
 def update_house_build_app(app_id, data, operator=''):
@@ -19,8 +20,17 @@ def update_house_build_app(app_id, data, operator=''):
             return None
 
         for field in APP_FIELDS:
+            if field in ('applicant_signature', 'applicant_signature_at'):
+                continue
             if field in data and data.get(field) is not None:
                 setattr(app, field, str(data.get(field)).strip())
+        if 'applicant_signature' in data and data.get('applicant_signature') is not None:
+            signature = normalize_signature(data.get('applicant_signature'))
+            app.applicant_signature = signature
+            signature_at = str(data.get('applicant_signature_at') or '').strip()
+            app.applicant_signature_at = signature_at if signature else ''
+            if signature and not app.applicant_signature_at:
+                app.applicant_signature_at = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         if 'person_id' in data and data.get('person_id') is not None:
             app.person_id = str(data.get('person_id')).strip()
 

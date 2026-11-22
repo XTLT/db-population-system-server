@@ -245,3 +245,14 @@ def migrate_db(engine):
             conn.commit()
         except Exception:
             pass
+        # 建房申请表：申请人移动端手写签名（2026-11-22）
+        try:
+            conn.execute(text("ALTER TABLE house_build_app ADD COLUMN applicant_signature TEXT DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass
+        try:
+            conn.execute(text("ALTER TABLE house_build_app ADD COLUMN applicant_signature_at VARCHAR DEFAULT ''"))
+            conn.commit()
+        except Exception:
+            pass

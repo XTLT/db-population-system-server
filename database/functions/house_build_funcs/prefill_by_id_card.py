@@ -4,6 +4,7 @@ from ..._base import get_session
 from ...models.house_build_app import HouseBuildApp
 from ...models.person import Person
 from ..head_guard_funcs.infer_gender import infer_gender
+from utils import person_age
 
 
 def _clean(value):
@@ -40,7 +41,7 @@ def prefill_by_id_card(id_card):
                 members.append({
                     'seq': str(index),
                     'name': _clean(row.name),
-                    'age': _clean(row.age),
+                    'age': str(person_age(row.age, row.id_card) or ''),
                     'relation': _clean(row.relation),
                     'id_card': _clean(row.id_card),
                     'hukou': _clean(row.address),
@@ -69,7 +70,7 @@ def prefill_by_id_card(id_card):
             'person_id': person.id,
             'owner_name': _clean(person.name),
             'owner_gender': infer_gender(id_card),
-            'owner_age': _clean(person.age),
+            'owner_age': str(person_age(person.age, person.id_card) or ''),
             'owner_phone': _clean(person.phone),
             'owner_id_card': id_card,
             'owner_hukou': _clean(person.address),

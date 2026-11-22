@@ -9,6 +9,7 @@ from ...models.house_build_app import HouseBuildApp, HouseBuildMember
 from .fields import APP_FIELDS, APPROVAL_KEYS, to_number
 from .gen_app_id import gen_app_id
 from .serialize_app import serialize_app
+from .signature import normalize_signature
 
 
 def _clean(data, key):
@@ -58,8 +59,17 @@ def create_house_build_app(data, operator=''):
         for field in APP_FIELDS:
             if field == 'owner_name':
                 continue
+            if field in ('applicant_signature', 'applicant_signature_at'):
+                continue
             if field in data:
                 setattr(app, field, _clean(data, field))
+        if 'applicant_signature' in data:
+            signature = normalize_signature(data.get('applicant_signature'))
+            app.applicant_signature = signature
+            signature_at = _clean(data, 'applicant_signature_at')
+            app.applicant_signature_at = signature_at if signature else ''
+            if signature and not app.applicant_signature_at:
+                app.applicant_signature_at = now
         app.person_id = _clean(data, 'person_id')
         app.apply_area_num = to_number(app.apply_land_area)
         app.approval_area_num = to_number(app.approval_land_area)

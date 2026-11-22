@@ -52,6 +52,9 @@ class HouseBuildApp(Base):
     village_opinion = Column(String, default="")   # 村集体经济组织或村委会意见
     village_leader = Column(String, default="")    # 负责人
     village_date = Column(String, default="")      # 日期
+    # 申请人移动端手写签名（PNG/JPEG base64，仅申请表 PDF 嵌图；Excel 保留空白手签位）
+    applicant_signature = Column(Text, default="")
+    applicant_signature_at = Column(String, default="")
 
     # ===== 拟批准宅基地及建房情况（审批表）=====
     approval_land_area = Column(String, default="")

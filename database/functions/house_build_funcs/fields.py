@@ -9,6 +9,7 @@ APP_FIELDS = (
     'build_type', 'land_type', 'house_floor_area', 'floors', 'building_height',
     'neighbor_opinion', 'design_plan', 'apply_reason',
     'village_opinion', 'village_leader', 'village_date',
+    'applicant_signature', 'applicant_signature_at',
     'approval_land_area', 'approval_foundation_area', 'approval_address',
     'approval_build_type', 'approval_land_type', 'approval_house_floor_area',
     'approval_floors', 'approval_height',

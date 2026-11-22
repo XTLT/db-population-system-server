@@ -1,5 +1,6 @@
 # utils/common 包 — 向后兼容 shim
 from .calculate_age import calculate_age
+from .person_age import person_age
 from .clean_filename import clean_filename
 from .validate_photo_filename import validate_photo_filename
 from .find_existing_photo import find_existing_photo
@@ -16,6 +17,7 @@ from .validate_real_name import validate_real_name
 
 __all__ = [
     'calculate_age',
+    'person_age',
     'clean_filename',
     'validate_photo_filename',
     'find_existing_photo',

@@ -18,4 +18,5 @@ from . import get_photo_by_type
 from . import delete_photo_by_type
 from . import serve_photo
 from . import get_person_photos
+from . import manifest_all
 from . import batch_delete_photos

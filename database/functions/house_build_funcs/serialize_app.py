@@ -62,6 +62,8 @@ def serialize_app(app, members=None):
         'village_opinion': app.village_opinion or '',
         'village_leader': app.village_leader or '',
         'village_date': app.village_date or '',
+        'applicant_signature': app.applicant_signature or '',
+        'applicant_signature_at': app.applicant_signature_at or '',
         'approval_land_area': app.approval_land_area or '',
         'approval_area_num': app.approval_area_num or 0.0,
         'approval_foundation_area': app.approval_foundation_area or '',

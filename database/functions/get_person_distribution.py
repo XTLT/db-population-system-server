@@ -2,6 +2,7 @@
 from ..models.person import Person
 from .._base import get_session
 from ._alive_filter import alive_filter
+from utils import person_age
 
 def get_person_distribution(field: str) -> dict:
     from sqlalchemy import func
@@ -45,7 +46,8 @@ def get_person_distribution(field: str) -> dict:
 
         elif field == 'age_group':
             # 年龄段分布（用户口径 2026-11-04：0-18 / 19-59 / 60-80 / 80以上）
-            persons = session.query(Person.age).filter(alive_filter()).all()
+            # 50 等历史库 age 为空时按身份证推导；两边都取不到就跳过，不能当 0 岁。
+            persons = session.query(Person.age, Person.id_card).filter(alive_filter()).all()
 
             age_groups = {
                 '0-18岁': 0,
@@ -54,19 +56,18 @@ def get_person_distribution(field: str) -> dict:
                 '80岁以上': 0
             }
 
-            for p in persons:
-                try:
-                    age = int(p.age) if p.age else 0
-                    if age <= 18:
-                        age_groups['0-18岁'] += 1
-                    elif age <= 59:
-                        age_groups['19-59岁'] += 1
-                    elif age <= 80:
-                        age_groups['60-80岁'] += 1
-                    else:
-                        age_groups['80岁以上'] += 1
-                except Exception:
+            for age_value, id_card in persons:
+                age = person_age(age_value, id_card)
+                if age is None:
+                    continue
+                if age <= 18:
                     age_groups['0-18岁'] += 1
+                elif age <= 59:
+                    age_groups['19-59岁'] += 1
+                elif age <= 80:
+                    age_groups['60-80岁'] += 1
+                else:
+                    age_groups['80岁以上'] += 1
 
             result = age_groups
 

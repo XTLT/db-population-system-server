@@ -32,6 +32,11 @@ def api_delete_photo(person_id):
             os.remove(path)
             return jsonify({'success': True})
 
-        return jsonify({'error': '照片不存在'}), 404
+        # 幂等删除：照片已被其他端删掉时仍按成功处理，避免离线队列反复失败。
+        return jsonify({
+            'success': True,
+            'message': '照片不存在，已视为删除',
+            'not_found': True,
+        })
     finally:
         session.close()

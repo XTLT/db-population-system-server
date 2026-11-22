@@ -26,10 +26,15 @@ def api_delete_photo_by_type(id_card, photo_type):
         if not base_name:
             return jsonify({'error': '无法定位照片'}), 400
         
-        # 查找并删除照片
+        # 查找并删除照片。离线队列可能在下载快照后、联网前已被其他端删除，
+        # 此时“删一个不存在的照片”应视为成功，否则客户端会永远卡在失败重试。
         path = find_existing_photo(base_name, PHOTO_UPLOAD_DIR)
         if not path or not os.path.exists(path):
-            return jsonify({'error': '照片不存在'}), 404
+            return jsonify({
+                'success': True,
+                'message': '照片不存在，已视为删除',
+                'not_found': True,
+            })
         
         os.remove(path)
         
