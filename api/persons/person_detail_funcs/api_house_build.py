@@ -10,6 +10,7 @@ from database import (
     create_house_build_app,
     delete_house_build_app,
     export_app_pdf,
+    export_apps_pdf,
     export_app_xlsx,
     get_house_build_app,
     list_house_build_apps,
@@ -147,4 +148,57 @@ def api_house_build_export(app_id):
         download_name=os.path.basename(path),
         mimetype='application/pdf' if fmt == 'pdf' else
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    )
+
+
+@require_auth
+def api_house_build_batch_export():
+    """多户合并导出：每户 6 页，会议记录和公示共用；只支持 PDF。"""
+    data = request.get_json(silent=True) or {}
+    fmt = (data.get('fmt') or 'pdf').strip().lower()
+    if fmt != 'pdf':
+        return jsonify({'error': '批量导出仅支持 pdf'}), 400
+
+    raw_ids = data.get('ids')
+    if not isinstance(raw_ids, list):
+        return jsonify({'error': '缺少 ids 列表'}), 400
+    ids = []
+    for value in raw_ids:
+        text = str(value or '').strip()
+        if text and text not in ids:
+            ids.append(text)
+    if not ids:
+        return jsonify({'error': '请至少选择一户'}), 400
+    if len(ids) > 50:
+        return jsonify({'error': '一次最多导出 50 户'}), 400
+
+    apps = []
+    missing = []
+    for app_id in ids:
+        app_data = get_house_build_app(app_id)
+        if app_data is None:
+            missing.append(app_id)
+        else:
+            apps.append(app_data)
+    if missing:
+        return jsonify({'error': '以下建房申请不存在：%s' % '、'.join(missing)}), 404
+
+    try:
+        path = export_apps_pdf(apps)
+    except Exception as e:
+        return jsonify({'error': '生成批量导出文件失败：%s' % e}), 500
+
+    tmp_dir = os.path.dirname(path)
+
+    @after_this_request
+    def _cleanup(response):
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        return response
+
+    _log('批量导出建房申请', '%d户 %s' % (len(apps), fmt))
+    return send_file(
+        path,
+        as_attachment=True,
+        download_name=os.path.basename(path),
+        mimetype='application/pdf',
     )

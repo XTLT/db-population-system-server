@@ -107,6 +107,7 @@ from .functions.house_build_funcs import (
     create_house_build_app,
     delete_house_build_app,
     export_app_pdf,
+    export_apps_pdf,
     export_app_xlsx,
     get_house_build_app,
     list_house_build_apps,
@@ -217,4 +218,5 @@ __all__ = [
     "prefill_by_id_card",
     "export_app_xlsx",
     "export_app_pdf",
+    "export_apps_pdf",
 ]

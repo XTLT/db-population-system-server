@@ -122,7 +122,7 @@ def _tick(options, selected, head, sep='\n'):
     ))
 
 
-def _p(text, size=10, align=0, leading=None):
+def _p(text, size=10, align=0, leading=None, firstLineIndent=0):
     font = _ensure_font()
     style = ParagraphStyle(
         'hb%d_%d' % (size, align),
@@ -130,20 +130,22 @@ def _p(text, size=10, align=0, leading=None):
         fontSize=size,
         leading=leading or size * 1.45,
         alignment=align,
+        firstLineIndent=firstLineIndent,
         wordWrap='CJK',
     )
     return Paragraph(escape(_s(text)).replace('\n', '<br/>'), style)
 
 
-def _raw_p(markup, size=10, align=0):
+def _raw_p(markup, size=10, align=0, leading=None, firstLineIndent=0):
     """已是 reportlab 标记的段落，不再转义。"""
     font = _ensure_font()
     style = ParagraphStyle(
         'hbraw%d_%d' % (size, align),
         fontName=font,
         fontSize=size,
-        leading=size * 1.45,
+        leading=leading or size * 1.45,
         alignment=align,
+        firstLineIndent=firstLineIndent,
         wordWrap='CJK',
     )
     return Paragraph(markup.replace('\n', '<br/>'), style)
@@ -237,7 +239,7 @@ class _SignatureLine(Flowable):
             )
 
 
-def _signature_file(app, tmp_dir):
+def _signature_file(app, tmp_dir, filename='applicant_signature.png'):
     """把库里的 base64 签名落成临时 PNG，供 PDF 嵌图；无效返回 None。"""
     encoded = _s(app.get('applicant_signature'))
     if not encoded:
@@ -248,7 +250,7 @@ def _signature_file(app, tmp_dir):
         raw = base64.b64decode(re.sub(r'\s+', '', encoded), validate=True)
         if not raw:
             return None
-        path = os.path.join(tmp_dir, 'applicant_signature.png')
+        path = os.path.join(tmp_dir, filename)
         with open(path, 'wb') as file:
             file.write(raw)
         ImageReader(path).getSize()
@@ -589,6 +591,67 @@ def export_app_pdf(app):
         PageBreak(),
         _build_approval(app, width, limit),
     ]
+    # 追加“一户一档”6 张附页；局部导入避免与附页模块循环引用。
+    from .export_support_pdf import build_support_story
+    story.append(PageBreak())
+    story.extend(build_support_story(app, width))
+    doc.build(story)
+    return out_path
+
+
+def _page_layout():
+    left = 0.86875 * 72
+    right = 0.822222 * 72
+    top = 0.279166 * 72
+    bottom = 0.70 * 72
+    return left, right, top, bottom, A4[0] - left - right, A4[1] - top - bottom
+
+
+def export_apps_pdf(apps):
+    """多户合并导出：每户申请表、审批表和 4 张一户一表附页，最后共用会议记录和公示。
+
+    每户 6 页；会议记录、公示各 1 页，按选中户数生成一份，不再随每户重复。
+    """
+    apps = [app for app in (apps or []) if app]
+    if not apps:
+        raise ValueError('至少需要一条建房申请')
+    _ensure_font()
+
+    tmp_dir = tempfile.mkdtemp(prefix='hb_batch_pdf_')
+    out_name = '宅基地建房一户一档_%d户.pdf' % len(apps)
+    out_path = os.path.join(tmp_dir, out_name)
+
+    left, right, top, bottom, width, limit = _page_layout()
+    doc = SimpleDocTemplate(
+        out_path,
+        pagesize=A4,
+        leftMargin=left,
+        rightMargin=right,
+        topMargin=top,
+        bottomMargin=bottom,
+        title='宅基地建房一户一档_%d户' % len(apps),
+        author='人口通',
+    )
+
+    story = []
+    for index, app in enumerate(apps):
+        signature_path = _signature_file(
+            app, tmp_dir, 'applicant_signature_%d.png' % index
+        )
+        if index:
+            story.append(PageBreak())
+        story.append(_build_apply(app, width, limit, signature_path))
+        story.append(PageBreak())
+        story.append(_build_approval(app, width, limit))
+        story.append(PageBreak())
+        # 局部导入避免与附页模块循环引用。
+        from .export_support_pdf import build_household_support_story
+        story.extend(build_household_support_story(app, width))
+
+    from .export_support_pdf import build_shared_support_story
+    story.append(PageBreak())
+    story.extend(build_shared_support_story(apps, width))
+
     doc.build(story)
     return out_path
 

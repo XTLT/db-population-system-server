@@ -18,6 +18,7 @@ from .person_detail_funcs import (
     api_house_build_delete,
     api_house_build_prefill,
     api_house_build_export,
+    api_house_build_batch_export,
 )
 
 bp.add_url_rule('/person/<person_id>', endpoint='api_person', view_func=api_person)
@@ -80,4 +81,10 @@ bp.add_url_rule(
     '/persons/house-build/<app_id>/export',
     endpoint='api_house_build_export',
     view_func=api_house_build_export,
+)
+bp.add_url_rule(
+    '/persons/house-build/batch-export',
+    endpoint='api_house_build_batch_export',
+    view_func=api_house_build_batch_export,
+    methods=['POST'],
 )
