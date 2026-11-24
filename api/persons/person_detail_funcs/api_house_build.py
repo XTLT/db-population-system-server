@@ -39,6 +39,16 @@ def _client_type():
     return request.headers.get('X-Client-Type', 'Web')
 
 
+def _meeting_info(payload=None):
+    """导出抬头与会议记录信息：乡镇/村 + 时间/地点/主持人/记录人，均可留空。"""
+    payload = payload if isinstance(payload, dict) else {}
+    result = {}
+    for key in ('date', 'place', 'host', 'recorder', 'township', 'village'):
+        value = payload.get(key)
+        result[key] = str(value or '').strip()[:120]
+    return result
+
+
 @require_auth
 def api_house_build_list():
     try:
@@ -129,8 +139,17 @@ def api_house_build_export(app_id):
     if app_data is None:
         return jsonify({'error': '建房申请不存在'}), 404
 
+    meeting_info = _meeting_info({
+        'date': request.args.get('meeting_date'),
+        'place': request.args.get('meeting_place'),
+        'host': request.args.get('meeting_host'),
+        'recorder': request.args.get('meeting_recorder'),
+        'township': request.args.get('meeting_township'),
+        'village': request.args.get('meeting_village'),
+    }) if fmt == 'pdf' else None
+
     try:
-        path = export_app_xlsx(app_data) if fmt == 'xlsx' else export_app_pdf(app_data)
+        path = export_app_xlsx(app_data) if fmt == 'xlsx' else export_app_pdf(app_data, meeting_info)
     except Exception as e:
         return jsonify({'error': '生成导出文件失败：%s' % e}), 500
 
@@ -183,8 +202,9 @@ def api_house_build_batch_export():
     if missing:
         return jsonify({'error': '以下建房申请不存在：%s' % '、'.join(missing)}), 404
 
+    meeting_info = _meeting_info(data.get('meeting'))
     try:
-        path = export_apps_pdf(apps)
+        path = export_apps_pdf(apps, meeting_info)
     except Exception as e:
         return jsonify({'error': '生成批量导出文件失败：%s' % e}), 500
 

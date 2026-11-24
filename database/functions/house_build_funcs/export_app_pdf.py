@@ -8,6 +8,8 @@ import tempfile
 from pathlib import Path
 from xml.sax.saxutils import escape
 
+from PIL import Image
+
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
@@ -181,14 +183,16 @@ def _date_cn(value):
 class _SignatureLine(Flowable):
     """申请人落款行：申请人： + 手写签名图 + 签名日期，整体右对齐。"""
 
-    def __init__(self, label, image_path, date_text, size=10, image_height=28):
+    def __init__(self, label, image_path, date_text, size=10, image_height=28,
+                 start_ratio=None, font=None):
         super().__init__()
         self.label = label
         self.image_path = image_path
         self.date_text = date_text
         self.size = size
         self.image_height = image_height
-        self.font = _ensure_font()
+        self.start_ratio = start_ratio
+        self.font = font or _ensure_font()
         self._image_ratio = 2.0
         self._avail_width = 0
         if image_path:
@@ -213,7 +217,11 @@ class _SignatureLine(Flowable):
         blank = max(0, self._avail_width - label_width - date_width - 6)
         image_width = min(image_width, blank)
         total = label_width + image_width + (4 if self.date_text else 0) + date_width
-        start = max(0, self._avail_width - total)
+        if self.start_ratio is None:
+            start = max(0, self._avail_width - total)
+        else:
+            start = min(max(0, self._avail_width * self.start_ratio),
+                        max(0, self._avail_width - total))
         baseline = 3
 
         canvas.setFont(self.font, self.size)
@@ -239,6 +247,30 @@ class _SignatureLine(Flowable):
             )
 
 
+def _trim_signature(path):
+    """裁掉手签画布四周的大片空白，只保留有效笔迹，避免缩成一个小点。"""
+    try:
+        image = Image.open(path)
+        image.load()
+        if image.mode != 'RGBA':
+            image = image.convert('RGBA')
+        alpha = image.getchannel('A')
+        if alpha.getextrema()[0] < 250:
+            mask = alpha.point(lambda value: 255 if value > 40 else 0)
+        else:
+            gray = image.convert('L')
+            mask = gray.point(lambda value: 255 if value < 245 else 0)
+        box = mask.getbbox()
+        if not box:
+            return
+        pad = max(4, int(max(box[2] - box[0], box[3] - box[1]) * 0.04))
+        box = (max(0, box[0] - pad), max(0, box[1] - pad),
+               min(image.width, box[2] + pad), min(image.height, box[3] + pad))
+        image.crop(box).save(path, 'PNG')
+    except (OSError, ValueError):
+        pass
+
+
 def _signature_file(app, tmp_dir, filename='applicant_signature.png'):
     """把库里的 base64 签名落成临时 PNG，供 PDF 嵌图；无效返回 None。"""
     encoded = _s(app.get('applicant_signature'))
@@ -254,6 +286,7 @@ def _signature_file(app, tmp_dir, filename='applicant_signature.png'):
         with open(path, 'wb') as file:
             file.write(raw)
         ImageReader(path).getSize()
+        _trim_signature(path)
         return path
     except (binascii.Error, ValueError, OSError, TypeError):
         return None
@@ -558,7 +591,7 @@ def _build_approval(app, width, limit):
     return table
 
 
-def export_app_pdf(app):
+def export_app_pdf(app, meeting_info=None):
     """返回生成好的 pdf 绝对路径，调用方负责清理临时目录。"""
     if app is None:
         raise ValueError('申请记录不存在')
@@ -594,7 +627,7 @@ def export_app_pdf(app):
     # 追加“一户一档”6 张附页；局部导入避免与附页模块循环引用。
     from .export_support_pdf import build_support_story
     story.append(PageBreak())
-    story.extend(build_support_story(app, width))
+    story.extend(build_support_story(app, width, applicant_signature_path, meeting_info))
     doc.build(story)
     return out_path
 
@@ -607,7 +640,7 @@ def _page_layout():
     return left, right, top, bottom, A4[0] - left - right, A4[1] - top - bottom
 
 
-def export_apps_pdf(apps):
+def export_apps_pdf(apps, meeting_info=None):
     """多户合并导出：每户申请表、审批表和 4 张一户一表附页，最后共用会议记录和公示。
 
     每户 6 页；会议记录、公示各 1 页，按选中户数生成一份，不再随每户重复。
@@ -646,11 +679,11 @@ def export_apps_pdf(apps):
         story.append(PageBreak())
         # 局部导入避免与附页模块循环引用。
         from .export_support_pdf import build_household_support_story
-        story.extend(build_household_support_story(app, width))
+        story.extend(build_household_support_story(app, width, signature_path, meeting_info))
 
     from .export_support_pdf import build_shared_support_story
     story.append(PageBreak())
-    story.extend(build_shared_support_story(apps, width))
+    story.extend(build_shared_support_story(apps, width, meeting_info))
 
     doc.build(story)
     return out_path
