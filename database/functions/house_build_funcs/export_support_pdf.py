@@ -326,7 +326,7 @@ _FLOW_TOKEN_RE = re.compile(
     r'(?:东至|南至|西至|北至)[^，。；：]{2,14}(?=[，。；]|$)|'
     r'性别：[^\s，。；]*(?:\s*[□■☑][男女])?|'
     r'身份证号：[^\s，。；]*|'
-    r'\d+(?:\.\d+)?\s*(?:m2|m²|㎡)|'
+    r'\d+(?:\.\d+)?\s*(?:平方米|m2|m²|㎡)|'
     r'\d+\.(?:√)?[^\s）＿，。；：]{0,12}|'
     r'[\u4e00-\u9fa5]{1,4}组|[\u4e00-\u9fa5]{1,4}(?:村|社区)|[\u4e00-\u9fa5]{1,4}(?:镇|乡|街道)|'
     r'[^\s（），。；：]{0,2}＿+[^\s（），。；：]{0,2}|'
@@ -653,7 +653,9 @@ def _meeting_household_entry(index, app, size):
     area_value = _s(app.get('apply_land_area'))
     if area_value.endswith('.0'):
         area_value = area_value[:-2]
-    area = '%sm2' % (area_value or (_BLANK * 4))
+    area_value = re.sub(r'\s*(?:平方米|平米|m2|m²|㎡)\s*$', '', area_value,
+                        flags=re.IGNORECASE).strip()
+    area = '%s平方米' % (area_value or (_BLANK * 4))
     boundary = ('四至：东至%s，南至%s，西至%s，北至%s。'
                 % (_blank(app.get('east_to'), 4),
                    _blank(app.get('south_to'), 4),
